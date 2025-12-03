@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# 排除整个 lib/ 文件夹
+lib/
+
+# 但保留 lib/README.md 文件
+!lib/README.md

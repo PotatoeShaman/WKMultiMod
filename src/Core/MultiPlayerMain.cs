@@ -1,0 +1,58 @@
+﻿using BepInEx;
+using BepInEx.Logging;
+using HarmonyLib;
+using LiteNetLib;
+using LiteNetLib.Utils;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+
+namespace WKMultiMod.src.Core;
+
+[BepInPlugin(ModGUID, ModName, ModVersion)]
+public class MultiPalyerMain : BaseUnityPlugin {
+
+	public const String ModGUID = "shenxl.MultiPalyerMod";
+	public const String ModName = "MultiPalyer Mod";
+	public const String ModVersion = "0.9.1";
+
+	// 单例实例
+	public static MultiPalyerMain Instance;
+
+	// MultiplayerCore 实例 (核心逻辑的入口)
+	public static MultiplayerCore CoreInstance;
+
+	// 日志记录器
+	internal static new ManualLogSource Logger;
+
+	// Harmony上下文
+	private Harmony _harmony;
+
+	// Awake在对象创建时调用, 早于Start
+	private void Awake() {
+		// 日志初始化
+		Instance = this;
+		Logger = base.Logger;
+		Logger.LogInfo($"{ModGUID} {ModVersion} 已加载 (启动器)");
+
+		// 1. 创建一个新的, GameObject
+		GameObject coreGameObject = new GameObject("MultiplayerCore_DDOL");
+
+		// 2. 将核心脚本添加到新对象上
+		CoreInstance = coreGameObject.AddComponent<MultiplayerCore>();
+
+		// 3. 立即保护新对象 (保证是根对象, 应可被保护)
+		DontDestroyOnLoad(coreGameObject);
+
+		// 4. 使用Harmony打补丁 (如果有 CommandConsolePatch 等, 需要保留)
+		_harmony = new Harmony($"{ModGUID}");
+		_harmony.PatchAll();
+	}
+
+	private void OnDestroy() {
+		// 这个方法应该在场景切换时运行, 确认主组件被清理.
+		Logger.LogInfo("MultiPalyerMain (启动器) 已被销毁.");
+	}
+}
