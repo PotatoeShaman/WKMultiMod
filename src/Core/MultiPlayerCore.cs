@@ -99,9 +99,9 @@ public class MultiplayerCore : MonoBehaviour {
 	// 命令注册方法
 	private void RegisterCommands() {
 		// 将命令注册到 CommandConsole
-		CommandConsole.AddCommand("host", Host, false);
-		CommandConsole.AddCommand("join", Join, false);
-		CommandConsole.AddCommand("leave", Leave, false);
+		CommandConsole.AddCommand("host", Host);
+		CommandConsole.AddCommand("join", Join);
+		CommandConsole.AddCommand("leave", Leave);
 		MultiPalyerMain.Logger.LogInfo("命令集 注册成功");
 	}
 

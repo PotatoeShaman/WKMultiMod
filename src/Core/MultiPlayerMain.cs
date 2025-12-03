@@ -16,7 +16,7 @@ public class MultiPalyerMain : BaseUnityPlugin {
 
 	public const String ModGUID = "shenxl.MultiPalyerMod";
 	public const String ModName = "MultiPalyer Mod";
-	public const String ModVersion = "0.9.1";
+	public const String ModVersion = "0.9.2";
 
 	// 单例实例
 	public static MultiPalyerMain Instance;
