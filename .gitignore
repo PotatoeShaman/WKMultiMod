@@ -367,3 +367,7 @@ lib/
 
 # 但保留 lib/README.md 文件
 !lib/README.md
+
+# 排除整个 temp/ 文件夹 
+# 我用来存放他人代码和工具的位置
+temp/

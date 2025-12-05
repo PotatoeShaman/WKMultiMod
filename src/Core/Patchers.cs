@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using WKMultiMod.Main;
+using WKMultiMod.Core;
 
-namespace WKMultiMod.src.Core;
+namespace WKMultiMod.Patcher;
 
 // 补丁类: 注入核心对象到 SteamManager
 // 在 SteamManager 的 Awake 方法后执行
