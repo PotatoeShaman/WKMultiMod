@@ -13,23 +13,26 @@ using WKMultiMod.Core;
 namespace WKMultiMod.Main;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
-public class MultiPalyerMain : BaseUnityPlugin {
+public class MultiPlayerMain : BaseUnityPlugin {
 
 	public const String ModGUID = "shenxl.MultiPalyerMod";
 	public const String ModName = "MultiPalyer Mod";
-	public const String ModVersion = "0.10.4";
+	public const String ModVersion = "0.10.8";
 
 	// 单例实例
-	public static MultiPalyerMain Instance;
+	public static MultiPlayerMain Instance;
 
 	// MultiplayerCore 实例 (核心逻辑的入口)
-	public static MultiplayerCore CoreInstance;
+	public static MultiPlayerCore CoreInstance;
 
 	// 日志记录器
 	internal static new ManualLogSource Logger;
 
 	// Harmony上下文
 	private Harmony _harmony;
+
+	// 共享状态变量：用于控制是否启用关卡标准化 Patch
+	public static bool IsMultiplayerActive = false;
 
 	// Awake在对象创建时调用, 早于Start
 	private void Awake() {
@@ -42,7 +45,7 @@ public class MultiPalyerMain : BaseUnityPlugin {
 		GameObject coreGameObject = new GameObject("MultiplayerCore_DDOL");
 
 		// 2. 将核心脚本添加到新对象上
-		CoreInstance = coreGameObject.AddComponent<MultiplayerCore>();
+		CoreInstance = coreGameObject.AddComponent<MultiPlayerCore>();
 
 		// 3. 立即保护新对象 (被游戏创建初期销毁了,为什么?)
 		DontDestroyOnLoad(coreGameObject);

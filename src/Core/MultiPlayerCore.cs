@@ -9,7 +9,7 @@ using WKMultiMod.Main;
 
 namespace WKMultiMod.Core;
 
-public class MultiplayerCore : MonoBehaviour {
+public class MultiPlayerCore : MonoBehaviour {
 
 	// 服务器和客户端监听器 - 处理网络事件
 	private EventBasedNetListener _serverListener;
@@ -41,7 +41,7 @@ public class MultiplayerCore : MonoBehaviour {
 	// 注意：日志通过 MultiPalyerMain.Logger 访问
 
 	void Awake() {
-		MultiPalyerMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Awake");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Awake");
 
 		// 初始化网络监听器和管理器
 		_serverListener = new EventBasedNetListener();
@@ -49,14 +49,12 @@ public class MultiplayerCore : MonoBehaviour {
 		_clientListener = new EventBasedNetListener();
 		_client = new NetManager(_clientListener);
 
-		// 处理客户端接收到的网络数据
-		_clientListener.NetworkReceiveEvent += HandleClientNetworkReceive;
 		// 订阅场景加载事件, 用于执行依赖于场景的操作（如命令注册）
 		SceneManager.sceneLoaded += OnSceneLoaded;
 	}
 
 	private void Start() {
-		MultiPalyerMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Start");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Start");
 	}
 
 	private void Update() {
@@ -92,7 +90,7 @@ public class MultiplayerCore : MonoBehaviour {
 
 	// 场景加载完成时调用
 	private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-		MultiPalyerMain.Logger.LogInfo("[MP Mod] 核心场景加载完成: " + scene.name);
+		MultiPlayerMain.Logger.LogInfo("[MP Mod] 核心场景加载完成: " + scene.name);
 
 		if (scene.name == "Game-Main") {
 			// 注册命令和初始化世界数据
@@ -100,7 +98,7 @@ public class MultiplayerCore : MonoBehaviour {
 				InitializeData();
 				RegisterCommands();
 			} else {
-				MultiPalyerMain.Logger.LogError("[MP Mod] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
+				MultiPlayerMain.Logger.LogError("[MP Mod] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
 			}
 		}
 		if (scene.name == "Main-Menu") {
@@ -112,7 +110,7 @@ public class MultiplayerCore : MonoBehaviour {
 	// 当核心对象被销毁时调用
 	void OnDestroy() {
 		// 核心对象被销毁时的清理工作
-		MultiPalyerMain.Logger.LogError("[MP Mod loading] MultiplayerCore 被销毁");
+		MultiPlayerMain.Logger.LogError("[MP Mod loading] MultiplayerCore 被销毁");
 		SceneManager.sceneLoaded -= OnSceneLoaded;
 
 		// 关闭网络连接
@@ -125,7 +123,7 @@ public class MultiplayerCore : MonoBehaviour {
 		CommandConsole.AddCommand("host", Host);
 		CommandConsole.AddCommand("join", Join);
 		CommandConsole.AddCommand("leave", Leave);
-		MultiPalyerMain.Logger.LogInfo("[MP Mod loading] 命令集 注册成功");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod loading] 命令集 注册成功");
 	}
 
 	// 初始化数据
@@ -136,18 +134,39 @@ public class MultiplayerCore : MonoBehaviour {
 
 	// 关闭所有连接
 	private void CloseAllConnections() {
-		// 如果服务器正在运行，断开所有连接
-		if (_server != null && _server.IsRunning) {
+		// 如果服务器正在运行, 断开所有连接
+		if (_server != null) {
+			// 取消订阅服务器事件
+			_serverListener.ConnectionRequestEvent -= HandleConnectionRequest;
+			_serverListener.PeerConnectedEvent -= HandlePeerConnected;
+			_serverListener.NetworkReceiveEvent -= HandleNetworkReceive;
+			_serverListener.PeerDisconnectedEvent -= HandlePeerDisconnected;
+
+			// 断开所有客户端连接
 			_server.DisconnectAll();
-			_server.Stop();
-			MultiPalyerMain.Logger.LogInfo("[MP Mod Close] 服务器连接已停止.");
+
+			// 停止服务器
+			if (_server.IsRunning) {
+				_server.Stop();
+			}
+
+			MultiPlayerMain.Logger.LogInfo("[MP Mod Close] 服务器连接已停止.");
 		}
 
 		// 断开客户端连接
-		if (_client != null && _client.IsRunning) {
+		if (_client != null) {
+			// 取消订阅客户端事件
+			_clientListener.NetworkReceiveEvent -= HandleClientNetworkReceive;
+
+			// 断开与服务器的连接
 			_client.DisconnectAll();
-			_client.Stop();
-			MultiPalyerMain.Logger.LogInfo("[MP Mod Close] 客户端连接已停止.");
+
+			// 停止客户端
+			if (_client.IsRunning) {
+				_client.Stop();
+			}
+
+			MultiPlayerMain.Logger.LogInfo("[MP Mod Close] 客户端连接已停止.");
 		}
 
 		_serverPeer = null; // 重置对等端引用
@@ -159,6 +178,9 @@ public class MultiplayerCore : MonoBehaviour {
 			}
 		}
 		_remotePlayers.Clear();
+
+		// 重置多人游戏活动标志
+		MultiPlayerMain.IsMultiplayerActive = false;
 	}
 
 	// 服务器端：处理连接请求
@@ -175,7 +197,7 @@ public class MultiplayerCore : MonoBehaviour {
 		peer.Tag = _nextPlayerId;
 		_nextPlayerId++;
 
-		MultiPalyerMain.Logger.LogInfo("[MP Mod server] 新客户端已连接: ID= " + peer.Tag.ToString());
+		MultiPlayerMain.Logger.LogInfo("[MP Mod server] 新客户端已连接: ID= " + peer.Tag.ToString());
 		//CommandConsole.Log("We got connection: " + peer.Tag);
 		CommandConsole.Log("We got new connection");
 
@@ -255,7 +277,7 @@ public class MultiplayerCore : MonoBehaviour {
 		if (_remotePlayers.ContainsKey(disconnectedPlayerId)) {
 			Destroy(_remotePlayers[disconnectedPlayerId]);
 			_remotePlayers.Remove(disconnectedPlayerId);
-			MultiPalyerMain.Logger.LogInfo("[MP Mod server] 主机已移除远程玩家 ID: " + disconnectedPlayerId);
+			MultiPlayerMain.Logger.LogInfo("[MP Mod server] 主机已移除远程玩家 ID: " + disconnectedPlayerId);
 		}
 
 		// 通知所有剩余的客户端移除该玩家
@@ -321,7 +343,7 @@ public class MultiplayerCore : MonoBehaviour {
 
 		if (!_remotePlayers.ContainsKey(playerId)) return;
 
-		MultiplayerObject player = _remotePlayers[playerId].GetComponent<MultiplayerObject>();
+		MultiPlayerObject player = _remotePlayers[playerId].GetComponent<MultiPlayerObject>();
 		player.UpdatePosition(newPosition);
 		player.UpdateRotation(newRotation);
 	}
@@ -329,7 +351,7 @@ public class MultiplayerCore : MonoBehaviour {
 	// 客户端：处理连接成功消息
 	private void HandleConnectionSuccess(NetPacketReader reader) {
 		int peerCount = reader.GetInt();
-		MultiPalyerMain.Logger.LogInfo("[MP Mod client] 已连接，正在加载 " + peerCount.ToString() + " 玩家");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod client] 已连接, 正在加载 " + peerCount.ToString() + " 玩家");
 		CommandConsole.Log(
 			"Connected!\nCreating "
 			+ peerCount
@@ -343,7 +365,7 @@ public class MultiplayerCore : MonoBehaviour {
 	// 客户端：处理加载世界种子
 	private void HandleSeedUpdate(NetPacketReader reader) {
 		WorldSeed = reader.GetInt();
-		MultiPalyerMain.Logger.LogInfo("[MP Mod client] 加载世界，种子号: " + WorldSeed.ToString());
+		MultiPlayerMain.Logger.LogInfo("[MP Mod client] 加载世界, 种子号: " + WorldSeed.ToString());
 		WorldLoader.ReloadWithSeed(new string[] { WorldSeed.ToString() });
 	}
 
@@ -360,19 +382,22 @@ public class MultiplayerCore : MonoBehaviour {
 		if (_remotePlayers.ContainsKey(playerIdToRemove)) {
 			Destroy(_remotePlayers[playerIdToRemove]);
 			_remotePlayers.Remove(playerIdToRemove);
-			MultiPalyerMain.Logger.LogInfo("[MP Mod client] 客户端已移除远程玩家: ID=" + playerIdToRemove);
+			MultiPlayerMain.Logger.LogInfo("[MP Mod client] 客户端已移除远程玩家: ID=" + playerIdToRemove);
 		}
 	}
 
 
 	// 命令实现
 	public void Host(string[] args) {
+		// 先关闭现有连接
+		CloseAllConnections();
+
 		if (_server == null) {
-			MultiPalyerMain.Logger.LogError("[MP Mod server] 服务器管理器不存在");
+			MultiPlayerMain.Logger.LogError("[MP Mod server] 服务器管理器不存在");
 			return;
 		}
 
-		// 修复：检查参数长度，防止 IndexOutOfRangeException
+		// 修复：检查参数长度, 防止 IndexOutOfRangeException
 		if (args.Length < 1) {
 			CommandConsole.LogError(
 				"Usage: host <port> [max_players]\nExample: host 22222");
@@ -395,30 +420,24 @@ public class MultiplayerCore : MonoBehaviour {
 		_serverListener.NetworkReceiveEvent += HandleNetworkReceive;
 		_serverListener.PeerDisconnectedEvent += HandlePeerDisconnected;
 
-		MultiPalyerMain.Logger.LogInfo("[MP Mod server] 已创建服务端");
+		// 主机作为客户端连接到自己的服务器
+		Join(["127.0.0.1", port.ToString()]);
+
+		MultiPlayerMain.Logger.LogInfo("[MP Mod server] 已创建服务端");
 
 		CommandConsole.Log("Hosting lobby...");
 		CommandConsole.LogError(
 			"You are a hosting a peer-to-peer lobby\n"
 			+ "By sharing your IP you are also sharing your address\n"
 			+ "Be careful... :)");
-
-		// 主机作为客户端连接到自己的服务器
-		StartCoroutine(DelayedJoin("127.0.0.1", port.ToString()));
-	}
-
-	// 添加一个新的协程方法来延迟连接
-	private System.Collections.IEnumerator DelayedJoin(string ip, string port) {
-		// 等待一帧，确保服务器的网络事件处理已完成
-		yield return new UnityEngine.WaitForSeconds(0.1f);
-
-		// 现在主机作为客户端连接到自己的服务器
-		Join(new string[] { ip, port });
 	}
 
 	public void Join(string[] args) {
+		// 先取消可能存在的客户端订阅
+		_clientListener.NetworkReceiveEvent -= HandleClientNetworkReceive;
+
 		if (_client == null) {
-			MultiPalyerMain.Logger.LogError("[MP Mod client] 客户端管理器不存在");
+			MultiPlayerMain.Logger.LogError("[MP Mod client] 客户端管理器不存在");
 			return;
 		}
 
@@ -434,22 +453,34 @@ public class MultiplayerCore : MonoBehaviour {
 		string ip = args[0];
 		int port = int.Parse(args[1]);
 
+		// 如果客户端已经在运行, 先停止
+		if (_client.IsRunning) {
+			_client.DisconnectAll();
+			_client.Stop();
+		}
+
 		// 启动客户端并连接到服务器
 		_client.Start();
 		_serverPeer = _client.Connect(ip, port, "");
 
-		MultiPalyerMain.Logger.LogInfo("[MP Mod server] 尝试连接: " + ip);
+		// 设置多人游戏活动标志
+		MultiPlayerMain.IsMultiplayerActive = true;
+
+		// 处理客户端接收到的网络数据
+		_clientListener.NetworkReceiveEvent += HandleClientNetworkReceive;
+
+		MultiPlayerMain.Logger.LogInfo("[MP Mod server] 尝试连接: " + ip);
 		CommandConsole.Log("Trying to join ip: " + ip);
 	}
 
 	public void Leave(string[] args) {
 		CloseAllConnections();
-		MultiPalyerMain.Logger.LogInfo("[MP Mod] 所有连接已断开，远程玩家已清理.");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod] 所有连接已断开, 远程玩家已清理.");
 	}
 
 	// 创建玩家视觉表现
 	private void CreateRemotePlayer(int Tag) {
-		MultiPalyerMain.Logger.LogInfo("[MP Mod create] 创建玩家中" + Tag);
+		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家中" + Tag);
 
 		// 创建玩家游戏对象
 		GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -472,7 +503,7 @@ public class MultiplayerCore : MonoBehaviour {
 		}
 		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加 CL_Handhold 组件");
 
-		// 确保 Renderer 被赋值，否则 Material 设置会崩溃
+		// 确保 Renderer 被赋值, 否则 Material 设置会崩溃
 		Renderer objectRenderer = player.GetComponent<Renderer>();
 		if (objectRenderer != null) {
 			player.GetComponent<CL_Handhold>().handholdRenderer = objectRenderer;
@@ -483,14 +514,14 @@ public class MultiplayerCore : MonoBehaviour {
 		CapsuleCollider collider = player.GetComponent<CapsuleCollider>();
 		if (collider != null) {
 			collider.isTrigger = true;
-			// 调整尺寸 (如果需要，但默认尺寸通常可以直接使用)
+			// 调整尺寸 (如果需要, 但默认尺寸通常可以直接使用)
 			collider.radius = 0.5f;
 			collider.height = 2.0f;
 		}
 		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加并配置 CapsuleCollider 组件");
 
 		// 添加 玩家 组件以处理位置和旋转更新
-		player.AddComponent<MultiplayerObject>();
+		player.AddComponent<MultiPlayerObject>();
 		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加 MultiplayerObject 组件");
 
 		// 设置材质 (Renderer/Graphics)
@@ -506,12 +537,12 @@ public class MultiplayerCore : MonoBehaviour {
 		DontDestroyOnLoad(player);
 
 		// 输出创建成功信息
-		MultiPalyerMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + Tag);
+		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + Tag);
 		CommandConsole.Log("Creating Player with Tag: " + player.GetInstanceID());
 	}
 }
 
-public class MultiplayerObject : MonoBehaviour {
+public class MultiPlayerObject : MonoBehaviour {
 	int id;  // 玩家ID, 用于在网络中识别不同的玩家实例
 
 	// 更新玩家位置的方法
