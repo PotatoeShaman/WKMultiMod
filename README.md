@@ -14,6 +14,22 @@ This is a Unity MOD for the game  *White Knuckle* , implementing basic networked
 * The online multiplayer functionality code is  **forked from a previous online mod project** .
 * You are **solely responsible for assessing and bearing any risks** (including but not limited to security and stability issues) associated with using this MOD for development or hosting multiplayer ports.
 
+**Known Issues:**
+
+* Chaotic object lifecycle management, which may lead to unexpected behavior.
+* Currently only supports mapping player capsules; synchronization for other objects is not yet implemented.
+* Using LiteNetLib requires a public IP address, LAN penetration tools, or IPv6 support; otherwise, multiplayer connection is impossible.
+* Log output contains extensive Chinese text and is quite messy, requiring manual filtering for relevant information.
+
+**Potential Future Goals:**
+
+* Implement Mass height synchronization.
+* Implement name highlighting.
+* Implement remote hand display.
+* Utilize Steam P2P for networking.
+* Implement object synchronization.
+* Implement player teleportation.
+
 ---
 
 ## Installation
