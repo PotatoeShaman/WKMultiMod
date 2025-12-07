@@ -13,6 +13,7 @@ namespace WKMultiMod.Patcher;
 [HarmonyPatch(typeof(SteamManager))]
 [HarmonyPatch("Awake")]
 public class Patch_SteamManager_Awake {
+	//void 类型: 总是执行原方法
 	public static void Postfix(SteamManager __instance) {
 		// 只有当核心对象不存在时才创建, 防止重复注入
 		if (MultiPlayerMain.CoreInstance != null) {
@@ -33,6 +34,32 @@ public class Patch_SteamManager_Awake {
 	}
 }
 
+// 补丁类: 强制解锁所有进度
+[HarmonyPatch(typeof(CL_ProgressionManager), "HasProgressionUnlock")]
+class Patch_Progression_ForceUnlock {
+	//bool 类型: 控制是否执行原方法 true=执行 false=跳过
+	static bool Prefix(ref bool __result) {
+		if (MultiPlayerMain.IsMultiplayerActive) {
+			__result = true; // 强制所有解锁检查通过
+			return false;    // 跳过原始的解锁检查逻辑
+		}
+		return true; // 非联机模式，执行原始的解锁检查
+	}
+}
+
+// 补丁类: 禁用关卡翻转功能
+// Copy自WK_IShowSeed Mod GitHub仓库地址: https://github.com/shishyando/WK_IShowSeed
+[HarmonyPatch(typeof(M_Level), "Awake")]
+public static class Patch_M_Level_Awake {
+	public static void Prefix(M_Level __instance) {
+		// 仅在联机模式下禁用关卡翻转
+		if (MultiPlayerMain.IsMultiplayerActive) {
+			// 禁用关卡翻转功能
+			__instance.canFlip = false;
+		}
+	}
+}
+
 // 补丁类: 标准化关卡生成几率
 // 会一直生成稀有事件和稀有关卡 过于搞笑 所以注释掉了
 //[HarmonyPatch(typeof(SpawnTable.SpawnSettings), "GetEffectiveSpawnChance")]
@@ -49,35 +76,12 @@ public class Patch_SteamManager_Awake {
 //			__result = 1f;
 //			return false; // 跳过原始复杂的计算和过滤
 //		}
-
 //		return true; // 非联机模式, 执行原始方法
 //	}
 //}
 
-[HarmonyPatch(typeof(CL_ProgressionManager), "HasProgressionUnlock")]
-class Patch_Progression_ForceUnlock {
-	// 假设 CL_ProgressionManager.HasProgressionUnlock 签名是 public static bool HasProgressionUnlock(string unlockName)
-	static bool Prefix(ref bool __result) {
-		if (MultiPlayerMain.IsMultiplayerActive) {
-			__result = true; // 强制所有解锁检查通过
-			return false;    // 跳过原始的解锁检查逻辑
-		}
-		return true; // 非联机模式，执行原始的解锁检查
-	}
-}
-
-// 补丁类: 禁用关卡翻转功能
-[HarmonyPatch(typeof(M_Level), "Awake")]
-public static class M_Level_Awake_Patcher {
-	public static void Prefix(M_Level __instance) {
-		// 仅在联机模式下禁用关卡翻转
-		if (MultiPlayerMain.IsMultiplayerActive) {
-			// 禁用关卡翻转功能
-			__instance.canFlip = false;
-		}
-	}
-}
-
+// 补丁类: 标准化关卡生成
+// 貌似没用
 //[HarmonyPatch(typeof(M_Subregion), "CanSpawn")]
 //class Patch_MSubregion_CanSpawn {
 //	static bool Prefix(ref bool __result) {
@@ -86,7 +90,6 @@ public static class M_Level_Awake_Patcher {
 //			__result = true; // 如果联机, 强制返回 True (启用标准化)
 //			return false;    // 跳过原始方法
 //		}
-
 //		return true; // 如果未联机, 继续执行原始方法 (禁用标准化)
 //	}
 //}
