@@ -6,7 +6,7 @@ using UnityEngine;
 using WKMultiMod.Main;
 using WKMultiMod.Core;
 
-namespace WKMultiMod.Patcher;
+namespace WKMultiMod.src.Patch;
 
 // 补丁类: 注入核心对象到 SteamManager
 // 在 SteamManager 的 Awake 方法后执行
