@@ -1,11 +1,12 @@
-﻿# 依赖库说明 | Library Dependencies
+# 依赖库说明 | Library Dependencies
 
 ## 中文说明
 
 您需要从以下游戏目录获取所需的 DLL 文件并放入 `lib/` 文件夹中：
 
-```
+```sh
 steamapps\common\White Knuckle\White Knuckle_Data\Managed
+
 ```
 
 ### 需要的文件列表：
@@ -13,6 +14,7 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 - `ALINE.dll`
 - `Assembly-CSharp-firstpass.dll`
 - `Assembly-CSharp.dll`
+- `Unity.TextMeshPro.dll`
 - `UnityEngine.CoreModule.dll`
 - `UnityEngine.dll`
 - `UnityEngine.InputLegacyModule.dll`
@@ -33,8 +35,9 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 
 You need to obtain the required DLL files from the following game directory and place them in the `lib/` folder:
 
-```
+```sh
 steamapps\common\White Knuckle\White Knuckle_Data\Managed
+
 ```
 
 ### Required files list:

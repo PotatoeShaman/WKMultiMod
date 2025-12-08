@@ -24,7 +24,6 @@ This is a Unity MOD for the game  *White Knuckle* , implementing basic networked
 **Potential Future Goals:**
 
 * Implement Mass height synchronization.
-* Implement name highlighting.
 * Implement remote hand display.
 * Utilize Steam P2P for networking.
 * Implement object synchronization.

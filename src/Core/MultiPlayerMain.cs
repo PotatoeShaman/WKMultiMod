@@ -17,7 +17,7 @@ public class MultiPlayerMain : BaseUnityPlugin {
 
 	public const String ModGUID = "shenxl.MultiPalyerMod";
 	public const String ModName = "MultiPalyer Mod";
-	public const String ModVersion = "0.10.8";
+	public const String ModVersion = "0.11.2";
 
 	// 单例实例
 	public static MultiPlayerMain Instance;

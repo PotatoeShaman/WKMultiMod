@@ -2,10 +2,12 @@
 using LiteNetLib.Utils;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using WKMultiMod.Main;
+using WKMultiMod.src.Component;
 
 namespace WKMultiMod.Core;
 
@@ -38,7 +40,7 @@ public class MultiPlayerCore : MonoBehaviour {
 		RemovePlayer = 4,      // 移除玩家
 	}
 
-	// 注意：日志通过 MultiPalyerMain.Logger 访问
+	// 注意：日志通过 MultiPlayerMain.Logger 访问
 
 	void Awake() {
 		MultiPlayerMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Awake");
@@ -341,9 +343,11 @@ public class MultiPlayerCore : MonoBehaviour {
 			reader.GetFloat()
 		);
 
+		// 没有该玩家则忽略
 		if (!_remotePlayers.ContainsKey(playerId)) return;
 
-		MultiPlayerObject player = _remotePlayers[playerId].GetComponent<MultiPlayerObject>();
+		// 更新玩家位置和旋转
+		MultiPlayerComponent player = _remotePlayers[playerId].GetComponent<MultiPlayerComponent>();
 		player.UpdatePosition(newPosition);
 		player.UpdateRotation(newRotation);
 	}
@@ -482,59 +486,91 @@ public class MultiPlayerCore : MonoBehaviour {
 	private void CreateRemotePlayer(int Tag) {
 		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家中" + Tag);
 
-		// 创建玩家游戏对象
+		// 1. 创建玩家游戏对象
 		GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 		player.name = "RemotePlayer_" + Tag;
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 创建玩家对象");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家对象");
 
-		// 添加 ObjectTagger 组件
+		// 2. 添加 ObjectTagger 组件
 		ObjectTagger tagger = player.AddComponent<ObjectTagger>();
 		if (tagger != null) {
 			tagger.tags.Add("Handhold");
 		}
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加 ObjectTagger 组件");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 ObjectTagger 组件");
 
-		// 添加 CL_Handhold 组件 (攀爬逻辑)
+		// 3. 添加 CL_Handhold 组件 (攀爬逻辑)
 		CL_Handhold handholdComponent = player.AddComponent<CL_Handhold>();
 		if (handholdComponent != null) {
 			// 添加停止和激活事件
 			handholdComponent.stopEvent = new UnityEvent();
 			handholdComponent.activeEvent = new UnityEvent();
 		}
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加 CL_Handhold 组件");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 CL_Handhold 组件");
 
-		// 确保 Renderer 被赋值, 否则 Material 设置会崩溃
+		// 4. 确保 渲染器 被赋值, 否则 材质 设置会崩溃
 		Renderer objectRenderer = player.GetComponent<Renderer>();
 		if (objectRenderer != null) {
 			player.GetComponent<CL_Handhold>().handholdRenderer = objectRenderer;
 		}
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 分配 Renderer 给 CL_Handhold 组件");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 分配 Renderer 给 CL_Handhold 组件");
 
-		// 设置碰撞体为触发器 (Collider/Trigger)
+		// 5. 设置碰撞体为触发器 (Collider/Trigger)
 		CapsuleCollider collider = player.GetComponent<CapsuleCollider>();
 		if (collider != null) {
 			collider.isTrigger = true;
-			// 调整尺寸 (如果需要, 但默认尺寸通常可以直接使用)
+			// 调整尺寸 (胶囊体高2.0, 宽0.5, 中心在0.0)
 			collider.radius = 0.5f;
 			collider.height = 2.0f;
 		}
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加并配置 CapsuleCollider 组件");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加并配置 CapsuleCollider 组件");
 
-		// 添加 玩家 组件以处理位置和旋转更新
-		player.AddComponent<MultiPlayerObject>();
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 添加 MultiplayerObject 组件");
+		// 6. 添加 玩家 组件以处理位置和旋转更新
+		player.AddComponent<MultiPlayerComponent>();
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 MultiplayerObject 组件");
 
-		// 设置材质 (Renderer/Graphics)
+		// 7. 设置材质
 		Material bodyMaterial = new Material(Shader.Find("Unlit/Color"));
 		bodyMaterial.color = Color.gray;
 		player.GetComponent<Renderer>().material = bodyMaterial;
-		//MultiPalyerMain.Logger.LogInfo("[MP Mod create] 设置玩家材质");
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 设置玩家材质");
 
-		// 将玩家添加到字典中
+		// 8. 创建文本子对象 (用来承载 TextMeshPro)
+		GameObject textObject = new GameObject("PlayerID_Text_" + Tag);
+		textObject.transform.SetParent(player.transform);
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建文本子对象");
+
+		// 9. 设置文本框位置：略高于胶囊体
+		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+		textObject.transform.localRotation = Quaternion.identity;
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 设置文本框位置");
+
+		// 10. 添加 TextMeshPro 组件
+		TextMeshPro tmp = textObject.AddComponent<TextMeshPro>();
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 TextMeshPro 组件");
+
+		// 11. 配置文本内容和外观
+		if (tmp != null) {
+			tmp.text = "Player ID: " + Tag.ToString(); // 显示玩家 ID
+			tmp.fontSize = 1.5f;                     // 设置字体大小
+			tmp.alignment = TextAlignmentOptions.Center; // 居中对齐
+			tmp.color = Color.white;                 // 设置文本颜色
+			tmp.font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF"); // 设置字体资产
+
+			// 但为了确保它在远距离也可见且不会被遮挡，你可能需要调整它的 orting Order
+		}
+
+		// 12. 添加 Billboard 组件 (实现透视/永远面向摄像机)
+		// 需要一个新的脚本来处理旋转，确保它始终面向 Scene 的主摄像机。
+		textObject.AddComponent<BillboardComponent>();
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加并配置 TextMeshPro 组件");
+
+		// 13. 将玩家添加到字典中
 		_remotePlayers.Add(Tag, player);
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 玩家添加到字典");
 
-		// 设置为不销毁
+		// 14. 设置为不销毁
 		DontDestroyOnLoad(player);
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 设置玩家为不销毁");
 
 		// 输出创建成功信息
 		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + Tag);
@@ -542,19 +578,5 @@ public class MultiPlayerCore : MonoBehaviour {
 	}
 }
 
-public class MultiPlayerObject : MonoBehaviour {
-	int id;  // 玩家ID, 用于在网络中识别不同的玩家实例
 
-	// 更新玩家位置的方法
-	public void UpdatePosition(Vector3 new_position) {
-		// 实际更新游戏对象的位置
-		transform.position = new_position;
-	}
-
-	// 更新玩家旋转的方法
-	public void UpdateRotation(Vector3 new_rotation) {
-		// 设置游戏对象的欧拉角旋转
-		transform.eulerAngles = new_rotation;
-	}
-}
 
