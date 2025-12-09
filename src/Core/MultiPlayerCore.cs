@@ -544,24 +544,29 @@ public class MultiPlayerCore : MonoBehaviour {
 		textObject.transform.localRotation = Quaternion.identity;
 		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 设置文本框位置");
 
-		// 10. 添加 TextMeshPro 组件
-		TextMeshPro tmp = textObject.AddComponent<TextMeshPro>();
-		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 TextMeshPro 组件");
+		// 10. 添加 TextMesh 组件
+		TextMesh textMesh = textObject.AddComponent<TextMesh>();
+		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加 TextMesh 组件");
 
 		// 11. 配置文本内容和外观
-		if (tmp != null) {
-			tmp.text = "Player ID: " + Tag.ToString(); // 显示玩家 ID
-			tmp.fontSize = 1.5f;                     // 设置字体大小
-			tmp.alignment = TextAlignmentOptions.Center; // 居中对齐
-			tmp.color = Color.white;                 // 设置文本颜色
-			tmp.font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF"); // 设置字体资产
+		if (textMesh != null) {
+			textMesh.text = "Player ID: " + Tag.ToString(); // 显示玩家 ID
+			textMesh.fontSize = 20;                         // TextMesh的字体大小单位不同
+			textMesh.characterSize = 0.1f;                  // 字符大小缩放
+			textMesh.anchor = TextAnchor.MiddleCenter;      // 对齐方式
 
-			// 但为了确保它在远距离也可见且不会被遮挡，你可能需要调整它的 orting Order
+			// 设置颜色 - TextMesh自带的材质有透明通道
+			textMesh.color = new Color(1f, 1f, 1f, 0.85f);  // 白色，85%透明度
+
+			// 但你可以设置一个深色背景来提高可读性：
+			textMesh.fontStyle = FontStyle.Bold;            // 加粗
+
+			// 设置字体
+			textMesh.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 		}
 
-		// 12. 添加 Billboard 组件 (实现透视/永远面向摄像机)
-		// 需要一个新的脚本来处理旋转，确保它始终面向 Scene 的主摄像机。
-		textObject.AddComponent<BillboardComponent>();
+		// 12. 添加 Billboard 组件 实现永远面向摄像机
+		textObject.AddComponent<LootAtComponent>();
 		//MultiPlayerMain.Logger.LogInfo("[MP Mod create] 添加并配置 TextMeshPro 组件");
 
 		// 13. 将玩家添加到字典中

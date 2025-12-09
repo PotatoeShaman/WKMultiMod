@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<AssemblyName>WKMultiMod</AssemblyName>
 		<Product>WKMultiMod</Product>
-		<Version>0.11.2</Version>
+		<Version>0.11.5</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
@@ -60,9 +60,17 @@
 			<HintPath>..\WhiteKnuckleMod\libs\UnityEngine.PhysicsModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="UnityEngine.TextRenderingModule">
+		  <HintPath>libs\UnityEngine.TextRenderingModule.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
 		<Reference Include="UnityEngine.UI">
 			<HintPath>..\WhiteKnuckleMod\libs\UnityEngine.UI.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Shaders\" />
 	</ItemGroup>
 </Project>

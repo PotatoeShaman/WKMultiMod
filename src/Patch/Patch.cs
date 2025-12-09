@@ -30,7 +30,7 @@ public class Patch_SteamManager_Awake {
 		// 3. 挂载核心脚本
 		MultiPlayerMain.CoreInstance = coreGameObject.AddComponent<MultiPlayerCore>();
 
-		MultiPlayerMain.Logger.LogInfo("核心对象已成功注入 SteamManager 的 GameObject.");
+		MultiPlayerMain.Logger.LogInfo("[MP Mod Loading] 核心对象已成功注入 SteamManager 的 GameObject.");
 	}
 }
 

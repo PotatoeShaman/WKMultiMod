@@ -23,7 +23,7 @@ public class MultiPlayerComponent : MonoBehaviour {
 }
 
 // BillboardComponent: 使文本框始终面向摄像机
-public class BillboardComponent : MonoBehaviour {
+public class LootAtComponent : MonoBehaviour {
 	private Camera mainCamera;
 	void LateUpdate() {
 		// 持续检查并尝试获取主摄像机
@@ -37,8 +37,11 @@ public class BillboardComponent : MonoBehaviour {
 			}
 		}
 
-		// 使 Transform (文本框) 面对摄像机
-		transform.LookAt(transform.position + mainCamera.transform.rotation * Vector3.forward,
-						 mainCamera.transform.rotation * Vector3.up);
+		// 使 Transform (文本框) 朝向摄像机
+		transform.rotation = mainCamera.transform.rotation;
+
+		// 使 Transform (文本框) y轴 朝向摄像机
+		//transform.LookAt(transform.position + mainCamera.transform.rotation * Vector3.forward,
+		//				 mainCamera.transform.rotation * Vector3.up);
 	}
 }

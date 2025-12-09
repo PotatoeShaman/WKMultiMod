@@ -19,6 +19,7 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 - `UnityEngine.dll`
 - `UnityEngine.InputLegacyModule.dll`
 - `UnityEngine.PhysicsModule.dll`
+- `UnityEngine.TextRenderingModule.dll`
 - `UnityEngine.UI.dll`
 
 ### 操作步骤：
