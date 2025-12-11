@@ -6,31 +6,81 @@ using UnityEngine;
 namespace WKMultiMod.src.Component;
 
 // MultiPlayerComponent: 管理玩家的网络同步位置和旋转
-public class MultiPlayerComponent : MonoBehaviour {
-	public int id;  // 玩家ID, 用于在网络中识别不同的玩家实例
+using UnityEngine;
 
-	// 更新玩家位置的方法
-	public void UpdatePosition(Vector3 newPosition) {
-		// 实际更新游戏对象的位置
-		transform.position = newPosition;
+// MultiPlayerComponent: 管理玩家的网络同步位置和旋转
+public class MultiPlayerComponent : MonoBehaviour {
+	public int id;
+	private Vector3 _targetPosition;    // 目标位置
+	private Vector3 _velocity = Vector3.zero;   // 当前速度，用于平滑插值
+
+	void Update() {
+		if (transform.position != _targetPosition) {
+			// 动态计算平滑时间，确保最低速度
+			float distance = Vector3.Distance(transform.position, _targetPosition); // 计算距离
+			float smoothTime = Mathf.Max(0.1f, distance / 20f);	// 确保有最小速度
+
+			transform.position = Vector3.SmoothDamp(
+				transform.position,	// 当前位置
+				_targetPosition,    // 目标位置
+				ref _velocity,      // 速度引用
+				smoothTime,         // 平滑时间
+				float.MaxValue,     // 最大速度
+				Time.deltaTime      // 时间增量
+			);
+
+			// 强制最低速度 2格/秒
+			if (_velocity.magnitude < 2.0f && distance > 0.1f) {
+				// 计算方向并设置最低速度
+				Vector3 direction = (_targetPosition - transform.position).normalized;
+				_velocity = direction * 2.0f;
+			}
+		}
 	}
 
-	// 更新玩家旋转的方法
+	public void UpdatePosition(Vector3 newPosition) {
+		_targetPosition = newPosition;
+	}
+
 	public void UpdateRotation(Vector3 newRotation) {
-		// 设置游戏对象的欧拉角旋转
+		// 立即更新旋转
 		transform.eulerAngles = newRotation;
 	}
 }
 
-// MultiPlayerComponent: 管理玩家手部的网络同步位置和旋转
-public class MultiPlayerHandComponent : MonoBehaviour {
-	public int id;  // 玩家ID, 用于在网络中识别不同的玩家实例
-	public int hand; // 手部标识, 0表示左手, 1表示右手
 
-	// 更新手部位置的方法
-	public void UpdateLoaclPosition(Vector3 newLocalPosition) {
-		// 实际更新游戏手部的位置
-		transform.localPosition = newLocalPosition;
+// MultiPlayerHandComponent: 管理玩家手部的网络同步位置
+public class MultiPlayerHandComponent : MonoBehaviour {
+	public int id;  // 玩家ID
+	public int hand;    // 手部标识 (0: 左手, 1: 右手)
+
+	private Vector3 _targetLocalPosition;   // 目标本地位置
+	private Vector3 _velocity = Vector3.zero;   // 当前速度，用于平滑插值
+
+	void Update() {
+		if (transform.localPosition != _targetLocalPosition) {
+			float distance = Vector3.Distance(transform.localPosition, _targetLocalPosition);
+			float smoothTime = Mathf.Clamp(distance / 10f, 0.05f, 0.2f);
+
+			transform.localPosition = Vector3.SmoothDamp(
+				transform.localPosition,
+				_targetLocalPosition,
+				ref _velocity,
+				smoothTime,
+				float.MaxValue,
+				Time.deltaTime
+			);
+
+			// 强制最低速度 0.5格/秒
+			if (_velocity.magnitude < 0.5f && distance > 0.05f) {
+				Vector3 direction = (_targetLocalPosition - transform.localPosition).normalized;
+				_velocity = direction * 0.5f;
+			}
+		}
+	}
+
+	public void UpdateLocalPosition(Vector3 localPosition) {
+		_targetLocalPosition = localPosition;
 	}
 }
 

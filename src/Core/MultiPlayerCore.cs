@@ -414,8 +414,8 @@ public class MultiPlayerCore : MonoBehaviour {
 		int playerId = reader.GetInt();
 		bool isLeftFree = reader.GetBool();
 		bool isRightFree = reader.GetBool();
-		Vector3 leftLocalPosition = new Vector3((float)-0.4, (float)0.5, (float)0.3);
-		Vector3 rightLocalPosition = new Vector3((float)0.4, (float)0.5, (float)0.3);
+		Vector3 leftLocalPosition = new Vector3(-0.4f, 0.5f, 0.4f);
+		Vector3 rightLocalPosition = new Vector3(0.4f, 0.5f, 0.4f);
 		if (!isLeftFree) {
 			// 左手世界坐标
 			Vector3 leftWorldPosition = new Vector3(
@@ -425,8 +425,8 @@ public class MultiPlayerCore : MonoBehaviour {
 			);
 			// 转为局部坐标
 			leftLocalPosition = _remotePlayers[playerId].transform.InverseTransformPoint(leftWorldPosition);
-		} 
-		if(!isRightFree) {
+		}
+		if (!isRightFree) {
 			// 右手世界坐标
 			Vector3 rightWorldPosition = new Vector3(
 				reader.GetFloat(),
@@ -440,9 +440,9 @@ public class MultiPlayerCore : MonoBehaviour {
 		if (!_remoteLeftHands.ContainsKey(playerId) || !_remoteRightHands.ContainsKey(playerId)) return;
 		// 更新手部位置
 		MultiPlayerHandComponent leftHand = _remoteLeftHands[playerId].GetComponent<MultiPlayerHandComponent>();
-		leftHand.UpdateLoaclPosition(leftLocalPosition);
+		leftHand.UpdateLocalPosition(leftLocalPosition);
 		MultiPlayerHandComponent rightHand = _remoteRightHands[playerId].GetComponent<MultiPlayerHandComponent>();
-		rightHand.UpdateLoaclPosition(rightLocalPosition);
+		rightHand.UpdateLocalPosition(rightLocalPosition);
 	}
 
 	// 客户端：处理连接成功消息
@@ -577,7 +577,7 @@ public class MultiPlayerCore : MonoBehaviour {
 		MultiPlayerMain.Logger.LogInfo("[MP Mod] 所有连接已断开, 远程玩家已清理.");
 	}
 
-	// 创建可攀爬对象
+	// 赋予可攀爬组件
 	private void CreateHandholdObject(GameObject gameObject) {
 		// 添加 ObjectTagger 组件
 		ObjectTagger tagger = gameObject.AddComponent<ObjectTagger>();
@@ -600,17 +600,16 @@ public class MultiPlayerCore : MonoBehaviour {
 		}
 	}
 
-	// 创建玩家视觉表现
-	private void CreateRemotePlayer(int tag) {
+	// 创建远程玩家对象
+	private GameObject CreateMultiPlayerObject(int tag) {
+		// 输出创建信息
 		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家中" + tag);
 
 		// 创建玩家游戏对象
 		GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 		player.name = "RemotePlayer_" + tag;
 
-		CreateHandholdObject(player);
-
-		// 设置碰撞体为触发器 (Collider/Trigger)
+		// 设置碰撞器为触发器 (Collider/Trigger)
 		CapsuleCollider playerCollider = player.GetComponent<CapsuleCollider>();
 		if (playerCollider != null) {
 			playerCollider.isTrigger = true;
@@ -619,7 +618,17 @@ public class MultiPlayerCore : MonoBehaviour {
 			playerCollider.height = 2.0f;
 		}
 
-		// 添加 玩家 组件以处理位置和旋转更新
+		// 设置碰撞体可以被攀爬
+		CreateHandholdObject(player);
+
+		// 添加第二个碰撞器 - 用于物理碰撞
+		CapsuleCollider physicsCollider = player.AddComponent<CapsuleCollider>();
+		physicsCollider.isTrigger = false;  // 不是触发器，用于物理阻挡
+		physicsCollider.radius = 0.4f;     // 稍微小一点，避免重叠问题
+		physicsCollider.height = 1.8f;
+		physicsCollider.center = new Vector3(0, 0.1f, 0); // 轻微偏移避免完全重叠
+
+		// 添加 远程玩家 组件以处理位置和旋转更新
 		MultiPlayerComponent playerComponent = player.AddComponent<MultiPlayerComponent>();
 		playerComponent.id = tag;
 
@@ -628,18 +637,44 @@ public class MultiPlayerCore : MonoBehaviour {
 		bodyMaterial.color = Color.gray;
 		player.GetComponent<Renderer>().material = bodyMaterial;
 
-		// 创建左右手子对象 暂时使用球形表示
-		GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		leftHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f); // 缩小到0.2倍
-		rightHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-		leftHand.name = "RemotePlayer_LeftHand_" + tag;
-		rightHand.name = "RemotePlayer_RightHand_" + tag;
-		leftHand.transform.SetParent(player.transform);
-		rightHand.transform.SetParent(player.transform);
+		// 创建眼睛子对象
+		GameObject leftEye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		leftEye.name = "RemotePlayer_LeftEye_" + tag;
+		leftEye.transform.SetParent(player.transform);
+		leftEye.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		leftEye.transform.localPosition = new Vector3(-0.15f, 0.5f, 0.45f);
+		GameObject rightEye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		rightEye.name = "RemotePlayer_RightEye_" + tag;
+		rightEye.transform.SetParent(player.transform);
+		rightEye.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		rightEye.transform.localPosition = new Vector3(0.15f, 0.5f, 0.45f);
 
-		CreateHandholdObject(leftHand);
-		CreateHandholdObject(rightHand);
+		// 将玩家添加到字典中
+		_remotePlayers.Add(tag, player);
+
+		// 设置为不销毁
+		DontDestroyOnLoad(player);
+
+		// 输出创建成功信息
+		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + tag);
+
+		// 返回创建的玩家对象
+		return player;
+	}
+
+	// 创建远程玩家手部对象
+	private (GameObject leftHand, GameObject rightHand) CreateMultiHandObject(int tag) {
+		// 输出创建信息
+		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建手部中" + tag);
+
+		// 创建左手
+		GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		leftHand.name = $"RemotePlayer_LeftHand_" + tag;
+		leftHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		// 创建右手
+		GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		rightHand.name = $"RemotePlayer_RightHand_" + tag;
+		rightHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 
 		// 设置碰撞体为触发器 (Collider/Trigger)
 		SphereCollider leftCollider = leftHand.GetComponent<SphereCollider>();
@@ -655,6 +690,11 @@ public class MultiPlayerCore : MonoBehaviour {
 			rightCollider.radius = 0.2f;
 		}
 
+		// 设置碰撞体可以被攀爬
+		CreateHandholdObject(leftHand);
+		CreateHandholdObject(rightHand);
+
+		// 添加 远程玩家手部 组件以处理位置更新
 		MultiPlayerHandComponent leftComponent = leftHand.AddComponent<MultiPlayerHandComponent>();
 		leftComponent.id = tag;
 		leftComponent.hand = 0;// 0 表示左手
@@ -670,9 +710,20 @@ public class MultiPlayerCore : MonoBehaviour {
 		rightHandMaterial.color = Color.white; // 设置为白色
 		rightHand.GetComponent<Renderer>().material = rightHandMaterial;
 
+		// 将手部添加到字典中
+		_remoteLeftHands.Add(tag, leftHand);
+		_remoteRightHands.Add(tag, rightHand);
+
+		// 输出创建成功信息
+		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建手部成功 ID:" + tag);
+
+		// 返回创建的手部对象
+		return (leftHand, rightHand);
+	}
+
+	private GameObject CreateMultiNameObject(string tag) {
 		// 创建文本子对象 (用来承载 TextMeshPro)
 		GameObject textObject = new GameObject("PlayerID_Text_" + tag);
-		textObject.transform.SetParent(player.transform);
 
 		// 设置文本框位置：略高于胶囊体
 		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
@@ -701,17 +752,24 @@ public class MultiPlayerCore : MonoBehaviour {
 		// 添加 Billboard 组件 实现永远面向摄像机
 		textObject.AddComponent<LootAtComponent>();
 
-		// 将玩家添加到字典中
-		_remotePlayers.Add(tag, player);
-		_remoteLeftHands.Add(tag, leftHand);
-		_remoteRightHands.Add(tag, rightHand);
+		return textObject;
+	}
 
-		// 设置为不销毁
-		DontDestroyOnLoad(player);
+	// 创建玩家视觉表现
+	private void CreateRemotePlayer(int tag) {
+		// 创建手部对象
+		GameObject player = CreateMultiPlayerObject(tag);
 
+		// 创建手部对象
+		var (leftHand, rightHand) = CreateMultiHandObject(tag);
+		leftHand.transform.SetParent(player.transform);
+		rightHand.transform.SetParent(player.transform);
 
-		// 输出创建成功信息
-		MultiPlayerMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + tag);
+		// 创建名称文本对象
+		GameObject textObject = CreateMultiNameObject(tag.ToString());
+		textObject.transform.SetParent(player.transform);
+
+		// 输出日志
 		CommandConsole.Log("Creating Player with Tag: " + player.GetInstanceID());
 	}
 }
