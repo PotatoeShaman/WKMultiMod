@@ -3,9 +3,9 @@ using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using UnityEngine;
-using WKMultiMod.Core;
+using WKMultiMod.src.Core;
 
-namespace WKMultiMod.Main;
+namespace WKMultiMod.src.Main;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 public class MultiPlayerMain : BaseUnityPlugin {
@@ -27,7 +27,7 @@ public class MultiPlayerMain : BaseUnityPlugin {
 	private Harmony _harmony;
 
 	// 共享状态变量：用于控制是否启用关卡标准化 Patch
-	public static bool IsMultiplayerActive = false;
+	public static bool IsMultiplayerActive { get; set; } = false;
 
 	// Awake在对象创建时调用, 早于Start
 	private void Awake() {

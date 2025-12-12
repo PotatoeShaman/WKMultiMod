@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using WKMultiMod.src.Core;
+using static WKMultiMod.src.Core.MultiPlayerCore;
 
 namespace WKMultiMod.src.Component;
-
-// MultiPlayerComponent: 管理玩家的网络同步位置和旋转
-using UnityEngine;
 
 // MultiPlayerComponent: 管理玩家的网络同步位置和旋转
 public class MultiPlayerComponent : MonoBehaviour {
@@ -52,7 +51,7 @@ public class MultiPlayerComponent : MonoBehaviour {
 // MultiPlayerHandComponent: 管理玩家手部的网络同步位置
 public class MultiPlayerHandComponent : MonoBehaviour {
 	public int id;  // 玩家ID
-	public int hand;    // 手部标识 (0: 左手, 1: 右手)
+	public HandType hand;    // 手部标识 (0: 左手, 1: 右手)
 
 	private Vector3 _targetLocalPosition;   // 目标本地位置
 	private Vector3 _velocity = Vector3.zero;   // 当前速度，用于平滑插值
