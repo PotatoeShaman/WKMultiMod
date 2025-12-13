@@ -5,32 +5,69 @@ using System.Text;
 using UnityEngine;
 using WKMultiMod.src.Main;
 using WKMultiMod.src.Core;
+using Object = UnityEngine.Object;
 
 namespace WKMultiMod.src.Patch;
 
-// 补丁类: 注入核心对象到 SteamManager
 // 在 SteamManager 的 Awake 方法后执行
 [HarmonyPatch(typeof(SteamManager))]
-[HarmonyPatch("Awake")]
 public class Patch_SteamManager_Awake {
+	// 跟踪是否已经注入过
+	private static bool _hasInjected = false;
+
 	//void 类型: 总是执行原方法
+	[HarmonyPostfix]
+	[HarmonyPatch("Awake")]
 	public static void Postfix(SteamManager __instance) {
 		// 只有当核心对象不存在时才创建, 防止重复注入
-		if (MultiPlayerMain.CoreInstance != null) {
+		if (_hasInjected) {
+			MPMain.Logger.LogWarning("[MP Mod loading] 已经注入过,跳过");
 			return;
 		}
 
-		// 1. 创建一个新的 GameObject
-		GameObject coreGameObject = new GameObject("MultiplayerCore_INJECTED_CHILD");
+		MPMain.Logger.LogInfo($"[MP Mod loading] SteamManager.Awake 调用,准备注入核心");
 
-		// 2. 将新对象作为 SteamManager 的子对象
-		// 这样它就继承了 SteamManager 的持久性
-		coreGameObject.transform.SetParent(__instance.gameObject.transform);
+		// 检查是否已经存在核心实例
+		var existingCores = Object.FindObjectsOfType<MultiPlayerCore>();
+		MultiPlayerCore existingValidCore = null;
 
-		// 3. 挂载核心脚本
-		MultiPlayerMain.CoreInstance = coreGameObject.AddComponent<MultiPlayerCore>();
+		foreach (var core in existingCores) {
+			if (core.isActiveAndEnabled && core.transform.parent != null) {
+				existingValidCore = core;
+				break;
+			}
+		}
 
-		MultiPlayerMain.Logger.LogInfo("[MP Mod Loading] 核心对象已成功注入 SteamManager 的 GameObject.");
+		if (existingValidCore != null) {
+			MPMain.Logger.LogWarning($"[MP Mod loading] 已存在有效的核心实例: {existingValidCore.name}");
+			_hasInjected = true;
+			return;
+		}
+
+		// 创建核心对象作为SteamManager的子对象
+		CreateCoreAsChild(__instance);
+		_hasInjected = true;
+	}
+
+	// 创建核心对象并设为SteamManager的子对象
+	private static void CreateCoreAsChild(SteamManager steamManager) {
+		try {
+			// 创建核心游戏对象
+			GameObject coreGameObject = new GameObject("MultiplayerCore_Injected");
+
+			// 设为SteamManager的子对象(关键！这样会跟随SteamManager持久化)
+			coreGameObject.transform.SetParent(steamManager.transform, false);
+
+			// 添加核心组件
+			var core = coreGameObject.AddComponent<MultiPlayerCore>();
+
+			MPMain.Logger.LogInfo($"[MP Mod loading] 核心对象已成功注入 SteamManager");
+			MPMain.Logger.LogInfo(
+				$"[MP Mod] 核心位置: 父对象= {core.transform.parent?.name ?? null}" +
+				$"\n激活状态= {core.isActiveAndEnabled.ToString()}");
+		} catch (System.Exception e) {
+			MPMain.Logger.LogError("[MP Mod loading] 注入核心失败: " + e);
+		}
 	}
 }
 
@@ -39,11 +76,11 @@ public class Patch_SteamManager_Awake {
 class Patch_Progression_ForceUnlock {
 	//bool 类型: 控制是否执行原方法 true=执行 false=跳过
 	static bool Prefix(ref bool __result) {
-		if (MultiPlayerMain.IsMultiplayerActive) {
+		if (MultiPlayerCore.IsMultiplayerActive) {
 			__result = true; // 强制所有解锁检查通过
 			return false;    // 跳过原始的解锁检查逻辑
 		}
-		return true; // 非联机模式，执行原始的解锁检查
+		return true; // 非联机模式,执行原始的解锁检查
 	}
 }
 
@@ -53,7 +90,7 @@ class Patch_Progression_ForceUnlock {
 public static class Patch_M_Level_Awake {
 	public static void Prefix(M_Level __instance) {
 		// 仅在联机模式下禁用关卡翻转
-		if (MultiPlayerMain.IsMultiplayerActive) {
+		if (MultiPlayerCore.IsMultiplayerActive) {
 			// 禁用关卡翻转功能
 			__instance.canFlip = false;
 		}

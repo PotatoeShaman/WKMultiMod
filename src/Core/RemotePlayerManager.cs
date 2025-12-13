@@ -1,0 +1,417 @@
+﻿using LiteNetLib;
+using MonoMod.Core.Utils;
+using Steamworks;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Events;
+using WKMultiMod.src.Component;
+using WKMultiMod.src.Data;
+using WKMultiMod.src.Main;
+using static WKMultiMod.src.Data.PlayerData;
+
+namespace WKMultiMod.src.Core;
+
+// 生命周期为全局
+public class RemotePlayerManager: MonoBehaviour {
+
+	// 单例实例
+	private static RemotePlayerManager _instance;
+
+	// 公共访问点
+	public static RemotePlayerManager Instance {
+		get {
+			if (_instance == null) {
+				// 尝试查找现有实例
+				_instance = FindObjectOfType<RemotePlayerManager>();
+
+				// 如果没有找到，创建一个新实例
+				if (_instance == null) {
+					var go = new GameObject("[RemotePlayerManager]");
+					_instance = go.AddComponent<RemotePlayerManager>();
+				}
+			}
+			return _instance;
+		}
+	}
+
+	// 存储所有远程对象
+	private static Dictionary<ulong, RemotePlayerContainer> _players = new Dictionary<ulong, RemotePlayerContainer>();
+
+	// 挂载远程玩家对象的根对象
+	private GameObject _persistentRoot;
+
+	void Awake() {
+		// 单例检查
+		if (_instance != null && _instance != this) {
+			Destroy(gameObject);
+			return;
+		}
+
+		_instance = this;
+		DontDestroyOnLoad(gameObject);
+
+		// 初始化实例字段
+		_players = new Dictionary<ulong, RemotePlayerContainer>();
+		_persistentRoot = new GameObject("RemotePlayers_PersistentRoot");
+		_persistentRoot.transform.SetParent(transform, false); // 作为子对象
+		DontDestroyOnLoad(_persistentRoot);
+	}
+
+	// 清除全部玩家
+	void OnDestroy() {
+		foreach (var container in _players.Values) {
+			container.Destroy();
+		}
+		_players.Clear();
+		Destroy(_persistentRoot);
+	}
+
+	// 清除特定玩家
+	public void DestroyPlayer(ulong playId) {
+		if (_players.TryGetValue(playId, out var container)) {
+			container.Destroy();
+			_players.Remove(playId);
+		}
+	}
+
+	// 创建玩家对象并挂载
+	public RemotePlayerContainer CreatePlayer(ulong playId) {
+		var container = new RemotePlayerContainer(playId);
+
+		// 传递给容器持久化根对象
+		container.Initialize(_persistentRoot.transform);
+
+		_players[playId] = container;
+		return container;
+	}
+
+	// 处理玩家数据
+	public void ProcessPlayerData(PlayerData playerData) {
+		// 以后加上时间戳处理
+		var RPcontainer = _players[playerData.PlayerId];
+        if (RPcontainer == null) {
+			MPMain.Logger.LogError($"[MP Mod RPManager] 未找到远程对象 Id: {playerData.PlayerId}");
+			return;
+        }
+		RPcontainer.UpdatePlayerData(playerData);
+		return;
+    }
+
+}
+
+
+
+// 单个玩家的容器类
+public class RemotePlayerContainer {
+	public ulong PlayId { get; set; }
+	public GameObject PlayerObject { get; private set; }
+	public GameObject LeftHandObject { get; private set; }
+	public GameObject RightHandObject { get; private set; }
+	public GameObject NameTagObject { get; private set; }
+
+	private RemotePlayerComponent _playerComponent;
+	private RemoteHandComponent _leftHandComponent;
+	private RemoteHandComponent _rightHandComponent;
+	private TextMesh _nameTextMesh;
+
+	// 构造函数 - 只设置基本信息
+	public RemotePlayerContainer(ulong playId) {
+		PlayId = playId;
+	}
+
+	// 初始化方法 - 负责创建所有对象
+	public bool Initialize(Transform persistentParent = null) {
+		try {
+			MPMain.Logger.LogInfo($"[MP Mod RPContainer] 远程玩家映射创建 ID: {PlayId}");
+
+			// 创建对象
+			CreatePlayerHierarchy();
+
+			// 设置持久化
+			if (persistentParent != null) {
+				PlayerObject.transform.SetParent(persistentParent, false);
+			}
+
+			MPMain.Logger.LogInfo($"[MP Mod RPContainer] 远程玩家映射成功 ID: {PlayId}");
+			return true;
+		} catch (Exception ex) {
+			MPMain.Logger.LogError($"[MP Mod RPContainer] 远程玩家映射失败 ID: {PlayId}, Error: {ex.Message}");
+			CleanupOnFailure();
+			return false;
+		}
+	}
+
+	// 创建并组装对象
+	private void CreatePlayerHierarchy() {
+		// 创建主玩家对象
+		PlayerObject = CreatePlayerObject();
+
+		// 创建手部对象
+		(LeftHandObject, RightHandObject) = CreateHandObjects();
+
+		// 创建名称标签
+		NameTagObject = CreateNameTagObject();
+
+		// 设置父子关系
+		LeftHandObject.transform.SetParent(PlayerObject.transform, false);
+		RightHandObject.transform.SetParent(PlayerObject.transform, false);
+		NameTagObject.transform.SetParent(PlayerObject.transform, false);
+	}
+
+	// 创建玩家对象
+	private GameObject CreatePlayerObject() {
+		var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+		player.name = $"RemotePlayer_{PlayId}";
+
+		// 配置触发器
+		var collider = player.GetComponent<CapsuleCollider>();
+		if (collider != null) {
+			collider.isTrigger = true;
+			collider.radius = 0.5f;
+			collider.height = 2.0f;
+		}
+
+		// 添加物理碰撞器
+		var physicsCollider = player.AddComponent<CapsuleCollider>();
+		physicsCollider.isTrigger = false;
+		physicsCollider.radius = 0.4f;
+		physicsCollider.height = 1.8f;
+		physicsCollider.center = new Vector3(0, 0.1f, 0);
+
+		// 添加攀爬组件
+		AddHandholdComponents(player);
+		// 远程玩家组件
+		_playerComponent = player.AddComponent<RemotePlayerComponent>();
+
+		// 设置外观
+		ConfigurePlayerAppearance(player);
+
+		return player;
+	}
+
+	// 配置玩家简易外观
+	private void ConfigurePlayerAppearance(GameObject player) {
+		// 设置材质
+		Material bodyMaterial = new Material(Shader.Find("Unlit/Color"));
+		bodyMaterial.color = Color.gray;
+
+		Renderer renderer = player.GetComponent<Renderer>();
+		if (renderer != null) {
+			renderer.material = bodyMaterial;
+		}
+
+		// 创建左眼
+		GameObject leftEye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		leftEye.name = "RemotePlayer_LeftEye_" + PlayId;
+		leftEye.transform.SetParent(player.transform);
+		leftEye.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		leftEye.transform.localPosition = new Vector3(-0.15f, 0.5f, 0.45f);
+
+		// 设置左眼材质
+		Material leftEyeMaterial = new Material(Shader.Find("Unlit/Color"));
+		leftEyeMaterial.color = Color.white;
+		leftEye.GetComponent<Renderer>().material = leftEyeMaterial;
+
+		// 创建右眼
+		GameObject rightEye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		rightEye.name = "RemotePlayer_RightEye_" + PlayId;
+		rightEye.transform.SetParent(player.transform);
+		rightEye.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+		rightEye.transform.localPosition = new Vector3(0.15f, 0.5f, 0.45f);
+
+		// 设置右眼材质
+		Material rightEyeMaterial = new Material(Shader.Find("Unlit/Color"));
+		rightEyeMaterial.color = Color.white;
+		rightEye.GetComponent<Renderer>().material = rightEyeMaterial;
+	}
+
+	// 创建手部对象
+	private (GameObject leftHand, GameObject rightHand) CreateHandObjects() {
+		// 创建左手
+		GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		leftHand.name = $"RemotePlayer_LeftHand_" + PlayId;
+		leftHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+
+		// 创建右手
+		GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		rightHand.name = $"RemotePlayer_RightHand_" + PlayId;
+		rightHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+
+		// 配置触发器
+		var leftCollider = leftHand.GetComponent<SphereCollider>();
+		if (leftCollider != null) {
+			leftCollider.isTrigger = true;
+			leftCollider.radius = 0.2f;
+		}
+		var rightCollider = rightHand.GetComponent<SphereCollider>();
+		if (rightCollider != null) {
+			rightCollider.isTrigger = true;
+			rightCollider.radius = 0.2f;
+		}
+
+		// 添加攀爬组件
+		AddHandholdComponents(leftHand);
+		AddHandholdComponents(rightHand);
+		// 远程手部组件
+		_leftHandComponent = leftHand.AddComponent<RemoteHandComponent>();
+		_leftHandComponent.hand = HandType.Left;
+		_rightHandComponent = rightHand.AddComponent<RemoteHandComponent>();
+		_rightHandComponent.hand = HandType.Right;
+
+		// 配置手部外观
+		ConfigureHandAppearance(leftHand, rightHand);
+
+		return (leftHand, rightHand);
+	}
+
+	// 配置手部简易外观
+	private void ConfigureHandAppearance(GameObject leftHand, GameObject rightHand) {
+		// 设置左手材质
+		Material leftHandMaterial = new Material(Shader.Find("Unlit/Color"));
+		leftHandMaterial.color = Color.white;
+
+		Renderer leftRenderer = leftHand.GetComponent<Renderer>();
+		if (leftRenderer != null) {
+			leftRenderer.material = leftHandMaterial;
+		}
+
+		// 设置右手材质
+		Material rightHandMaterial = new Material(Shader.Find("Unlit/Color"));
+		rightHandMaterial.color = Color.white;
+
+		Renderer rightRenderer = rightHand.GetComponent<Renderer>();
+		if (rightRenderer != null) {
+			rightRenderer.material = rightHandMaterial;
+		}
+	}
+
+	// 创建文本框
+	private GameObject CreateNameTagObject() {
+		var textObject = new GameObject($"PlayerID_Text_{PlayId}");
+		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+
+		var textMesh = textObject.AddComponent<TextMesh>();
+		textMesh.text = $"Player: {PlayId}";
+		textMesh.fontSize = 20;
+		textMesh.characterSize = 0.1f;
+		textMesh.anchor = TextAnchor.MiddleCenter;
+		textMesh.color = new Color(1f, 1f, 1f, 0.85f);
+		textMesh.fontStyle = FontStyle.Bold;
+		textMesh.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+		textObject.AddComponent<LootAtComponent>();
+		_nameTextMesh = textMesh;
+
+		return textObject;
+	}
+
+	// 清理对象
+	private void CleanupOnFailure() {
+		// 清理已创建的对象
+		SafeDestroy(PlayerObject);
+		SafeDestroy(LeftHandObject);
+		SafeDestroy(RightHandObject);
+		SafeDestroy(NameTagObject);
+	}
+
+	private void SafeDestroy(GameObject obj) {
+		if (obj != null) {
+			if (Application.isPlaying) {
+				GameObject.Destroy(obj);
+			} else {
+				GameObject.DestroyImmediate(obj);
+			}
+		}
+	}
+
+	// 销毁方法 - 清理所有资源
+	public void Destroy() {
+		SafeDestroy(PlayerObject);
+		SafeDestroy(LeftHandObject);
+		SafeDestroy(RightHandObject);
+		SafeDestroy(NameTagObject);
+
+		// 清理引用
+		PlayerObject = null;
+		LeftHandObject = null;
+		RightHandObject = null;
+		NameTagObject = null;
+		_playerComponent = null;
+		_leftHandComponent = null;
+		_rightHandComponent = null;
+		_nameTextMesh = null;
+	}
+
+	// 通过数据进行更新
+	public void UpdatePlayerData(PlayerData playerData) {
+		// 缺少部分对象
+		if (PlayerObject == null || LeftHandObject == null
+			|| RightHandObject == null || NameTagObject == null)
+			return;
+
+		// 检查组件是否存在,如果不存在尝试获取
+		if (_playerComponent == null) {
+			_playerComponent = PlayerObject.GetComponent<RemotePlayerComponent>();
+			if (_playerComponent == null) {
+				MPMain.Logger.LogError($"[MP Mod RPContainer] PlayerObject的组件未添加");
+				return;
+			}
+		}
+
+		if (_leftHandComponent == null) {
+			_leftHandComponent = LeftHandObject.GetComponent<RemoteHandComponent>();
+			if (_leftHandComponent == null) {
+				MPMain.Logger.LogError($"[MP Mod RPContainer] LeftHandObject的组件未添加");
+				return;
+			}
+		}
+
+		if (_rightHandComponent == null) {
+			_rightHandComponent = RightHandObject.GetComponent<RemoteHandComponent>();
+			if (_rightHandComponent == null) {
+				MPMain.Logger.LogError($"[MP Mod RPContainer] RightHandObject的组件未添加");
+				return;
+			}
+		}
+
+		if (playerData.IsTeleport) {
+			// 使用组件的传送方法
+			_playerComponent.Teleport(playerData.Position, playerData.Rotation);
+			_leftHandComponent.Teleport(playerData.LeftHand.Position);
+			_rightHandComponent.Teleport(playerData.RightHand.Position);
+		} else {
+			// 使用插值更新
+			_playerComponent.UpdatePosition(playerData.Position);
+			_playerComponent.UpdateRotation(playerData.Rotation);
+			_leftHandComponent.UpdateFromHandData(playerData.LeftHand);
+			_rightHandComponent.UpdateFromHandData(playerData.RightHand);
+		}
+	}
+
+	// 赋予可攀爬组件
+	private void AddHandholdComponents(GameObject gameObject) {
+		// 添加 ObjectTagger 组件
+		ObjectTagger tagger = gameObject.AddComponent<ObjectTagger>();
+		if (tagger != null) {
+			tagger.tags.Add("Handhold");
+		}
+
+		// 添加 CL_Handhold 组件 (攀爬逻辑)
+		CL_Handhold handholdComponent = gameObject.AddComponent<CL_Handhold>();
+		if (handholdComponent != null) {
+			// 添加停止和激活事件
+			handholdComponent.stopEvent = new UnityEvent();
+			handholdComponent.activeEvent = new UnityEvent();
+		}
+
+		// 确保 渲染器 被赋值, 否则 材质 设置会崩溃
+		Renderer objectRenderer = gameObject.GetComponent<Renderer>();
+		if (objectRenderer != null) {
+			gameObject.GetComponent<CL_Handhold>().handholdRenderer = objectRenderer;
+		}
+	}
+}
+
+
