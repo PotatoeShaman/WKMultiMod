@@ -3,68 +3,42 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using WKMultiMod.src.Main;
 using WKMultiMod.src.Core;
 using Object = UnityEngine.Object;
 
 namespace WKMultiMod.src.Patch;
 
-// 在 SteamManager 的 Awake 方法后执行
 [HarmonyPatch(typeof(SteamManager))]
 public class Patch_SteamManager_Awake {
-	// 跟踪是否已经注入过
-	private static bool _hasInjected = false;
+	private static bool _hasCoreInjected = false;
 
-	//void 类型: 总是执行原方法
 	[HarmonyPostfix]
 	[HarmonyPatch("Awake")]
 	public static void Postfix(SteamManager __instance) {
-		// 只有当核心对象不存在时才创建, 防止重复注入
-		if (_hasInjected) {
-			MPMain.Logger.LogWarning("[MP Mod loading] 已经注入过,跳过");
-			return;
-		}
-
 		MPMain.Logger.LogInfo($"[MP Mod loading] SteamManager.Awake 调用,准备注入核心");
 
-		// 检查是否已经存在核心实例
-		var existingCores = Object.FindObjectsOfType<MultiPlayerCore>();
-		MultiPlayerCore existingValidCore = null;
-
-		foreach (var core in existingCores) {
-			if (core.isActiveAndEnabled && core.transform.parent != null) {
-				existingValidCore = core;
-				break;
-			}
-		}
-
-		if (existingValidCore != null) {
-			MPMain.Logger.LogWarning($"[MP Mod loading] 已存在有效的核心实例: {existingValidCore.name}");
-			_hasInjected = true;
+		if (_hasCoreInjected) {
+			MPMain.Logger.LogWarning("[MP Mod loading] Core已经注入过,跳过");
 			return;
 		}
 
-		// 创建核心对象作为SteamManager的子对象
-		CreateCoreAsChild(__instance);
-		_hasInjected = true;
-	}
+		// 简化的检查：只看是否已经存在任何MultiPlayerCore实例
+		var existingCore = Object.FindObjectOfType<MultiPlayerCore>();
+		if (existingCore != null) {
+			MPMain.Logger.LogWarning($"[MP Mod loading] 已存在核心实例: {existingCore.name}");
+			_hasCoreInjected = true;
+			return;
+		}
 
-	// 创建核心对象并设为SteamManager的子对象
-	private static void CreateCoreAsChild(SteamManager steamManager) {
+		// 创建核心对象
 		try {
-			// 创建核心游戏对象
 			GameObject coreGameObject = new GameObject("MultiplayerCore_Injected");
+			coreGameObject.transform.SetParent(__instance.transform, false);
+			coreGameObject.AddComponent<MultiPlayerCore>();
 
-			// 设为SteamManager的子对象(关键！这样会跟随SteamManager持久化)
-			coreGameObject.transform.SetParent(steamManager.transform, false);
+			MPMain.Logger.LogInfo($"[MP Mod loading] MPCore 对象已成功注入 SteamManager");
+			_hasCoreInjected = true;
 
-			// 添加核心组件
-			var core = coreGameObject.AddComponent<MultiPlayerCore>();
-
-			MPMain.Logger.LogInfo($"[MP Mod loading] 核心对象已成功注入 SteamManager");
-			MPMain.Logger.LogInfo(
-				$"[MP Mod] 核心位置: 父对象= {core.transform.parent?.name ?? null}" +
-				$"\n激活状态= {core.isActiveAndEnabled.ToString()}");
 		} catch (System.Exception e) {
 			MPMain.Logger.LogError("[MP Mod loading] 注入核心失败: " + e);
 		}

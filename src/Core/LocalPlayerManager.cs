@@ -1,10 +1,11 @@
 ﻿using LiteNetLib.Utils;
+using Steamworks.Data;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using WKMultiMod.src.Data;
-using WKMultiMod.src.Main;
+using WKMultiMod.src.NetWork;
 
 namespace WKMultiMod.src.Core;
 
@@ -30,7 +31,7 @@ public class LocalPlayerManager: MonoBehaviour {
 			return;
 		_lastSendTime = Time.time;
 		// 创建玩家数据
-		var playerData = PlayerDataSerializer.CreateLocalPlayerData(LocalPlayerId);
+		var playerData = MPDataSerializer.CreateLocalPlayerData(LocalPlayerId);
 		if (playerData == null) {
 			MPMain.Logger.LogError("[MP Mod LPManager] 本地玩家信息异常");
 			return;
@@ -39,10 +40,15 @@ public class LocalPlayerManager: MonoBehaviour {
 		// 进行数据写入
 		NetDataWriter writer = new NetDataWriter();
 		writer.Put((int)PacketType.PlayerDataUpdate);
-		PlayerDataSerializer.WriteToNetData(writer, playerData);
+		MPDataSerializer.WriteToNetData(writer, playerData);
 
-		// 触发事件
-		NetworkEvents.TriggerSendData(writer);
+		// 不通过总控模块直写
+		// 触发Steam数据发送
+		// 转为byte[]
+		// 使用不可靠+立即发送
+		SteamNetworkEvents.TriggerSendToHost(
+			MPDataSerializer.WriterToBytes(writer), 
+			SendType.Unreliable | SendType.NoNagle);
 	}
 }
 

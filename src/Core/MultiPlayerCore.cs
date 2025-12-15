@@ -1,18 +1,20 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
 using MonoMod.Core.Utils;
+using Steamworks;
+using Steamworks.Data;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
-using WKMultiMod.src.Component;
 using WKMultiMod.src.Data;
-using WKMultiMod.src.Main;
+using WKMultiMod.src.NetWork;
 using WKMultiMod.src.Util;
+using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
-
+using static WKMultiMod.src.Data.MPDataSerializer;
 namespace WKMultiMod.src.Core;
 
 public class MultiPlayerCore : MonoBehaviour {
@@ -22,30 +24,17 @@ public class MultiPlayerCore : MonoBehaviour {
 	// 标识这是否是"有效"实例(防止使用游戏初期被销毁的实例)
 	public static bool HasValidInstance => Instance != null && Instance.isActiveAndEnabled;
 
-	// 服务器和客户端监听器 - 处理网络事件
-	private EventBasedNetListener _serverListener;
-	private EventBasedNetListener _clientListener;
-	// 服务器和客户端管理器 - 管理网络连接
-	private NetManager _client;
-	private NetManager _server;
-	// 连接到服务器的对等端引用    
-	private NetPeer _serverPeer;
-	// 网络初始化状态
-	public bool IsInitialized { get; private set; }
-
-
+	// Steam网络管理器 玩家ID管理器 远程玩家管理器
+	public MPSteamworks Steamworks { get; private set; }
+	public PlayerIdManager PlayerIdManager { get; private set; }
+	public RemotePlayerManager RPManager { get; private set; }
 
 	// 最大玩家数量
 	private int _maxPlayerCount;
 	// 下一个可用玩家ID
-	private int _nextAvailablePlayerId = 0;
-
-	// 玩家字典 - 存储所有玩家对象, 键为玩家ID, 值为GameObject
-	private Dictionary<long, GameObject> _remotePlayerObjects = new Dictionary<long, GameObject>();
-	// 手部字典 - 存储所有玩家手部对象, 键为玩家ID, 值为GameObject
-	private Dictionary<long, GameObject> _remoteLeftHandObjects = new Dictionary<long, GameObject>();
-	// 手部字典 - 存储所有玩家手部对象, 键为玩家ID, 值为GameObject
-	private Dictionary<long, GameObject> _remoteRightHandObjects = new Dictionary<long, GameObject>();
+	private int _nextPlayerId = 0;
+	// 单独的方法来获取并递增
+	public int GetNextPlayerId() => _nextPlayerId++;
 
 	// 世界种子 - 用于同步游戏世界生成
 	public int WorldSeed { get; private set; }
@@ -59,145 +48,96 @@ public class MultiPlayerCore : MonoBehaviour {
 	void Awake() {
 		MPMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Awake");
 
-		Instance = this;
-
-		// 但如果是重复的活跃实例,销毁新的
-		if (FindObjectsOfType<MultiPlayerCore>().Length > 1) {
-			// 检查哪个实例是SteamManager的子对象(应该是持久的)
-			var allCores = FindObjectsOfType<MultiPlayerCore>();
-			MultiPlayerCore steamChildCore = null;
-			MultiPlayerCore otherCore = null;
-
-			foreach (var core in allCores) {
-				if (core.transform.parent != null &&
-					core.transform.parent.name.Contains("SteamManager")) {
-					steamChildCore = core;
-				} else if (core != this) {
-					otherCore = core;
-				}
-			}
-
-			// 如果已经有一个作为SteamManager子对象的实例,销毁其他的
-			if (steamChildCore != null && steamChildCore != this) {
-				MPMain.Logger.LogWarning("[MP Mod loading] 检测到重复的核心实例,销毁非Steam子对象");
-				Destroy(gameObject);
-				return;
-			}
+		// 简单的重复检查作为安全网
+		if (Instance != null && Instance != this) {
+			MPMain.Logger.LogWarning("[MP Mod loading] 检测到重复实例，销毁当前");
+			Destroy(gameObject);
+			return;
 		}
 
-		// 初始化网络监听器和管理器
-		InitializeNetwork();
+		Instance = this;
+
+		// 但是注意：如果MultiPlayerCore已经是SteamManager的子对象，
+		// SteamManager本身可能已经是DontDestroyOnLoad的
+		// 可选：如果需要在整个游戏生命周期中保持，可以添加
+		// DontDestroyOnLoad(gameObject);
+
+		// 初始化网络监听器和远程玩家管理器
+		InitializeAllManagers();
 	}
 
 	void Start() {
-		// 延迟验证,确保这是持久实例
-		if (transform.parent == null) {
-			MPMain.Logger.LogWarning("[MP Mod loading] 核心实例没有父对象,可能被游戏销毁");
-		} else {
-			MPMain.Logger.LogInfo("[MP Mod loading] 核心实例已附加到: " + transform.parent.name);
+		// 订阅场景切换
+		SceneManager.sceneLoaded += OnSceneLoaded;
+	}
+
+	/// <summary>
+	/// 初始化所有管理器
+	/// </summary>
+	private void InitializeAllManagers() {
+		try {
+			// 创建Steamworks组件（无状态）
+			Steamworks = gameObject.AddComponent<MPSteamworks>();
+
+			// 创建玩家ID管理器
+			PlayerIdManager = gameObject.AddComponent<PlayerIdManager>();
+
+			// 创建远程玩家管理器
+			RPManager = gameObject.AddComponent<RemotePlayerManager>();
+
+			MPMain.Logger.LogInfo("[MP Mod init] 所有管理器初始化完成");
+
+		} catch (Exception e) {
+			MPMain.Logger.LogError("[MP Mod init] 管理器初始化失败: " + e.Message);
 		}
+	}
+
+	/// <summary>
+	/// 初始化网络事件订阅
+	/// </summary>
+	private void SubscribeToEvents() {
+		// 订阅网络数据接收事件
+		SteamNetworkEvents.OnReceiveData += ProcessReceiveData;
+
+		// 订阅Steam玩家连接事件
+		SteamNetworkEvents.OnPlayerConnected += ProcessPlayerConnected;
+		SteamNetworkEvents.OnPlayerDisconnected += ProcessPlayerDisconnected;
+
+		// 订阅大厅事件
+		SteamNetworkEvents.OnLobbyEntered += ProcessLobbyEntered;
+		SteamNetworkEvents.OnLobbyMemberJoined += ProcessLobbyMemberJoined;
+		SteamNetworkEvents.OnLobbyMemberLeft += ProcessLobbyMemberLeft;
+
+		// 订阅主机专用事件
+		SteamNetworkEvents.OnHostNewPlayerConnected += ProcessHostNewPlayerConnected;
+		SteamNetworkEvents.OnHostResponseExistingPlayers += ProcessHostResponseExistingPlayers;
 	}
 
 	private void Update() {
-		// 恢复网络事件轮询
-		if (_client != null) _client.PollEvents();
-		if (_server != null && _server.IsRunning) _server.PollEvents();
 
-		// 如果已连接到服务器, 持续更新位置. 
-		if (_serverPeer != null && ENT_Player.GetPlayer() != null) {
-			SendPlayerTransform();
-			SendHandTransform();
-		}
 	}
 
-	// 当核心对象被销毁时调用
+	/// <summary>
+	/// 当核心对象被销毁时调用
+	/// </summary>
 	private void OnDestroy() {
-		// 只有当前实例是单例时才清理
-		if (Instance == this) {
-			Instance = null;
-		}
-
-		// 取消订阅场景加载事件
+		// 订阅场景切换
 		SceneManager.sceneLoaded -= OnSceneLoaded;
-		// 关闭网络连接和重置状态
-		CloseAllConnections();
+
+		// 取消所有事件订阅
+		UnsubscribeFromEvents();
+
+		// 重置状态
 		ResetStateVariables();
 
 		MPMain.Logger.LogInfo("[MP Mod destroy] MultiPlayerCore 已被销毁");
 	}
 
-	//// 网络初始化
-	//private void InitializeNetwork() {
-	//	try {
-	//		_serverListener = new EventBasedNetListener();
-	//		_server = new NetManager(_serverListener);
-	//		_clientListener = new EventBasedNetListener();
-	//		_client = new NetManager(_clientListener);
-
-	//		SceneManager.sceneLoaded += OnSceneLoaded;
-
-	//		IsInitialized = true;
-	//		MPMain.Logger.LogInfo("[MP Mod init] 网络系统初始化完成");
-	//	} catch (Exception e) {
-	//		MPMain.Logger.LogError("[MP Mod init] 网络初始化失败: " + e.Message);
-	//		IsInitialized = false;
-	//	}
-	//}
-
-	// 初始化数据
-	private void InitializeData() {
-		_maxPlayerCount = 4;
-	}
-
-	// 客户端 发送 服务器: 本地玩家位置
-	private void SendPlayerTransform() {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.PlayerTransformUpdate);
-
-		// 获取本地玩家位置和旋转
-		Vector3 playerPosition = ENT_Player.GetPlayer().transform.position;
-		Vector3 playerRotation = ENT_Player.GetPlayer().transform.eulerAngles;
-
-		// 写入位置和旋转数据
-		writer.Put(playerPosition.x);
-		writer.Put(playerPosition.y);
-		writer.Put(playerPosition.z);
-		writer.Put(playerRotation.x);
-		writer.Put(playerRotation.y);
-		writer.Put(playerRotation.z);
-
-		// 发送到服务器
-		_serverPeer.Send(writer, DeliveryMethod.ReliableOrdered);
-	}
-
-	// 客户端 发送 服务器: 本地玩家手部位置
-	private void SendHandTransform() {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.HandTransformUpdate);
-		ENT_Player.Hand leftHand = ENT_Player.GetPlayer().hands[0];
-		ENT_Player.Hand rightHand = ENT_Player.GetPlayer().hands[1];
-		writer.Put(leftHand.IsFree());
-		writer.Put(rightHand.IsFree());
-		if (!leftHand.IsFree()) {
-			// 获取本地玩家手部位置
-			Vector3 LeftPosition = leftHand.GetHoldWorldPosition();
-			writer.Put(LeftPosition.x);
-			writer.Put(LeftPosition.y);
-			writer.Put(LeftPosition.z);
-		}
-		if (!rightHand.IsFree()) {
-			// 获取本地玩家手部位置
-			Vector3 RightPosition = rightHand.GetHoldWorldPosition();
-			writer.Put(RightPosition.x);
-			writer.Put(RightPosition.y);
-			writer.Put(RightPosition.z);
-		}
-
-		// 发送到服务器
-		_serverPeer.Send(writer, DeliveryMethod.ReliableOrdered);
-	}
-
-	// 场景加载完成时调用
+	/// <summary>
+	/// 场景加载完成时调用
+	/// </summary>
+	/// <param name="scene"></param>
+	/// <param name="mode"></param>
 	private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
 		MPMain.Logger.LogInfo("[MP Mod] 核心场景加载完成: " + scene.name);
 
@@ -206,7 +146,7 @@ public class MultiPlayerCore : MonoBehaviour {
 		if (scene.name == "Game-Main") {
 			// 注册命令和初始化世界数据
 			if (CommandConsole.instance != null) {
-				InitializeData();
+				SubscribeToEvents();
 				RegisterCommands();
 			} else {
 				MPMain.Logger.LogError("[MP Mod] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
@@ -214,9 +154,36 @@ public class MultiPlayerCore : MonoBehaviour {
 		}
 		if (scene.name == "Main-Menu") {
 			// 返回主菜单时关闭连接 重设置
-			CloseAllConnections();
+			UnsubscribeFromEvents();
 			ResetStateVariables();
 		}
+	}
+
+	/// <summary>
+	/// 取消所有网络事件订阅
+	/// </summary>
+	private void UnsubscribeFromEvents() {
+		// 订阅网络数据接收事件
+		SteamNetworkEvents.OnReceiveData -= ProcessReceiveData;
+
+		// 订阅Steam玩家连接事件
+		SteamNetworkEvents.OnPlayerConnected -= ProcessPlayerConnected;
+		SteamNetworkEvents.OnPlayerDisconnected -= ProcessPlayerDisconnected;
+
+		// 订阅大厅事件
+		SteamNetworkEvents.OnLobbyEntered -= ProcessLobbyEntered;
+		SteamNetworkEvents.OnLobbyMemberJoined -= ProcessLobbyMemberJoined;
+		SteamNetworkEvents.OnLobbyMemberLeft -= ProcessLobbyMemberLeft;
+
+		// 订阅主机专用事件
+		SteamNetworkEvents.OnHostNewPlayerConnected -= ProcessHostNewPlayerConnected;
+		SteamNetworkEvents.OnHostResponseExistingPlayers -= ProcessHostResponseExistingPlayers;
+	}
+
+	// 重置设置
+	private void ResetStateVariables() {
+		IsMultiplayerActive = false;
+		IsChaosMod = false;
 	}
 
 	// 命令注册
@@ -229,418 +196,18 @@ public class MultiPlayerCore : MonoBehaviour {
 		MPMain.Logger.LogInfo("[MP Mod loading] 命令集 注册成功");
 	}
 
-	// 关闭所有连接
-	private void CloseAllConnections() {
-		// 如果服务器正在运行, 断开所有连接
-		if (_server != null) {
-			// 取消订阅服务器事件
-			_serverListener.ConnectionRequestEvent -= ProcessConnectionRequest;
-			_serverListener.PeerConnectedEvent -= ProcessPeerConnected;
-			_serverListener.NetworkReceiveEvent -= ProcessNetworkReceive;
-			_serverListener.PeerDisconnectedEvent -= HandlePeerDisconnected;
-
-			// 断开所有客户端连接
-			_server.DisconnectAll();
-
-			// 停止服务器
-			if (_server.IsRunning) {
-				_server.Stop();
-			}
-
-			MPMain.Logger.LogInfo("[MP Mod Close] 服务器连接已停止.");
-		}
-
-		// 断开客户端连接
-		if (_client != null) {
-			// 取消订阅客户端事件
-			_clientListener.NetworkReceiveEvent -= ProcessClientNetworkReceive;
-
-			// 断开与服务器的连接
-			_client.DisconnectAll();
-
-			// 停止客户端
-			if (_client.IsRunning) {
-				_client.Stop();
-			}
-
-			MPMain.Logger.LogInfo("[MP Mod Close] 客户端连接已停止.");
-		}
-
-		_serverPeer = null; // 重置对等端引用
-
-		// 销毁所有玩家对象
-		foreach (KeyValuePair<long, GameObject> player in _remotePlayerObjects) {
-			if (player.Value != null) {
-				Destroy(player.Value);
-			}
-		}
-
-		_remotePlayerObjects.Clear();
-		_remoteLeftHandObjects.Clear();
-		_remoteRightHandObjects.Clear();
-	}
-
-	// 重置设置
-	private void ResetStateVariables() {
-		IsMultiplayerActive = false;
-		IsChaosMod = false;
-	}
-
-	// 服务器端 处理 新客户端：连接请求
-	private void ProcessConnectionRequest(ConnectionRequest request) {
-		if (_server.ConnectedPeersCount < _maxPlayerCount) {
-			request.Accept();
-		} else {
-			request.Reject();
-		}
-	}
-
-	// 服务器端 处理 新客户端：新客户端连接
-	private void ProcessPeerConnected(NetPeer peer) {
-		peer.Tag = _nextAvailablePlayerId;
-		_nextAvailablePlayerId++;
-
-		MPMain.Logger.LogInfo("[MP Mod server] 新客户端已连接: ID= " + peer.Tag.ToString());
-		//CommandConsole.Log("We got connection: " + peer.Tag);
-		CommandConsole.Log("We got new connection");
-
-		// 发送连接成功消息
-		SendConnectionSuccessMessage(peer);
-
-		// 发送世界种子信息
-		SendWorldSeedToPeer(peer);
-
-		// 通知所有客户端创建新玩家
-		NotifyAllClientsToCreatePlayer(peer);
-	}
-
-	// 服务器端 发送 新客户端：连接成功消息
-	private void SendConnectionSuccessMessage(NetPeer peer) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.ConnectedToServer);
-		writer.Put(_server.ConnectedPeersCount - 1);
-
-		foreach (NetPeer connectedPeer in _server.ConnectedPeerList) {
-			if ((int)connectedPeer.Tag == (int)peer.Tag) continue;
-			writer.Put((int)connectedPeer.Tag);
-		}
-
-		peer.Send(writer, DeliveryMethod.ReliableOrdered);
-	}
-
-	// 服务器端 发送 新客户端：发送世界种子
-	private void SendWorldSeedToPeer(NetPeer peer) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.SeedUpdate);
-		writer.Put(WorldLoader.instance.seed);
-		peer.Send(writer, DeliveryMethod.ReliableOrdered);
-	}
-
-	// 服务器端 通知 客户端：通知新玩家创建
-	private void NotifyAllClientsToCreatePlayer(NetPeer peer) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.CreatePlayer);
-		writer.Put((int)peer.Tag);
-		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered, peer);
-	}
-
-	// 服务器端 处理 客户端：处理网络数据接收
-	private void ProcessNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-		// 基本验证：确保数据足够读取一个整数(数据包类型)
-		if (reader.AvailableBytes < 4) {
-			reader.Recycle();
-			return;
-		}
-
-		int packetType = reader.GetInt();
-
-		switch (packetType) {
-			case (int)PacketType.PlayerTransformUpdate:
-				// 广播玩家位置
-				BroadcastPlayerTransform(peer, reader);
-				break;
-
-			case (int)PacketType.HandTransformUpdate:
-				// 广播手部位置
-				BroadcastHandTransform(peer, reader);
-				break;
-		}
-
-		reader.Recycle();
-	}
-
-	// 服务器端 广播 客户端：转发位置更新
-	private void BroadcastPlayerTransform(NetPeer peer, NetPacketReader reader) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.PlayerTransformUpdate);
-		writer.Put((int)peer.Tag);
-		writer.Put(reader.GetRemainingBytes());
-		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered, peer);
-	}
-
-	// 服务器端 广播 客户端: 转发手部位置
-	private void BroadcastHandTransform(NetPeer peer, NetPacketReader reader) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.HandTransformUpdate);
-		writer.Put((int)peer.Tag);
-		writer.Put(reader.GetRemainingBytes());
-		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered, peer);
-	}
-
-	// 服务器端 处理 客户端：断开连接
-	private void HandlePeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
-		int disconnectedPlayerId = (int)peer.Tag;
-
-		// 主机端：销毁本地的远程玩家代理对象
-		if (_remotePlayerObjects.ContainsKey(disconnectedPlayerId)) {
-			Destroy(_remotePlayerObjects[disconnectedPlayerId]);
-			_remotePlayerObjects.Remove(disconnectedPlayerId);
-			MPMain.Logger.LogInfo("[MP Mod server] 主机已移除远程玩家 ID: " + disconnectedPlayerId);
-		}
-
-		// 通知所有剩余的客户端移除该玩家
-		NotifyAllClientsToRemovePlayer(disconnectedPlayerId);
-	}
-
-	// 服务器端 通知 客户端：移除玩家
-	private void NotifyAllClientsToRemovePlayer(int playerId) {
-		NetDataWriter writer = new NetDataWriter();
-		writer.Put((int)PacketType.RemovePlayer);
-		writer.Put(playerId);
-		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-	}
-
-	// 客户端 处理 服务器端：收到的网络数据
-	private void ProcessClientNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-		// 基本验证：确保数据足够读取一个整数(数据包类型)
-		if (reader.AvailableBytes < 4) {
-			reader.Recycle();
-			return;
-		}
-
-		int packetType = reader.GetInt();
-
-		switch (packetType) {
-            case (int)PacketType.PlayerTransformUpdate:
-				// 更新玩家位置
-				ProcessPlayerTransform(reader);
-				break;
-
-			case (int)PacketType.HandTransformUpdate:
-				// 更新手部位置
-				ProcessHandTransform(reader);
-				break;
-
-			case (int)PacketType.ConnectedToServer:
-				// 连接成功创建玩家
-				ProcessConnectionSuccess(reader);
-				break;
-
-			case (int)PacketType.SeedUpdate:
-				// 种子更新并重载地图
-				ProcessSeedUpdate(reader);
-				break;
-
-			case (int)PacketType.CreatePlayer:
-				// 创建新玩家
-				ProcessCreatePlayer(reader);
-				break;
-
-			case (int)PacketType.RemovePlayer:
-				// 玩家被移除
-				ProcessRemovePlayer(reader);
-				break;
-		}
-
-		reader.Recycle();
-	}
-
-	// 客户端 处理 服务器端：连接成功消息
-	private void ProcessConnectionSuccess(NetPacketReader reader) {
-		int peerCount = reader.GetInt();
-		MPMain.Logger.LogInfo("[MP Mod client] 已连接, 正在加载 " + peerCount.ToString() + " 玩家");
-		CommandConsole.Log(
-			"Connected!\nCreating "
-			+ peerCount
-			+ " player instance(s).");
-
-		for (int i = 0; i < peerCount; i++) {
-			SetupRemotePlayer(reader.GetInt());
-		}
-	}
-
-	// 客户端 处理 服务器端：加载世界种子
-	private void ProcessSeedUpdate(int seed) {
-		MPMain.Logger.LogInfo("[MP Mod client] 加载世界, 种子号: " + seed.ToString());
-		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
-	}
-
-	// 客户端 处理 服务器端：创建玩家消息
-	private void ProcessCreatePlayer(NetPacketReader reader) {
-		int playerId = reader.GetInt();
-		SetupRemotePlayer(playerId);
-	}
-
-	// 客户端 处理 服务器端：移除玩家消息
-	private void ProcessRemovePlayer(NetPacketReader reader) {
-		int playerIdToRemove = reader.GetInt();
-
-		if (_remotePlayerObjects.ContainsKey(playerIdToRemove)) {
-			Destroy(_remotePlayerObjects[playerIdToRemove]);
-			_remotePlayerObjects.Remove(playerIdToRemove);
-			_remoteLeftHandObjects.Remove(playerIdToRemove);
-			_remoteRightHandObjects.Remove(playerIdToRemove);
-			MPMain.Logger.LogInfo("[MP Mod client] 客户端已移除远程玩家: ID=" + playerIdToRemove);
-		}
-	}
-
-	// 客户端 处理 服务器端：其他玩家的位置更新
-	private void ProcessPlayerTransform(NetPacketReader reader) {
-		int playerId = reader.GetInt();
-		Vector3 newPosition = new Vector3(
-			reader.GetFloat(),
-			reader.GetFloat(),
-			reader.GetFloat()
-		);
-		Vector3 newRotation = new Vector3(
-			reader.GetFloat(),
-			reader.GetFloat(),
-			reader.GetFloat()
-		);
-
-		// 没有该玩家则忽略
-		if (!_remotePlayerObjects.ContainsKey(playerId)) return;
-
-		// 更新玩家位置和旋转
-		RemotePlayerComponent player = _remotePlayerObjects[playerId].GetComponent<RemotePlayerComponent>();
-		player.UpdatePosition(newPosition);
-		player.UpdateRotation(newRotation);
-	}
-
-	// 客户端 处理 服务器端：其他玩家手部位置更新
-	private void ProcessHandTransform(NetPacketReader reader) {
-		int playerId = reader.GetInt();
-		bool isLeftFree = reader.GetBool();
-		bool isRightFree = reader.GetBool();
-		Vector3 leftLocalPosition = new Vector3(-0.4f, 0.5f, 0.4f);
-		Vector3 rightLocalPosition = new Vector3(0.4f, 0.5f, 0.4f);
-		if (!isLeftFree) {
-			// 左手世界坐标
-			Vector3 leftWorldPosition = new Vector3(
-				reader.GetFloat(),
-				reader.GetFloat(),
-				reader.GetFloat()
-			);
-			// 转为局部坐标
-			leftLocalPosition = _remotePlayerObjects[playerId].transform.InverseTransformPoint(leftWorldPosition);
-		}
-		if (!isRightFree) {
-			// 右手世界坐标
-			Vector3 rightWorldPosition = new Vector3(
-				reader.GetFloat(),
-				reader.GetFloat(),
-				reader.GetFloat()
-			);
-			// 转为局部坐标
-			rightLocalPosition = _remotePlayerObjects[playerId].transform.InverseTransformPoint(rightWorldPosition);
-		}
-		// 没有该玩家则忽略
-		if (!_remoteLeftHandObjects.ContainsKey(playerId) || !_remoteRightHandObjects.ContainsKey(playerId)) return;
-		// 更新手部位置
-		RemoteHandComponent leftHand = _remoteLeftHandObjects[playerId].GetComponent<RemoteHandComponent>();
-		leftHand.UpdatePosition(leftLocalPosition);
-		RemoteHandComponent rightHand = _remoteRightHandObjects[playerId].GetComponent<RemoteHandComponent>();
-		rightHand.UpdatePosition(rightLocalPosition);
-	}
-
 	// 命令实现
 	public void Host(string[] args) {
-		// 先关闭现有连接
-		CloseAllConnections();
 
-		if (_server == null) {
-			MPMain.Logger.LogError("[MP Mod server] 服务器管理器不存在");
-			return;
-		}
-
-		// 修复：检查参数长度, 防止 IndexOutOfRangeException
-		if (args.Length < 1) {
-			CommandConsole.LogError(
-				"Usage: host <port> [max_players]\nExample: host 22222");
-			return;
-		}
-
-		ushort port = ushort.Parse(args[0]);
-
-		if (args.Length >= 2) {
-			_maxPlayerCount = int.Parse(args[1]);
-		} else {
-			_maxPlayerCount = 4; // 默认值
-		}
-
-		_server.Start(port); // 在指定端口启动服务器
-
-		// 订阅服务器事件
-		_serverListener.ConnectionRequestEvent += ProcessConnectionRequest;
-		_serverListener.PeerConnectedEvent += ProcessPeerConnected;
-		_serverListener.NetworkReceiveEvent += ProcessNetworkReceive;
-		_serverListener.PeerDisconnectedEvent += HandlePeerDisconnected;
-
-		// 主机作为客户端连接到自己的服务器
-		Join(["127.0.0.1", port.ToString()]);
-
-		MPMain.Logger.LogInfo("[MP Mod server] 已创建服务端");
-
-		CommandConsole.Log("Hosting lobby...");
-		CommandConsole.LogError(
-			"You are a hosting a peer-to-peer lobby\n"
-			+ "By sharing your IP you are also sharing your address\n"
-			+ "Be careful... :)");
 	}
 
 	public void Join(string[] args) {
-		// 先取消可能存在的客户端订阅
-		_clientListener.NetworkReceiveEvent -= ProcessClientNetworkReceive;
 
-		if (_client == null) {
-			MPMain.Logger.LogError("[MP Mod client] 客户端管理器不存在");
-			return;
-		}
-
-		// 参数验证
-		if (args.Length < 2) {
-			CommandConsole.LogError(
-				"Usage: join <IP> <port>\n"
-				+ "Example: join 127.0.0.1 22222 or join [::1] 22222");
-			return;
-		}
-
-		// 解析IP地址和端口
-		string ip = args[0];
-		int port = int.Parse(args[1]);
-
-		// 如果客户端已经在运行, 先停止
-		if (_client.IsRunning) {
-			_client.DisconnectAll();
-			_client.Stop();
-		}
-
-		// 启动客户端并连接到服务器
-		_client.Start();
-		_serverPeer = _client.Connect(ip, port, "");
-
-		// 设置多人游戏活动标志
-		MultiPlayerCore.IsMultiplayerActive = true;
-
-		// 处理客户端接收到的网络数据
-		_clientListener.NetworkReceiveEvent += ProcessClientNetworkReceive;
-
-		MPMain.Logger.LogInfo("[MP Mod server] 尝试连接: " + ip);
-		CommandConsole.Log("Trying to join ip: " + ip);
 	}
 
 	public void Leave(string[] args) {
-		CloseAllConnections();
+		UnsubscribeFromEvents();
+		ResetStateVariables();
 		MPMain.Logger.LogInfo("[MP Mod] 所有连接已断开, 远程玩家已清理.");
 	}
 
@@ -656,35 +223,189 @@ public class MultiPlayerCore : MonoBehaviour {
 		}
 	}
 
+	/// <summary>
+	/// 处理主机接收到新玩家网络连接
+	/// </summary>
+	private void ProcessHostNewPlayerConnected(SteamId newPlayerSteamId, Connection connection) {
+		if (!Steamworks.IsHost) return;
 
+		MPMain.Logger.LogInfo($"[MP Mod] 主机：新玩家网络连接 {newPlayerSteamId.Value}");
 
+		// 1. 为新玩家分配玩家ID
+		int newPlayerId = PlayerIdManager.AssignPlayerId(newPlayerSteamId);
 
-	// 初始化网络事件订阅
-	private void InitializeNetwork() {
-		NetworkEvents.OnReceiveData += ProcessNetworkReceive;
+		// 2. 获取所有现有玩家ID（排除新玩家）
+		var existingPlayerIds = PlayerIdManager.GetAllExistingPlayerIds(newPlayerSteamId);
+
+		// 3. 为新玩家发送连接成功消息
+		SendConnectionSuccessToNewPlayer(newPlayerSteamId, newPlayerId, existingPlayerIds);
+
+		// 4. 通知所有现有玩家创建新玩家
+		NotifyAllPlayersCreateNewPlayer(newPlayerId);
+
+		// 5. 发送初始化数据（世界种子等）
+		SendInitializationDataToNewPlayer(newPlayerSteamId);
 	}
 
-	// 处理网络接收数据
-	private void ProcessNetworkReceive(NetPacketReader reader) {
-		// 基本验证：确保数据足够读取一个整数(数据包类型)
-		if (reader.AvailableBytes < 4) {
-			reader.Recycle();
-			return;
+	/// <summary>
+	/// 发送连接成功消息给新玩家
+	/// </summary>
+	private void SendConnectionSuccessToNewPlayer(SteamId newPlayerSteamId, int newPlayerId, List<int> existingPlayerIds) {
+		var writer = new NetDataWriter();
+		writer.Put((int)PacketType.ConnectedToServer);
+		writer.Put(existingPlayerIds.Count);
+
+		foreach (var id in existingPlayerIds) {
+			writer.Put(id);
 		}
 
-		int packetType = reader.GetInt();
+		// 通过Steamworks发送给新玩家
+		var data = MPDataSerializer.WriterToBytes(writer);
+		SteamNetworkEvents.TriggerHostSendToPeer(data, newPlayerSteamId, SendType.Reliable);
+
+		MPMain.Logger.LogInfo($"[MP Mod] 已向新玩家发送连接成功消息，分配ID: {newPlayerId}");
+	}
+
+	/// <summary>
+	/// 通知所有玩家创建新玩家
+	/// </summary>
+	private void NotifyAllPlayersCreateNewPlayer(int newPlayerId) {
+		var writer = new NetDataWriter();
+		writer.Put((int)PacketType.CreatePlayer);
+		writer.Put(newPlayerId);
+
+		var data = MPDataSerializer.WriterToBytes(writer);
+		SteamNetworkEvents.TriggerHostBroadcast(data, SendType.Reliable);
+
+		// 主机自己也创建本地表示（如果需要）
+		RPManager.CreatePlayer(newPlayerId);
+
+		MPMain.Logger.LogInfo($"[MP Mod] 已通知所有玩家创建新玩家 ID: {newPlayerId}");
+	}
+
+	/// <summary>
+	/// 发送初始化数据给新玩家
+	/// </summary>
+	private void SendInitializationDataToNewPlayer(SteamId newPlayerSteamId) {
+		// 发送世界种子
+		var seedWriter = new NetDataWriter();
+		seedWriter.Put((int)PacketType.SeedUpdate);
+		seedWriter.Put(WorldLoader.instance.seed);
+
+		var seedData = MPDataSerializer.WriterToBytes(seedWriter);
+		SteamNetworkEvents.TriggerHostSendToPeer(seedData, newPlayerSteamId, SendType.Reliable);
+
+		// 可以添加其他初始化数据，如游戏状态、物品状态等
+
+		MPMain.Logger.LogInfo($"[MP Mod] 已向新玩家发送初始化数据");
+	}
+
+	/// <summary>
+	/// 处理大厅成员加入
+	/// </summary>
+	private void ProcessLobbyMemberJoined(SteamId steamId) {
+		MPMain.Logger.LogInfo($"[MP Mod] 玩家加入大厅: {steamId}");
+	}
+
+	// 玩家断连
+	private void ProcessPlayerDisconnected(SteamId steamId) {
+
+	}
+
+	// 加入大厅
+	private void ProcessLobbyEntered(Lobby lobby) {
+	}
+
+	// 离开大厅
+	private void ProcessLobbyMemberLeft(SteamId steamId) {
+
+	}
+
+	// 获取现有玩家的ID
+	private void ProcessHostResponseExistingPlayers(List<int> playerIds) { 
+	}
+
+	/// <summary>
+	/// 处理普通玩家连接事件（所有玩家都会收到）
+	/// </summary>
+	private void ProcessPlayerConnected(SteamId steamId) {
+		MPMain.Logger.LogInfo($"[MP Mod] 玩家连接: {steamId}");
+
+		// 如果不是主机，可能需要执行一些操作
+		// 比如：更新玩家列表UI、记录连接状态等
+	}
+
+	/// <summary>
+	/// 处理连接成功消息（客户端收到）
+	/// </summary>
+	private void ProcessConnectionSuccess(NetDataReader reader) {
+		int peerCount = reader.GetInt();
+		MPMain.Logger.LogInfo($"[MP Mod] 客户端：连接成功，加载 {peerCount} 个现有玩家");
+
+		CommandConsole.Log($"连接成功！\n正在创建 {peerCount} 个玩家实例");
+
+		// 创建所有现有玩家
+		for (int i = 0; i < peerCount; i++) {
+			int playerId = reader.GetInt();
+			RPManager.CreatePlayer(playerId);
+			MPMain.Logger.LogInfo($"[MP Mod] 创建现有玩家 ID: {playerId}");
+		}
+	}
+
+	/// <summary>
+	/// 处理创建玩家消息
+	/// </summary>
+	private void ProcessCreatePlayer(int playerId) {
+		RPManager.CreatePlayer(playerId);
+		MPMain.Logger.LogInfo($"[MP Mod] 创建新玩家 ID: {playerId}");
+	}
+
+	/// <summary>
+	/// 处理网络接收数据
+	/// </summary>
+	/// <param name="playId"></param>
+	/// <param name="data"></param>
+	private void ProcessReceiveData(int playId, byte[] data) {
+		// 基本验证：确保数据足够读取一个整数(数据包类型)
+		var reader = MPDataSerializer.BytesToReader(data);
+		PacketType packetType = (PacketType)reader.GetInt();
 
 		switch (packetType) {
-			case (int)PacketType.PlayerDataUpdate:
-				var playerData = PlayerDataSerializer.ReadFromNetData(reader);
-				RemotePlayerManager.Instance.ProcessPlayerData(playerData);
+			// 连接成功
+			case PacketType.ConnectedToServer:
+				ProcessConnectionSuccess(reader);
 				break;
-			case (int)PacketType.SeedUpdate:
-				int seed = reader.GetInt();
-				ProcessSeedUpdate(seed);
+			// 种子加载
+			case PacketType.SeedUpdate:
+				ProcessSeedUpdate(reader.GetInt());
 				break;
-
-
+			// 创建玩家
+			case PacketType.CreatePlayer:
+				RPManager.CreatePlayer(reader.GetInt());
+				break;
+			// 移除玩家
+			case PacketType.RemovePlayer:
+				RPManager.DestroyPlayer(reader.GetInt());
+				break;
+			// 玩家数据更新
+			case PacketType.PlayerDataUpdate:
+				var playerData = MPDataSerializer.ReadFromNetData(reader);
+				RPManager.ProcessPlayerData(playId, playerData);
+				break;
 		}
 	}
+
+	/// <summary>
+	/// 加载世界种子
+	/// </summary>
+	/// <param name="seed"></param>
+	private void ProcessSeedUpdate(int seed) {
+		MPMain.Logger.LogInfo("[MP Mod client] 加载世界, 种子号: " + seed.ToString());
+		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
+	}
+
+	// 开启多人联机模式
+	public static void StartMultiPlayerMode() { IsMultiplayerActive = true;}
+	// 关闭多人联机模式
+	public static void CloseMultiPlayerMode() { IsMultiplayerActive = false; }
 }

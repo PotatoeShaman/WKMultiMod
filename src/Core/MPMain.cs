@@ -5,7 +5,7 @@ using WKMultiMod.src.Core;
 using Steamworks;
 using System;
 
-namespace WKMultiMod.src.Main;
+namespace WKMultiMod.src.Core;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 public class MPMain : BaseUnityPlugin {

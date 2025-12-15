@@ -8,7 +8,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using WKMultiMod.src.Component;
 using WKMultiMod.src.Data;
-using WKMultiMod.src.Main;
 using static WKMultiMod.src.Data.PlayerData;
 
 namespace WKMultiMod.src.Core;
@@ -16,47 +15,18 @@ namespace WKMultiMod.src.Core;
 // 生命周期为全局
 public class RemotePlayerManager: MonoBehaviour {
 
-	// 单例实例
-	private static RemotePlayerManager _instance;
-
-	// 公共访问点
-	public static RemotePlayerManager Instance {
-		get {
-			if (_instance == null) {
-				// 尝试查找现有实例
-				_instance = FindObjectOfType<RemotePlayerManager>();
-
-				// 如果没有找到，创建一个新实例
-				if (_instance == null) {
-					var go = new GameObject("[RemotePlayerManager]");
-					_instance = go.AddComponent<RemotePlayerManager>();
-				}
-			}
-			return _instance;
-		}
-	}
-
 	// 存储所有远程对象
-	private static Dictionary<ulong, RemotePlayerContainer> _players = new Dictionary<ulong, RemotePlayerContainer>();
-
-	// 挂载远程玩家对象的根对象
-	private GameObject _persistentRoot;
+	private static Dictionary<int, RemotePlayerContainer> _players = new Dictionary<int, RemotePlayerContainer>();
 
 	void Awake() {
-		// 单例检查
-		if (_instance != null && _instance != this) {
-			Destroy(gameObject);
-			return;
-		}
+		MPMain.Logger.LogInfo("[MP Mod] RemotePlayerManager Awake");
 
-		_instance = this;
-		DontDestroyOnLoad(gameObject);
+		_players = new Dictionary<int, RemotePlayerContainer>();
 
-		// 初始化实例字段
-		_players = new Dictionary<ulong, RemotePlayerContainer>();
-		_persistentRoot = new GameObject("RemotePlayers_PersistentRoot");
-		_persistentRoot.transform.SetParent(transform, false); // 作为子对象
-		DontDestroyOnLoad(_persistentRoot);
+		// 确保根对象存在
+		EnsureRootObject();
+
+		MPMain.Logger.LogInfo("[MP Mod] 远程玩家管理器初始化完成");
 	}
 
 	// 清除全部玩家
@@ -65,34 +35,65 @@ public class RemotePlayerManager: MonoBehaviour {
 			container.Destroy();
 		}
 		_players.Clear();
-		Destroy(_persistentRoot);
+	}
+
+	/// <summary>
+	/// 确保根对象存在
+	/// </summary>
+	private void EnsureRootObject() {
+		// 直接在MultiplayerCore_Injected下查找或创建
+		var coreTransform = transform.parent; // MultiplayerCore_Injected
+		var rootName = "RemotePlayers";
+
+		if (coreTransform.Find(rootName) == null) {
+			var rootObj = new GameObject(rootName);
+			rootObj.transform.SetParent(coreTransform, false);
+			MPMain.Logger.LogInfo("[MP Mod] 创建远程玩家根文件夹");
+		}
+	}
+
+	/// <summary>
+	/// 获取远程玩家根Transform
+	/// </summary>
+	private Transform GetRemotePlayersRoot() {
+		var coreTransform = transform.parent;
+		var rootName = "RemotePlayers";
+
+		var root = coreTransform.Find(rootName);
+		if (root == null) {
+			// 如果找不到，创建一个（应该不会发生，因为EnsureRootObject已调用）
+			root = new GameObject(rootName).transform;
+			root.SetParent(coreTransform, false);
+		}
+
+		return root;
+	}
+
+	// 创建玩家对象
+	public RemotePlayerContainer CreatePlayer(int playId) {
+		var container = new RemotePlayerContainer(playId);
+
+		// 使用专门的根对象
+		container.Initialize(GetRemotePlayersRoot());
+
+		_players[playId] = container;
+		return container;
 	}
 
 	// 清除特定玩家
-	public void DestroyPlayer(ulong playId) {
+	public void DestroyPlayer(int playId) {
 		if (_players.TryGetValue(playId, out var container)) {
 			container.Destroy();
 			_players.Remove(playId);
 		}
 	}
 
-	// 创建玩家对象并挂载
-	public RemotePlayerContainer CreatePlayer(ulong playId) {
-		var container = new RemotePlayerContainer(playId);
-
-		// 传递给容器持久化根对象
-		container.Initialize(_persistentRoot.transform);
-
-		_players[playId] = container;
-		return container;
-	}
-
 	// 处理玩家数据
-	public void ProcessPlayerData(PlayerData playerData) {
+	public void ProcessPlayerData(int playId, PlayerData playerData) {
 		// 以后加上时间戳处理
-		var RPcontainer = _players[playerData.PlayerId];
+		var RPcontainer = _players[playId];
         if (RPcontainer == null) {
-			MPMain.Logger.LogError($"[MP Mod RPManager] 未找到远程对象 Id: {playerData.PlayerId}");
+			MPMain.Logger.LogError($"[MP Mod RPManager] 未找到远程对象 Id: {playId}");
 			return;
         }
 		RPcontainer.UpdatePlayerData(playerData);
@@ -105,7 +106,7 @@ public class RemotePlayerManager: MonoBehaviour {
 
 // 单个玩家的容器类
 public class RemotePlayerContainer {
-	public ulong PlayId { get; set; }
+	public int PlayId { get; set; }
 	public GameObject PlayerObject { get; private set; }
 	public GameObject LeftHandObject { get; private set; }
 	public GameObject RightHandObject { get; private set; }
@@ -117,7 +118,7 @@ public class RemotePlayerContainer {
 	private TextMesh _nameTextMesh;
 
 	// 构造函数 - 只设置基本信息
-	public RemotePlayerContainer(ulong playId) {
+	public RemotePlayerContainer(int playId) {
 		PlayId = playId;
 	}
 
