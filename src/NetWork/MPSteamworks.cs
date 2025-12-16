@@ -281,6 +281,23 @@ public class MPSteamworks : MonoBehaviour {
 		}
 	}
 
+	public void TestLobbyCreationSync(int maxPlayers) {
+		if (!SteamClient.IsValid) return;
+		try {
+			Lobby? lobbyResult = SteamMatchmaking.CreateLobbyAsync(maxPlayers).Result;
+			if (lobbyResult.HasValue) {
+				MPMain.Logger.LogInfo("[MP Mod TEST] 同步创建成功!");
+			} else {
+				MPMain.Logger.LogError("[MP Mod TEST] 同步创建失败: 结果为空");
+			}
+		} catch (Exception ex) {
+			MPMain.Logger.LogError($"[MP Mod TEST] 同步创建抛出 C# 异常: {ex.Message}");
+			// 如果这里捕获到异常，请记录并报告！
+		} catch {
+			MPMain.Logger.LogError("[MP Mod TEST] 同步创建抛出未知异常!");
+		}
+	}
+
 	/// <summary>
 	/// 创建房间（主机模式）- 协程版本
 	/// </summary>
