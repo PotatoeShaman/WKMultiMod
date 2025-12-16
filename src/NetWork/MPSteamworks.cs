@@ -296,7 +296,6 @@ public class MPSteamworks : MonoBehaviour {
 
 		// 创建大厅 - 使用协程等待异步任务
 		var lobbyTask = SteamMatchmaking.CreateLobbyAsync(maxPlayers);
-
 		// 等待任务完成
 		while (!lobbyTask.IsCompleted) {
 			yield return null; // 每帧检查一次任务状态
@@ -307,7 +306,6 @@ public class MPSteamworks : MonoBehaviour {
 			callback?.Invoke(false);
 			yield break;
 		}
-
 		try {
 			_currentLobby = lobbyTask.Result.Value;
 
@@ -323,12 +321,13 @@ public class MPSteamworks : MonoBehaviour {
 			// 创建监听Socket（作为主机）
 			try {
 				_socketManager = SteamNetworkingSockets.CreateRelaySocket<SteamSocketManager>();
+				MPMain.Logger.LogWarning("[MP Mod MPSteamworks] TestC");
 			} catch (Exception socketEx) {
 				MPMain.Logger.LogError($"[MP Mod MPSteamworks] 创建Socket失败: {socketEx.Message}");
 				// 即使Socket创建失败，我们仍算房间创建成功，但网络功能可能受限
 			}
 
-			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 房间创建成功，ID: {_currentLobby.Id.Value}");
+			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 房间创建成功，ID: {_currentLobby.Id.Value.ToString()}");
 
 			// 触发大厅进入事件
 			SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
@@ -353,55 +352,79 @@ public class MPSteamworks : MonoBehaviour {
 	public IEnumerator JoinRoomCoroutine(ulong lobbyId, Action<bool> callback) {
 		bool success = false;
 		Exception exception = null;
+		Lobby? lobbyResult = null; // 用于存储异步结果
 
-		MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在加入房间: {lobbyId}");
+		MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在加入房间: {lobbyId.ToString()}");
 
-		// 先关闭现有连接
+		// 1. 断开连接并等待一帧
 		DisconnectAll();
 		yield return null;
 
+		// 2. 启动异步任务
 		var lobbyTask = SteamMatchmaking.JoinLobbyAsync(new SteamId { Value = lobbyId });
 
-		// 等待任务完成
+		// 3. 等待任务完成（非阻塞）
 		while (!lobbyTask.IsCompleted) {
-			yield return null;
+			yield return null; // 放在 try-catch 外部，等待
 		}
 
+		// 4. 检查异步结果
 		if (!lobbyTask.Result.HasValue) {
-			MPMain.Logger.LogError("[MP Mod MPSteamworks] 加入房间失败");
+			MPMain.Logger.LogError("[MP Mod MPSteamworks] 加入房间失败: 结果为空");
 			callback?.Invoke(false);
 			yield break;
 		}
 
+		// 5. 核心逻辑（获取结果和设置数据，可能抛出 C# 异常）
 		try {
-			_currentLobby = lobbyTask.Result.Value;
+			lobbyResult = lobbyTask.Result;
+			_currentLobby = lobbyResult.Value;
 
 			string roomName = _currentLobby.GetData("name") ?? "未知房间";
 			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 加入房间成功: {roomName}");
-
-			// 获取房主ID并连接
-			var hostSteamId = _currentLobby.Owner.Id;
-
-			if (hostSteamId != SteamClient.SteamId) {
-				// 使用协程连接到房主
-				yield return StartCoroutine(ConnectToPlayerCoroutine(hostSteamId, (connectSuccess) => {
-					if (!connectSuccess) {
-						MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 连接到房主失败，但已加入大厅");
-					}
-				}));
-			}
-
-			// 触发大厅进入事件
-			SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
-
 			success = true;
-
 		} catch (Exception ex) {
 			exception = ex;
 			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 加入房间异常: {ex.Message}");
+			success = false;
 		}
 
+		// **********************************************
+		// ** 6. 连接到房主（包含 yield return，必须在 try/catch 外部）**
+		// **********************************************
+		if (success) { // 只有在加入大厅成功后才尝试连接
+			var hostSteamId = _currentLobby.Owner.Id;
+			if (hostSteamId != SteamClient.SteamId) {
+				// yield return 必须在 try/catch 外部
+				yield return StartCoroutine(ConnectToPlayerCoroutine(hostSteamId, (connectSuccess) => {
+					// 仅设置成功标志，不在这里调用回调
+					if (!connectSuccess) {
+						MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 连接到房主失败，但已加入大厅");
+						success = false; // 如果连接失败，整体算失败
+					}
+				}));
+			}
+		}
+
+
+		// **********************************************
+		// ** 7. 原生崩溃隔离点：触发事件 **
+		// **********************************************
+		if (success) {
+			yield return null; // 等待一帧，分离连接/回调与事件触发
+			MPMain.Logger.LogInfo("[MP Mod] LOG Trigger: 准备触发大厅进入事件 (Join)");
+			SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
+			MPMain.Logger.LogInfo("[MP Mod] LOG Trigger: 事件触发完毕 (Join)");
+		}
+
+		// **********************************************
+		// ** 8. 原生崩溃隔离点：执行回调 **
+		// **********************************************
+		yield return null;
+		MPMain.Logger.LogInfo("[MP Mod] LOG Callback: 准备调用回调 (Join)");
 		callback?.Invoke(success);
+		MPMain.Logger.LogInfo("[MP Mod] LOG Callback: 回调调用完毕 (Join)");
+
 
 		if (exception != null) {
 			throw new Exception("[MP Mod MPSteamworks] 加入房间失败", exception);
@@ -414,51 +437,61 @@ public class MPSteamworks : MonoBehaviour {
 	private IEnumerator ConnectToPlayerCoroutine(SteamId playerId, Action<bool> callback) {
 		bool success = false;
 		Exception exception = null;
+		ConnectionManager connectionManager = null;
 
+		// 1. 预检查（在 try-catch 外部，且包含 yield break）
+		if (_outgoingConnections.ContainsKey(playerId) || _allConnections.ContainsKey(playerId)) {
+			MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 已经连接到玩家: {playerId.Value.ToString()}");
+			callback?.Invoke(true);
+			yield break; // 提前退出，安全
+		}
+
+		MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在连接玩家: {playerId.Value.ToString()}");
+
+		// 2. 建立连接（可能抛出 C# 异常）
 		try {
-			if (_outgoingConnections.ContainsKey(playerId) || _allConnections.ContainsKey(playerId)) {
-				MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 已经连接到玩家: {playerId.Value}");
-				callback?.Invoke(true);
-				yield break;
-			}
-
-			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在连接玩家: {playerId.Value}");
-
-			// 建立连接
-			var connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(playerId, 0);
+			connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(playerId, 0);
 			_outgoingConnections[playerId] = connectionManager;
 			_allConnections[playerId] = connectionManager.Connection;
-
-			// 等待连接建立（最多5秒）
-			float timeout = 5f;
-			float startTime = Time.time;
-
-			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
-				if (Time.time - startTime > timeout) {
-					MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家超时: {playerId.Value}");
-					_outgoingConnections.Remove(playerId);
-					_allConnections.Remove(playerId);
-					callback?.Invoke(false);
-					yield break;
-				}
-				yield return null;
-			}
-
-			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 连接玩家成功: {playerId.Value}");
-			success = true;
-
 		} catch (Exception ex) {
 			exception = ex;
 			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家异常: {ex.Message}");
 		}
 
+		// 3. 等待连接建立（暂停/恢复逻辑，必须在 try-catch 外部）
+		if (exception == null) {
+			float timeout = 5f;
+			float startTime = Time.time;
+
+			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
+				if (Time.time - startTime > timeout) {
+					MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家超时: {playerId.Value.ToString()}");
+					_outgoingConnections.Remove(playerId);
+					_allConnections.Remove(playerId);
+					success = false;
+
+					// 退出等待循环，不使用 yield break
+					goto ConnectionFinished;
+				}
+				yield return null; // 放在 try-catch 外部，等待
+			}
+
+			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 连接玩家成功: {playerId.Value.ToString()}");
+			success = true;
+		}
+
+
+	ConnectionFinished:
+		// **********************************************
+		// ** 4. 最终回调隔离 **
+		// **********************************************
+		yield return null; // 再次等待一帧，确保安全
 		callback?.Invoke(success);
 
 		if (exception != null) {
-			throw new Exception($"[MP Mod MPSteamworks] 连接玩家失败: {playerId.Value}", exception);
+			throw new Exception($"[MP Mod MPSteamworks] 连接玩家失败: {playerId.Value.ToString()}", exception);
 		}
 	}
-
 
 	/// <summary>
 	/// 创建房间的简便方法
