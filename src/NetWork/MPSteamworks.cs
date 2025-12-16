@@ -282,53 +282,37 @@ public class MPSteamworks : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 创建房间（主机模式）- 协程版本（内部使用异步）
+	/// 创建房间（主机模式）- 异步版本
 	/// </summary>
-	public IEnumerator CreateRoomCoroutine(string roomName, int maxPlayers, Action<bool> callback) {
-		// 启动异步任务并在协程中等待
-		var task = CreateRoomInternalAsync(roomName, maxPlayers, callback);
-
-		// 等待异步任务完成
-		while (!task.IsCompleted) {
-			yield return null;
-		}
-
-		// 如果任务有异常，在这里处理
-		if (task.IsFaulted) {
-			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 创建房间任务异常: {task.Exception?.Message}");
-		}
-	}
-
-	/// <summary>
-	/// 内部异步创建房间方法
-	/// </summary>
-	private async Task CreateRoomInternalAsync(string roomName, int maxPlayers, Action<bool> callback) {
-		bool success = false;
-		Exception exception = null;
+	public async Task<bool> CreateRoomAsync(string roomName, int maxPlayers) {
+		// 先关闭现有连接
+		DisconnectAll();
+		await Task.Yield(); // 替换 yield return null，确保一帧后执行
 
 		try {
-			// 先关闭现有连接
-			DisconnectAll();
-			await Task.Yield(); // 确保异步后执行，让断开操作生效
+			// 关键检查：防止因 Steam 未初始化而崩溃
+			if (!SteamClient.IsValid) {
+				MPMain.Logger.LogError("[MP Mod MPSteamworks] SteamClient 无效，无法创建大厅.");
+				return false;
+			}
 
 			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在创建房间: {roomName}");
 
-			// 创建大厅 - 使用异步等待
-			var lobbyTask = await SteamMatchmaking.CreateLobbyAsync(maxPlayers);
+			// 核心改变：直接 await 任务，Facepunch 会自动处理回到主线程
+			Lobby? lobbyResult = await SteamMatchmaking.CreateLobbyAsync(maxPlayers);
 
-			if (!lobbyTask.HasValue) {
-				MPMain.Logger.LogError("[MP Mod MPSteamworks] 创建房间失败");
-				await InvokeOnMainThread(() => callback?.Invoke(false));
-				return;
+			// 检查异步结果
+			if (!lobbyResult.HasValue) {
+				MPMain.Logger.LogError("[MP Mod MPSteamworks] 创建房间失败: 结果为空");
+				return false;
 			}
 
-			_currentLobby = lobbyTask.Value;
+			_currentLobby = lobbyResult.Value;
 
-			// 设置大厅数据（基本配置）
+			// 设置大厅数据（同步逻辑）
 			_currentLobby.SetData("name", roomName);
 			_currentLobby.SetData("game_version", Application.version);
 			_currentLobby.SetData("owner", SteamClient.SteamId.ToString());
-
 			_currentLobby.SetPublic();
 			_currentLobby.SetJoinable(true);
 			_currentLobby.Owner = new Friend(SteamClient.SteamId);
@@ -336,232 +320,136 @@ public class MPSteamworks : MonoBehaviour {
 			// 创建监听Socket（作为主机）
 			try {
 				_socketManager = SteamNetworkingSockets.CreateRelaySocket<SteamSocketManager>();
-				MPMain.Logger.LogWarning("[MP Mod MPSteamworks] TestC");
 			} catch (Exception socketEx) {
 				MPMain.Logger.LogError($"[MP Mod MPSteamworks] 创建Socket失败: {socketEx.Message}");
-				// 即使Socket创建失败，我们仍算房间创建成功，但网络功能可能受限
+				// 即使 Socket 失败，房间仍创建成功，但功能受限
 			}
 
 			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 房间创建成功，ID: {_currentLobby.Id.Value.ToString()}");
+			SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
 
-			// 触发大厅进入事件
-			await InvokeOnMainThread(() => {
-				SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
-			});
-
-			success = true;
+			return true; // 成功
 
 		} catch (Exception ex) {
-			exception = ex;
 			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 创建房间异常: {ex.Message}");
-		}
-
-		// 确保回调在主线程执行
-		await InvokeOnMainThread(() => {
-			callback?.Invoke(success);
-		});
-
-		if (exception != null) {
-			throw new Exception("[MP Mod MPSteamworks] 创建房间失败", exception);
+			return false; // 失败
 		}
 	}
 
-	/// <summary>
-	/// 加入房间（客户端模式）- 协程版本（内部使用异步）
-	/// </summary>
-	public IEnumerator JoinRoomCoroutine(ulong lobbyId, Action<bool> callback) {
-		// 启动异步任务并在协程中等待
-		var task = JoinRoomInternalAsync(lobbyId, callback);
-
-		// 等待异步任务完成
-		while (!task.IsCompleted) {
-			yield return null;
-		}
-
-		// 如果任务有异常，在这里处理
-		if (task.IsFaulted) {
-			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 加入房间任务异常: {task.Exception?.Message}");
-		}
+	// 对应的启动方法简化
+	public void CreateRoom(string roomName, int maxPlayers, Action<bool> callback) {
+		// 使用 Unity 的扩展方法来启动 async Task
+		this.StartCoroutine(RunAsync(CreateRoomAsync(roomName, maxPlayers), callback));
 	}
 
 	/// <summary>
-	/// 内部异步加入房间方法
+	/// 加入房间（客户端模式）- 异步版本
 	/// </summary>
-	private async Task JoinRoomInternalAsync(ulong lobbyId, Action<bool> callback) {
-		bool success = false;
-		Exception exception = null;
-		Lobby? lobbyResult = null;
-
-		MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在加入房间: {lobbyId.ToString()}");
+	public async Task<bool> JoinRoomAsync(Lobby lobby) {
+		// 注意：我们将 ConnectToPlayerCoroutine 转换为 async Task<bool>
 
 		try {
-			// 1. 断开连接并等待
-			DisconnectAll();
-			await Task.Yield();
+			// 核心改变：直接 await 任务
+			RoomEnter result = await lobby.Join();
 
-			// 2. 加入大厅
-			var lobbyTask = await SteamMatchmaking.JoinLobbyAsync(new SteamId { Value = lobbyId });
-
-			// 3. 检查异步结果
-			if (!lobbyTask.HasValue) {
-				MPMain.Logger.LogError("[MP Mod MPSteamworks] 加入房间失败: 结果为空");
-				await InvokeOnMainThread(() => callback?.Invoke(false));
-				return;
+			// 检查 RoomEnter 结果
+			if (result != RoomEnter.Success) {
+				throw new Exception($"Steam Lobby join failed: {result}");
 			}
 
-			lobbyResult = lobbyTask;
-			_currentLobby = lobbyResult.Value;
-
+			_currentLobby = lobby;
 			string roomName = _currentLobby.GetData("name") ?? "未知房间";
 			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 加入房间成功: {roomName}");
-			success = true;
 
-			// 4. 连接到房主
+			// 异步等待连接房主
 			var hostSteamId = _currentLobby.Owner.Id;
 			if (hostSteamId != SteamClient.SteamId) {
-				bool connectSuccess = await ConnectToPlayerInternalAsync(hostSteamId);
+				// 替换 StartCoroutine 为 await 异步方法
+				bool connectSuccess = await ConnectToPlayerAsync(hostSteamId);
 				if (!connectSuccess) {
 					MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 连接到房主失败，但已加入大厅");
-					success = false;
 				}
 			}
 
-			// 5. 触发大厅进入事件
-			if (success) {
-				await Task.Yield(); // 等待一帧，分离连接/回调与事件触发
-				MPMain.Logger.LogInfo("[MP Mod] LOG Trigger: 准备触发大厅进入事件 (Join)");
-				await InvokeOnMainThread(() => {
-					SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
-				});
-				MPMain.Logger.LogInfo("[MP Mod] LOG Trigger: 事件触发完毕 (Join)");
-			}
+			SteamNetworkEvents.TriggerLobbyEntered(_currentLobby);
+			return true;
 
 		} catch (Exception ex) {
-			exception = ex;
 			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 加入房间异常: {ex.Message}");
-			success = false;
-		}
-
-		// 6. 执行回调（在主线程）
-		await Task.Yield();
-		MPMain.Logger.LogInfo("[MP Mod] LOG Callback: 准备调用回调 (Join)");
-		await InvokeOnMainThread(() => {
-			callback?.Invoke(success);
-		});
-		MPMain.Logger.LogInfo("[MP Mod] LOG Callback: 回调调用完毕 (Join)");
-
-		if (exception != null) {
-			throw new Exception("[MP Mod MPSteamworks] 加入房间失败", exception);
+			// 这里可以调用回调，但因为我们将它包装在 Task 中，由调用者处理回调更清晰
+			return false;
 		}
 	}
 
+	// 对应的启动方法简化
+	public void JoinRoom(ulong lobbyId, Action<bool> callback) {
+		Lobby lobby = new Lobby(lobbyId);
+		// 使用 Unity 的扩展方法来启动 async Task
+		this.StartCoroutine(RunAsync(JoinRoomAsync(lobby), callback));
+	}
+
 	/// <summary>
-	/// 内部异步连接玩家方法
+	/// 连接到指定玩家 - 异步版本
 	/// </summary>
-	private async Task<bool> ConnectToPlayerInternalAsync(SteamId playerId) {
-		bool success = false;
-		Exception exception = null;
+	private async Task<bool> ConnectToPlayerAsync(SteamId playerId) {
 		ConnectionManager connectionManager = null;
+		float timeout = 5f;
+		float startTime = Time.time;
 
+		// 初始检查
+		if (_outgoingConnections.ContainsKey(playerId) || _allConnections.ContainsKey(playerId)) {
+			MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 已经连接到玩家: {playerId.Value}");
+			return true;
+		}
+
+		// 1. 同步建立连接
 		try {
-			// 1. 预检查
-			if (_outgoingConnections.ContainsKey(playerId) || _allConnections.ContainsKey(playerId)) {
-				MPMain.Logger.LogWarning($"[MP Mod MPSteamworks] 已经连接到玩家: {playerId.Value.ToString()}");
-				return true;
-			}
+			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在连接玩家: {playerId.Value}");
 
-			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 正在连接玩家: {playerId.Value.ToString()}");
-
-			// 2. 建立连接
+			// 建立连接
 			connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(playerId, 0);
 			_outgoingConnections[playerId] = connectionManager;
 			_allConnections[playerId] = connectionManager.Connection;
 
-			// 3. 等待连接建立（带超时）
-			float timeout = 5f;
-			float startTime = Time.time;
+		} catch (Exception ex) {
+			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 建立连接异常: {ex.Message}");
+			return false;
+		}
 
+		// 2. 异步等待连接建立
+		if (connectionManager != null) {
 			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
 				if (Time.time - startTime > timeout) {
-					MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家超时: {playerId.Value.ToString()}");
+					MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家超时: {playerId.Value}");
 					_outgoingConnections.Remove(playerId);
 					_allConnections.Remove(playerId);
 					return false;
 				}
-				await Task.Delay(10); // 每10毫秒检查一次
+				// 替换 yield return null
+				await Task.Yield();
 			}
-
-			MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 连接玩家成功: {playerId.Value.ToString()}");
-			success = true;
-
-		} catch (Exception ex) {
-			exception = ex;
-			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家异常: {ex.Message}");
-			success = false;
+		} else {
+			return false;
 		}
 
-		await Task.Yield(); // 等待一帧，确保安全
-
-		if (exception != null) {
-			throw new Exception($"[MP Mod MPSteamworks] 连接玩家失败: {playerId.Value.ToString()}", exception);
-		}
-
-		return success;
+		MPMain.Logger.LogInfo($"[MP Mod MPSteamworks] 连接玩家成功: {playerId.Value}");
+		return true;
 	}
 
-	/// <summary>
-	/// 连接到指定玩家 - 协程版本（内部使用异步）
-	/// </summary>
-	private IEnumerator ConnectToPlayerCoroutine(SteamId playerId, Action<bool> callback) {
-		// 启动异步任务并在协程中等待
-		var task = ConnectToPlayerInternalAsync(playerId);
+	// 这是一个通用的辅助方法，用于将 async Task<bool> 包装到 Unity 的 StartCoroutine 中，
+	// 并将结果传递给 Action<bool> 回调。
+	private IEnumerator RunAsync(Task<bool> task, Action<bool> callback) {
+		// 等待 Task 完成
+		yield return new WaitUntil(() => task.IsCompleted);
 
-		// 等待异步任务完成
-		while (!task.IsCompleted) {
-			yield return null;
-		}
-
-		// 获取结果
-		bool success = task.IsCompletedSuccessfully ? task.Result : false;
-
-		// 直接调用回调（假设已经在主线程）
-		callback?.Invoke(success);
-
-		// 如果任务有异常，在这里处理
 		if (task.IsFaulted) {
-			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 连接玩家任务异常: {task.Exception?.Message}");
+			MPMain.Logger.LogError($"[MP Mod MPSteamworks] 异步任务执行失败: {task.Exception.InnerException.Message}");
+			callback?.Invoke(false);
+		} else {
+			// Task.Result 即为异步方法的返回值 (bool)
+			callback?.Invoke(task.Result);
 		}
 	}
-
-	/// <summary>
-	/// 在主线程执行委托（Unity 需要）
-	/// </summary>
-	private async Task InvokeOnMainThread(Action action) {
-		// 这里使用 Unity 的主线程调度器
-		// 如果你有 UnityMainThreadDispatcher，可以这样使用：
-		// UnityMainThreadDispatcher.Instance().Enqueue(() => action?.Invoke());
-
-		// 如果没有，可以使用简单的 Task.Run
-		await Task.Run(() => {
-			// 注意：如果涉及 Unity API，必须确保在主线程执行
-			// 这里假设 SteamNetworkEvents.TriggerLobbyEntered 是线程安全的
-			action?.Invoke();
-		});
-	}
-	/// <summary>
-	/// 创建房间的简便方法
-	/// </summary>
-	public void CreateRoom(string roomName, int maxPlayers, Action<bool> callback) {
-		StartCoroutine(CreateRoomCoroutine(roomName, maxPlayers, callback));
-	}
-
-	/// <summary>
-	/// 加入房间的简便方法
-	/// </summary>
-	public void JoinRoom(ulong lobbyId, Action<bool> callback) {
-		StartCoroutine(JoinRoomCoroutine(lobbyId, callback));
-	}
-
 
 	/// <summary>
 	/// 大厅进入 - 发布到总线
