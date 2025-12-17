@@ -16,12 +16,10 @@ namespace WKMultiMod.src.Core;
 public class RemotePlayerManager: MonoBehaviour {
 
 	// 存储所有远程对象
-	private static Dictionary<int, RemotePlayerContainer> _players = new Dictionary<int, RemotePlayerContainer>();
+	private static Dictionary<ulong, RemotePlayerContainer> _players = new Dictionary<ulong, RemotePlayerContainer>();
 
 	void Awake() {
 		MPMain.Logger.LogInfo("[MP Mod] RemotePlayerManager Awake");
-
-		_players = new Dictionary<int, RemotePlayerContainer>();
 
 		// 确保根对象存在
 		EnsureRootObject();
@@ -65,7 +63,7 @@ public class RemotePlayerManager: MonoBehaviour {
 
 		var root = coreTransform.Find(rootName);
 		if (root == null) {
-			// 如果找不到，创建一个（应该不会发生，因为EnsureRootObject已调用）
+			// 如果找不到，创建一个(应该不会发生，因为EnsureRootObject已调用)
 			root = new GameObject(rootName).transform;
 			root.SetParent(coreTransform, false);
 		}
@@ -74,7 +72,7 @@ public class RemotePlayerManager: MonoBehaviour {
 	}
 
 	// 创建玩家对象
-	public RemotePlayerContainer CreatePlayer(int playId) {
+	public RemotePlayerContainer CreatePlayer(ulong playId) {
 		var container = new RemotePlayerContainer(playId);
 
 		// 使用专门的根对象
@@ -85,7 +83,7 @@ public class RemotePlayerManager: MonoBehaviour {
 	}
 
 	// 清除特定玩家
-	public void DestroyPlayer(int playId) {
+	public void DestroyPlayer(ulong playId) {
 		if (_players.TryGetValue(playId, out var container)) {
 			container.Destroy();
 			_players.Remove(playId);
@@ -93,7 +91,7 @@ public class RemotePlayerManager: MonoBehaviour {
 	}
 
 	// 处理玩家数据
-	public void ProcessPlayerData(int playId, PlayerData playerData) {
+	public void ProcessPlayerData(ulong playId, PlayerData playerData) {
 		// 以后加上时间戳处理
 		var RPcontainer = _players[playId];
         if (RPcontainer == null) {
@@ -110,7 +108,7 @@ public class RemotePlayerManager: MonoBehaviour {
 
 // 单个玩家的容器类
 public class RemotePlayerContainer {
-	public int PlayId { get; set; }
+	public ulong PlayId { get; set; }
 	public GameObject PlayerObject { get; private set; }
 	public GameObject LeftHandObject { get; private set; }
 	public GameObject RightHandObject { get; private set; }
@@ -122,7 +120,7 @@ public class RemotePlayerContainer {
 	private TextMesh _nameTextMesh;
 
 	// 构造函数 - 只设置基本信息
-	public RemotePlayerContainer(int playId) {
+	public RemotePlayerContainer(ulong playId) {
 		PlayId = playId;
 	}
 

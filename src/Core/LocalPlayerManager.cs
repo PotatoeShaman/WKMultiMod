@@ -12,7 +12,6 @@ namespace WKMultiMod.src.Core;
 //仅获取本地玩家信息并触发事件给其他系统使用
 //仅在联机时创建一个实例
 public class LocalPlayerManager: MonoBehaviour {
-	public ulong LocalPlayerId { get; set; } = 0;
 	private float _lastSendTime;
 	void Start() {
 		if (MultiPlayerCore.IsMultiplayerActive == false) {
@@ -24,14 +23,14 @@ public class LocalPlayerManager: MonoBehaviour {
 	}
 	void Update() {
 		// 没有被分配ID 或 没有开启多人时停止更新
-		if (LocalPlayerId == 0||MultiPlayerCore.IsMultiplayerActive == false) 
+		if (MultiPlayerCore.IsMultiplayerActive == false) 
 			return;
 		// 限制发送频率(20Hz)
 		if (Time.time - _lastSendTime < 0.05f) 
 			return;
 		_lastSendTime = Time.time;
 		// 创建玩家数据
-		var playerData = MPDataSerializer.CreateLocalPlayerData(LocalPlayerId);
+		var playerData = MPDataSerializer.CreateLocalPlayerData(MultiPlayerCore.PlayerID);
 		if (playerData == null) {
 			MPMain.Logger.LogError("[MP Mod LPManager] 本地玩家信息异常");
 			return;
@@ -46,7 +45,7 @@ public class LocalPlayerManager: MonoBehaviour {
 		// 触发Steam数据发送
 		// 转为byte[]
 		// 使用不可靠+立即发送
-		SteamNetworkEvents.TriggerSendToHost(
+		SteamNetworkEvents.TriggerBroadcast(
 			MPDataSerializer.WriterToBytes(writer), 
 			SendType.Unreliable | SendType.NoNagle);
 	}

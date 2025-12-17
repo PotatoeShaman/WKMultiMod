@@ -59,7 +59,7 @@
 //		_clientListener = new EventBasedNetListener();
 //		_client = new NetManager(_clientListener);
 
-//		// 订阅场景加载事件, 用于执行依赖于场景的操作（如命令注册）
+//		// 订阅场景加载事件, 用于执行依赖于场景的操作(如命令注册)
 //		SceneManager.sceneLoaded += OnSceneLoaded;
 //	}
 
@@ -284,7 +284,7 @@
 
 //	// 服务器端：处理网络数据接收
 //	private void HandleNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-//		// 基本验证：确保数据足够读取一个整数（数据包类型）
+//		// 基本验证：确保数据足够读取一个整数(数据包类型)
 //		if (reader.AvailableBytes < 4) {
 //			reader.Recycle();
 //			return;
@@ -348,7 +348,7 @@
 
 //	// 客户端：处理接收到的网络数据
 //	private void HandleClientNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-//		// 基本验证：确保数据足够读取一个整数（数据包类型）
+//		// 基本验证：确保数据足够读取一个整数(数据包类型)
 //		if (reader.AvailableBytes < 4) {
 //			reader.Recycle();
 //			return;

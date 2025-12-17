@@ -47,9 +47,6 @@ public class MPMain : BaseUnityPlugin {
 		//// 2. 立即保护新对象 (被游戏创建初期销毁了,为什么?)
 		//DontDestroyOnLoad(coreGameObject);
 
-		//// 3. 添加该组件
-		//coreGameObject.AddComponent<MPMain>();
-
 		// 使用Harmony打补丁
 		_harmony = new Harmony($"{ModGUID}");
 		_harmony.PatchAll();
