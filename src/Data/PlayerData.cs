@@ -29,10 +29,10 @@ public class PlayerData {
 	[System.NonSerialized] private Vector3 _positionCache;
 	[System.NonSerialized] private Quaternion _rotationCache;
 
-	// PlayerId(4) + TimestampTicks(8) + 位置(12) + 旋转(16) + 
+	// PlayerId(8) + TimestampTicks(8) + 位置(12) + 旋转(16) + 
 	// 左手(13) + 右手(13) + IsTeleport(1)
 	// 包长度
-	public static int CalculateSize => 4 + 8 + 12 + 16 + 13 + 13 + 1;
+	public static int CalculateSize => 8 + 8 + 12 + 16 + 13 + 13 + 1;
 
 	public Vector3 Position {
 		get {

@@ -20,6 +20,9 @@ public class MPSteamworks : MonoBehaviour {
 	private Dictionary<SteamId, ConnectionManager> _outgoingConnections = new Dictionary<SteamId, ConnectionManager>();
 	private Dictionary<SteamId, Connection> _allConnections = new Dictionary<SteamId, Connection>();
 
+	// 是否有链接
+	public bool HasConnections { get; private set; }
+
 	// 消息队列
 	private ConcurrentQueue<NetworkMessage> _messageQueue = new ConcurrentQueue<NetworkMessage>();
 
@@ -128,6 +131,8 @@ public class MPSteamworks : MonoBehaviour {
 		// 清空消息队列
 		while (_messageQueue.TryDequeue(out _)) { }
 
+		HasConnections = false;
+
 		MPMain.Logger.LogInfo("[MP Mod MPSteamworks] 所有网络连接已断开");
 	}
 
@@ -218,6 +223,9 @@ public class MPSteamworks : MonoBehaviour {
 
 		// 触发 玩家连接
 		SteamNetworkEvents.TriggerPlayerConnected(steamId);
+
+		// 设为有链接
+		HasConnections = true;
 	}
 
 	/// <summary>

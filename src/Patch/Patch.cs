@@ -15,17 +15,17 @@ public class Patch_SteamManager_Awake {
 	[HarmonyPostfix]
 	[HarmonyPatch("Awake")]
 	public static void Postfix(SteamManager __instance) {
-		MPMain.Logger.LogInfo($"[MP Mod loading] SteamManager.Awake 调用,准备注入核心");
+		MPMain.Logger.LogInfo($"[MP Mod Patch] SteamManager.Awake 调用,准备注入核心");
 
 		if (_hasCoreInjected) {
-			MPMain.Logger.LogWarning("[MP Mod loading] Core已经注入过,跳过");
+			MPMain.Logger.LogWarning("[MP Mod Patch] Core已经注入过,跳过");
 			return;
 		}
 
 		// 简化的检查：只看是否已经存在任何MultiPlayerCore实例
 		var existingCore = Object.FindObjectOfType<MultiPlayerCore>();
 		if (existingCore != null) {
-			MPMain.Logger.LogWarning($"[MP Mod loading] 已存在核心实例: {existingCore.name}");
+			MPMain.Logger.LogWarning($"[MP Mod Patch] 已存在核心实例: {existingCore.name}");
 			_hasCoreInjected = true;
 			return;
 		}
@@ -36,11 +36,11 @@ public class Patch_SteamManager_Awake {
 			coreGameObject.transform.SetParent(__instance.transform, false);
 			coreGameObject.AddComponent<MultiPlayerCore>();
 
-			MPMain.Logger.LogInfo($"[MP Mod loading] MPCore 对象已成功注入 SteamManager");
+			MPMain.Logger.LogInfo($"[MP Mod Patch] MPCore 对象已成功注入 SteamManager");
 			_hasCoreInjected = true;
 
 		} catch (System.Exception e) {
-			MPMain.Logger.LogError("[MP Mod loading] 注入核心失败: " + e);
+			MPMain.Logger.LogError("[MP Mod Patch] 注入核心失败: " + e);
 		}
 	}
 }

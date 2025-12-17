@@ -13,26 +13,22 @@ namespace WKMultiMod.src.Core;
 //仅在联机时创建一个实例
 public class LocalPlayerManager: MonoBehaviour {
 	private float _lastSendTime;
-	void Start() {
-		if (MultiPlayerCore.IsMultiplayerActive == false) {
-			MPMain.Logger.LogInfo("[MP Mod LPManager] 非联机状态, 自毁");
-			Destroy(this);
-		} else { 
-			MPMain.Logger.LogInfo("[MP Mod LPManager] 联机状态, 保持运行");
-		}
-	}
+
 	void Update() {
-		// 没有被分配ID 或 没有开启多人时停止更新
+		// 没有开启多人时停止更新
 		if (MultiPlayerCore.IsMultiplayerActive == false) 
 			return;
 		// 限制发送频率(20Hz)
 		if (Time.time - _lastSendTime < 0.05f) 
 			return;
+		// 没有链接时停止更新
+		if (!MultiPlayerCore.Instance.Steamworks.HasConnections) 
+			return;
 		_lastSendTime = Time.time;
 		// 创建玩家数据
 		var playerData = MPDataSerializer.CreateLocalPlayerData(MultiPlayerCore.PlayerID);
 		if (playerData == null) {
-			MPMain.Logger.LogError("[MP Mod LPManager] 本地玩家信息异常");
+			MPMain.Logger.LogError("[MP Mod LPMan] 本地玩家信息异常");
 			return;
 		}
 

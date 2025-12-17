@@ -13,18 +13,18 @@ using static WKMultiMod.src.Data.PlayerData;
 namespace WKMultiMod.src.Core;
 
 // 生命周期为全局
-public class RemotePlayerManager: MonoBehaviour {
+public class RemotePlayerManager : MonoBehaviour {
 
 	// 存储所有远程对象
 	private static Dictionary<ulong, RemotePlayerContainer> _players = new Dictionary<ulong, RemotePlayerContainer>();
 
 	void Awake() {
-		MPMain.Logger.LogInfo("[MP Mod] RemotePlayerManager Awake");
+		MPMain.Logger.LogInfo("[MP Mod RPMan] RemotePlayerManager Awake");
 
 		// 确保根对象存在
 		EnsureRootObject();
 
-		MPMain.Logger.LogInfo("[MP Mod] 远程玩家管理器初始化完成");
+		MPMain.Logger.LogInfo("[MP Mod RPMan] 远程玩家管理器初始化完成");
 	}
 
 	void OnDestroy() {
@@ -50,7 +50,6 @@ public class RemotePlayerManager: MonoBehaviour {
 		if (coreTransform.Find(rootName) == null) {
 			var rootObj = new GameObject(rootName);
 			rootObj.transform.SetParent(coreTransform, false);
-			MPMain.Logger.LogInfo("[MP Mod] 创建远程玩家根文件夹");
 		}
 	}
 
@@ -94,13 +93,13 @@ public class RemotePlayerManager: MonoBehaviour {
 	public void ProcessPlayerData(ulong playId, PlayerData playerData) {
 		// 以后加上时间戳处理
 		var RPcontainer = _players[playId];
-        if (RPcontainer == null) {
-			MPMain.Logger.LogError($"[MP Mod RPManager] 未找到远程对象 Id: {playId}");
+		if (RPcontainer == null) {
+			MPMain.Logger.LogError($"[MP Mod RPMan] 未找到远程对象 ID: {playId.ToString()}");
 			return;
-        }
+		}
 		RPcontainer.UpdatePlayerData(playerData);
 		return;
-    }
+	}
 
 }
 
@@ -127,8 +126,6 @@ public class RemotePlayerContainer {
 	// 初始化方法 - 负责创建所有对象
 	public bool Initialize(Transform persistentParent = null) {
 		try {
-			MPMain.Logger.LogInfo($"[MP Mod RPContainer] 远程玩家映射创建 ID: {PlayId.ToString()}");
-
 			// 创建对象
 			CreatePlayerHierarchy();
 
@@ -136,11 +133,12 @@ public class RemotePlayerContainer {
 			if (persistentParent != null) {
 				PlayerObject.transform.SetParent(persistentParent, false);
 			}
-
-			MPMain.Logger.LogInfo($"[MP Mod RPContainer] 远程玩家映射成功 ID: {PlayId.ToString()}");
+			// Debug
+			MPMain.Logger.LogInfo($"[MP Mod RPCont] 远程玩家映射成功 ID: {PlayId.ToString()}");
 			return true;
 		} catch (Exception ex) {
-			MPMain.Logger.LogError($"[MP Mod RPContainer] 远程玩家映射失败 ID: {PlayId.ToString()}, Error: {ex.Message}");
+			// Debug
+			MPMain.Logger.LogError($"[MP Mod RPCont] 远程玩家映射失败 ID: {PlayId.ToString()}, Error: {ex.Message}");
 			CleanupOnFailure();
 			return false;
 		}
@@ -166,7 +164,7 @@ public class RemotePlayerContainer {
 	// 创建玩家对象
 	private GameObject CreatePlayerObject() {
 		var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-		player.name = $"RemotePlayer_{PlayId}";
+		player.name = "RemotePlayer_" + PlayId;
 
 		// 配置触发器
 		var collider = player.GetComponent<CapsuleCollider>();
@@ -234,12 +232,12 @@ public class RemotePlayerContainer {
 	private (GameObject leftHand, GameObject rightHand) CreateHandObjects() {
 		// 创建左手
 		GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		leftHand.name = $"RemotePlayer_LeftHand_" + PlayId;
+		leftHand.name = "RemotePlayer_LeftHand_" + PlayId;
 		leftHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 
 		// 创建右手
 		GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		rightHand.name = $"RemotePlayer_RightHand_" + PlayId;
+		rightHand.name = "RemotePlayer_RightHand_" + PlayId;
 		rightHand.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
 
 		// 配置触发器
@@ -292,11 +290,11 @@ public class RemotePlayerContainer {
 
 	// 创建文本框
 	private GameObject CreateNameTagObject() {
-		var textObject = new GameObject($"PlayerID_Text_{PlayId}");
+		var textObject = new GameObject("PlayerID_Text_" + PlayId);
 		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
 
 		var textMesh = textObject.AddComponent<TextMesh>();
-		textMesh.text = $"Player: {PlayId}";
+		textMesh.text = "Player: " + PlayId;
 		textMesh.fontSize = 20;
 		textMesh.characterSize = 0.1f;
 		textMesh.anchor = TextAnchor.MiddleCenter;
@@ -358,7 +356,8 @@ public class RemotePlayerContainer {
 		if (_playerComponent == null) {
 			_playerComponent = PlayerObject.GetComponent<RemotePlayerComponent>();
 			if (_playerComponent == null) {
-				MPMain.Logger.LogError($"[MP Mod RPContainer] PlayerObject的组件未添加");
+				// Debug
+				MPMain.Logger.LogError($"[MP Mod RPCont] PlayerObject的组件未添加");
 				return;
 			}
 		}
@@ -366,7 +365,8 @@ public class RemotePlayerContainer {
 		if (_leftHandComponent == null) {
 			_leftHandComponent = LeftHandObject.GetComponent<RemoteHandComponent>();
 			if (_leftHandComponent == null) {
-				MPMain.Logger.LogError($"[MP Mod RPContainer] LeftHandObject的组件未添加");
+				// Debug
+				MPMain.Logger.LogError($"[MP Mod RPCont] LeftHandObject的组件未添加");
 				return;
 			}
 		}
@@ -374,7 +374,8 @@ public class RemotePlayerContainer {
 		if (_rightHandComponent == null) {
 			_rightHandComponent = RightHandObject.GetComponent<RemoteHandComponent>();
 			if (_rightHandComponent == null) {
-				MPMain.Logger.LogError($"[MP Mod RPContainer] RightHandObject的组件未添加");
+				// Debug
+				MPMain.Logger.LogError($"[MP Mod RPCont] RightHandObject的组件未添加");
 				return;
 			}
 		}
