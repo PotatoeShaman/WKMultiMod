@@ -51,7 +51,7 @@
 //	// 注意：日志通过 MPMain.Logger 访问
 
 //	void Awake() {
-//		MPMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Awake");
+//		MPMain.Logger.LogInfo("[loading] MultiplayerCore Awake");
 
 //		// 初始化网络监听器和管理器
 //		_serverListener = new EventBasedNetListener();
@@ -64,7 +64,7 @@
 //	}
 
 //	private void Start() {
-//		MPMain.Logger.LogInfo("[MP Mod loading] MultiplayerCore Start");
+//		MPMain.Logger.LogInfo("[loading] MultiplayerCore Start");
 //	}
 
 //	private void Update() {
@@ -128,7 +128,7 @@
 
 //	// 场景加载完成时调用
 //	private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-//		MPMain.Logger.LogInfo("[MP Mod] 核心场景加载完成: " + scene.name);
+//		MPMain.Logger.LogInfo("[] 核心场景加载完成: " + scene.name);
 
 //		if (scene.name == "Game-Main") {
 //			// 注册命令和初始化世界数据
@@ -136,7 +136,7 @@
 //				InitializeData();
 //				RegisterCommands();
 //			} else {
-//				MPMain.Logger.LogError("[MP Mod] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
+//				MPMain.Logger.LogError("[] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
 //			}
 //		}
 //		if (scene.name == "Main-Menu") {
@@ -148,7 +148,7 @@
 //	// 当核心对象被销毁时调用
 //	void OnDestroy() {
 //		// 核心对象被销毁时的清理工作
-//		MPMain.Logger.LogError("[MP Mod loading] MultiplayerCore 被销毁");
+//		MPMain.Logger.LogError("[loading] MultiplayerCore 被销毁");
 //		SceneManager.sceneLoaded -= OnSceneLoaded;
 
 //		// 关闭网络连接
@@ -161,7 +161,7 @@
 //		CommandConsole.AddCommand("host", Host);
 //		CommandConsole.AddCommand("join", Join);
 //		CommandConsole.AddCommand("leave", Leave);
-//		MPMain.Logger.LogInfo("[MP Mod loading] 命令集 注册成功");
+//		MPMain.Logger.LogInfo("[loading] 命令集 注册成功");
 //	}
 
 //	// 初始化数据
@@ -188,7 +188,7 @@
 //				_server.Stop();
 //			}
 
-//			MPMain.Logger.LogInfo("[MP Mod Close] 服务器连接已停止.");
+//			MPMain.Logger.LogInfo("[Close] 服务器连接已停止.");
 //		}
 
 //		// 断开客户端连接
@@ -204,7 +204,7 @@
 //				_client.Stop();
 //			}
 
-//			MPMain.Logger.LogInfo("[MP Mod Close] 客户端连接已停止.");
+//			MPMain.Logger.LogInfo("[Close] 客户端连接已停止.");
 //		}
 
 //		_serverPeer = null; // 重置对等端引用
@@ -238,7 +238,7 @@
 //		peer.Tag = _nextPlayerId;
 //		_nextPlayerId++;
 
-//		MPMain.Logger.LogInfo("[MP Mod server] 新客户端已连接: ID= " + peer.Tag.ToString());
+//		MPMain.Logger.LogInfo("[server] 新客户端已连接: ID= " + peer.Tag.ToString());
 //		//CommandConsole.Log("We got connection: " + peer.Tag);
 //		CommandConsole.Log("We got new connection");
 
@@ -331,7 +331,7 @@
 //		if (_remotePlayers.ContainsKey(disconnectedPlayerId)) {
 //			Destroy(_remotePlayers[disconnectedPlayerId]);
 //			_remotePlayers.Remove(disconnectedPlayerId);
-//			MPMain.Logger.LogInfo("[MP Mod server] 主机已移除远程玩家 ID: " + disconnectedPlayerId);
+//			MPMain.Logger.LogInfo("[server] 主机已移除远程玩家 ID: " + disconnectedPlayerId);
 //		}
 
 //		// 通知所有剩余的客户端移除该玩家
@@ -447,7 +447,7 @@
 //	// 客户端：处理连接成功消息
 //	private void HandleConnectionSuccess(NetPacketReader reader) {
 //		int peerCount = reader.GetInt();
-//		MPMain.Logger.LogInfo("[MP Mod client] 已连接, 正在加载 " + peerCount.ToString() + " 玩家");
+//		MPMain.Logger.LogInfo("[client] 已连接, 正在加载 " + peerCount.ToString() + " 玩家");
 //		CommandConsole.Log(
 //			"Connected!\nCreating "
 //			+ peerCount
@@ -461,7 +461,7 @@
 //	// 客户端：处理加载世界种子
 //	private void HandleSeedUpdate(NetPacketReader reader) {
 //		WorldSeed = reader.GetInt();
-//		MPMain.Logger.LogInfo("[MP Mod client] 加载世界, 种子号: " + WorldSeed.ToString());
+//		MPMain.Logger.LogInfo("[client] 加载世界, 种子号: " + WorldSeed.ToString());
 //		WorldLoader.ReloadWithSeed(new string[] { WorldSeed.ToString() });
 //	}
 
@@ -480,7 +480,7 @@
 //			_remotePlayers.Remove(playerIdToRemove);
 //			_remoteLeftHands.Remove(playerIdToRemove);
 //			_remoteRightHands.Remove(playerIdToRemove);
-//			MPMain.Logger.LogInfo("[MP Mod client] 客户端已移除远程玩家: ID=" + playerIdToRemove);
+//			MPMain.Logger.LogInfo("[client] 客户端已移除远程玩家: ID=" + playerIdToRemove);
 //		}
 //	}
 
@@ -491,7 +491,7 @@
 //		CloseAllConnections();
 
 //		if (_server == null) {
-//			MPMain.Logger.LogError("[MP Mod server] 服务器管理器不存在");
+//			MPMain.Logger.LogError("[server] 服务器管理器不存在");
 //			return;
 //		}
 
@@ -521,7 +521,7 @@
 //		// 主机作为客户端连接到自己的服务器
 //		Join(["127.0.0.1", port.ToString()]);
 
-//		MPMain.Logger.LogInfo("[MP Mod server] 已创建服务端");
+//		MPMain.Logger.LogInfo("[server] 已创建服务端");
 
 //		CommandConsole.Log("Hosting lobby...");
 //		CommandConsole.LogError(
@@ -535,7 +535,7 @@
 //		_clientListener.NetworkReceiveEvent -= HandleClientNetworkReceive;
 
 //		if (_client == null) {
-//			MPMain.Logger.LogError("[MP Mod client] 客户端管理器不存在");
+//			MPMain.Logger.LogError("[client] 客户端管理器不存在");
 //			return;
 //		}
 
@@ -567,13 +567,13 @@
 //		// 处理客户端接收到的网络数据
 //		_clientListener.NetworkReceiveEvent += HandleClientNetworkReceive;
 
-//		MPMain.Logger.LogInfo("[MP Mod server] 尝试连接: " + ip);
+//		MPMain.Logger.LogInfo("[server] 尝试连接: " + ip);
 //		CommandConsole.Log("Trying to join ip: " + ip);
 //	}
 
 //	public void Leave(string[] args) {
 //		CloseAllConnections();
-//		MPMain.Logger.LogInfo("[MP Mod] 所有连接已断开, 远程玩家已清理.");
+//		MPMain.Logger.LogInfo("[] 所有连接已断开, 远程玩家已清理.");
 //	}
 
 //	// 赋予可攀爬组件
@@ -602,7 +602,7 @@
 //	// 创建远程玩家对象
 //	private GameObject CreateMultiPlayerObject(int tag) {
 //		// 输出创建信息
-//		MPMain.Logger.LogInfo("[MP Mod create] 创建玩家中" + tag);
+//		MPMain.Logger.LogInfo("[create] 创建玩家中" + tag);
 
 //		// 创建玩家游戏对象
 //		GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -654,7 +654,7 @@
 //		DontDestroyOnLoad(player);
 
 //		// 输出创建成功信息
-//		MPMain.Logger.LogInfo("[MP Mod create] 创建玩家成功 ID:" + tag);
+//		MPMain.Logger.LogInfo("[create] 创建玩家成功 ID:" + tag);
 
 //		// 返回创建的玩家对象
 //		return player;
@@ -663,7 +663,7 @@
 //	// 创建远程玩家手部对象
 //	private (GameObject leftHand, GameObject rightHand) CreateMultiHandObject(int tag) {
 //		// 输出创建信息
-//		MPMain.Logger.LogInfo("[MP Mod create] 创建手部中" + tag);
+//		MPMain.Logger.LogInfo("[create] 创建手部中" + tag);
 
 //		// 创建左手
 //		GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -711,7 +711,7 @@
 //		_remoteRightHands.Add(tag, rightHand);
 
 //		// 输出创建成功信息
-//		MPMain.Logger.LogInfo("[MP Mod create] 创建手部成功 ID:" + tag);
+//		MPMain.Logger.LogInfo("[create] 创建手部成功 ID:" + tag);
 
 //		// 返回创建的手部对象
 //		return (leftHand, rightHand);

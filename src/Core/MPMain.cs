@@ -11,8 +11,8 @@ namespace WKMultiMod.src.Core;
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 public class MPMain : BaseUnityPlugin {
 
-	public const string ModGUID = "shenxl.MultiPalyerMod";
-	public const string ModName = "MultiPalyer Mod";
+	public const string ModGUID = "shenxl.MultiPlayerMod";
+	public const string ModName = "MultiPlayer Mod";
 	public const string ModVersion = "0.13.4.0";
 
 	// 单例实例
@@ -38,7 +38,7 @@ public class MPMain : BaseUnityPlugin {
 
 		// 日志初始化
 		Logger = base.Logger;
-		Logger.LogInfo($"[MP Mod MPMain] {ModGUID} {ModVersion} 已加载");
+		Logger.LogInfo($"[MPMain] {ModGUID} {ModVersion} 已加载");
 
 		//// 日后生命周期完善时使用这个单例创建
 		//// 1. 创建一个新的, GameObject
@@ -53,6 +53,6 @@ public class MPMain : BaseUnityPlugin {
 	}
 
 	private void OnDestroy() {
-		Logger.LogInfo("[MP Mod MPMain] MultiPalyerMain (启动器) 已被销毁.");
+		Logger.LogInfo("[MPMain] MultiPalyerMain (启动器) 已被销毁.");
 	}
 }

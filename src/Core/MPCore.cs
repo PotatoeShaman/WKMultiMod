@@ -44,12 +44,12 @@ public class MPCore : MonoBehaviour {
 
 	void Awake() {
 		// Debug
-		MPMain.Logger.LogInfo("[MP Mod MPCore Loading] MultiplayerCore Awake");
+		MPMain.Logger.LogInfo("[MPCore Loading] MultiplayerCore Awake");
 
 		// 简单的重复检查作为安全网
 		if (Instance != null && Instance != this) {
 			// Debug
-			MPMain.Logger.LogWarning("[MP Mod MPCore Loading] 检测到重复实例,销毁当前");
+			MPMain.Logger.LogWarning("[MPCore Loading] 检测到重复实例,销毁当前");
 			Destroy(gameObject);
 			return;
 		}
@@ -85,10 +85,10 @@ public class MPCore : MonoBehaviour {
 			// 订阅网络事件
 			SubscribeToEvents();
 			// Debug
-			MPMain.Logger.LogInfo("[MP Mod MPCore Init] 所有管理器初始化完成");
+			MPMain.Logger.LogInfo("[MPCore Init] 所有管理器初始化完成");
 		} catch (Exception e) {
 			// Debug
-			MPMain.Logger.LogError("[MP Mod MPCore Init] 管理器初始化失败: " + e.Message);
+			MPMain.Logger.LogError("[MPCore Init] 管理器初始化失败: " + e.Message);
 		}
 	}
 
@@ -140,7 +140,7 @@ public class MPCore : MonoBehaviour {
 		ResetStateVariables();
 
 		// Debug
-		MPMain.Logger.LogInfo("[MP Mod MPCore Destroy] MultiPlayerCore 已被销毁");
+		MPMain.Logger.LogInfo("[MPCore Destroy] MultiPlayerCore 已被销毁");
 	}
 
 	/// <summary>
@@ -150,22 +150,30 @@ public class MPCore : MonoBehaviour {
 	/// <param name="mode"></param>
 	private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
 		// Debug
-		MPMain.Logger.LogInfo("[MP Mod MPCore Scene] 核心场景加载完成: " + scene.name);
+		MPMain.Logger.LogInfo("[MPCore Scene] 核心场景加载完成: " + scene.name);
 
 		IsChaosMod = false;
 
-		if (scene.name == "Game-Main") {
-			// 注册命令和初始化世界数据
-			if (CommandConsole.instance != null) {
-				RegisterCommands();
-			} else {
-				// Debug
-				MPMain.Logger.LogError("[MP Mod MPCore Scene] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
-			}
-		}
-		if (scene.name == "Main-Menu") {
-			// 返回主菜单时关闭连接 重设置
-			ResetStateVariables();
+		switch (scene.name) {
+			case "Game-Main":
+				// 注册命令和初始化世界数据
+				if (CommandConsole.instance != null) {
+					RegisterCommands();
+				} else {
+					// Debug
+					MPMain.Logger.LogError("[MPCore Scene] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.");
+				}
+				break;
+
+			case "Main-Menu":
+				ResetStateVariables();
+				break;
+
+			default:
+				ResetStateVariables();
+				break;
+
+
 		}
 	}
 
@@ -206,7 +214,7 @@ public class MPCore : MonoBehaviour {
 		string roomName = args[0];
 		int maxPlayers = args.Length >= 2 ? int.Parse(args[1]) : 4;
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Host] 正在创建房间: {roomName}...");
+		MPMain.Logger.LogInfo($"[MPCore Host] 正在创建房间: {roomName}...");
 
 		// 使用协程版本(内部已改为异步)
 		Steamworks.CreateRoom(roomName, maxPlayers, (success) => {
@@ -232,7 +240,7 @@ public class MPCore : MonoBehaviour {
 		}
 
 		if (ulong.TryParse(args[0], out ulong lobbyId)) {
-			MPMain.Logger.LogInfo($"[MP Mod MPCore Join] 正在加入房间: {lobbyId.ToString()}...");
+			MPMain.Logger.LogInfo($"[MPCore Join] 正在加入房间: {lobbyId.ToString()}...");
 
 			Steamworks.JoinRoom(lobbyId, (success) => {
 				if (success) {
@@ -249,7 +257,7 @@ public class MPCore : MonoBehaviour {
 	public void Leave(string[] args) {
 		ResetStateVariables();
 		// Debug
-		MPMain.Logger.LogInfo("[MP Mod MPCore Leave] 所有连接已断开, 远程玩家已清理.");
+		MPMain.Logger.LogInfo("[MPCore Leave] 所有连接已断开, 远程玩家已清理.");
 	}
 
 	public void ChaosMod(string[] args) {
@@ -279,10 +287,10 @@ public class MPCore : MonoBehaviour {
 			return;
 		}
 		foreach (var connection in Steamworks._outgoingConnections) {
-			MPMain.Logger.LogInfo($"[MP Mod MPCore] 出站连接 Id: {connection.Key.ToString()}");
+			MPMain.Logger.LogInfo($"[MPCore] 出站连接 Id: {connection.Key.ToString()}");
 		}
 		foreach (var connection in Steamworks._allConnections) {
-			MPMain.Logger.LogInfo($"[MP Mod MPCore] 全部连接 Id: {connection.Key.ToString()}");
+			MPMain.Logger.LogInfo($"[MPCore] 全部连接 Id: {connection.Key.ToString()}");
 		}
 	}
 
@@ -301,7 +309,7 @@ public class MPCore : MonoBehaviour {
 		// 可以添加其他初始化数据,如游戏状态、物品状态等
 
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Send] 已向新玩家发送初始化数据");
+		MPMain.Logger.LogInfo($"[MPCore Send] 已向新玩家发送初始化数据");
 	}
 
 	/// <summary>
@@ -310,19 +318,19 @@ public class MPCore : MonoBehaviour {
 	private void ProcessLobbyMemberJoined(SteamId steamId) {
 		if (steamId == SteamClient.SteamId) return;
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 玩家加入大厅: {steamId.ToString()}");
+		MPMain.Logger.LogInfo($"[MPCore Process] 玩家加入大厅: {steamId.ToString()}");
 		Steamworks.ConnectToPlayer(steamId);
 	}
 
 	// 加入大厅
 	private void ProcessLobbyEntered(Lobby lobby) {
 		// Debug
-		MPMain.Logger.LogWarning($"[MP Mod MPCore Process] 正在加入房间,ID: {lobby.Id.ToString()}");
+		MPMain.Logger.LogWarning($"[MPCore Process] 正在加入房间,ID: {lobby.Id.ToString()}");
 		//在这里连接所有玩家
 		// 遍历大厅里已经在的所有成员
 		foreach (var member in lobby.Members) {
 			if (member.Id == SteamClient.SteamId) continue; // 跳过自己
-			MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 连接已在大厅玩家: {member.Name}({member.Id.ToString()})");
+			MPMain.Logger.LogInfo($"[MPCore Process] 连接已在大厅玩家: {member.Name}({member.Id.ToString()})");
 			Steamworks.ConnectToPlayer(member.Id);
 		}
 	}
@@ -330,7 +338,7 @@ public class MPCore : MonoBehaviour {
 	// 离开大厅
 	private void ProcessLobbyMemberLeft(SteamId steamId) {
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 玩家离开大厅: {steamId.ToString()}");
+		MPMain.Logger.LogInfo($"[MPCore Process] 玩家离开大厅: {steamId.ToString()}");
 	}
 
 	/// <summary>
@@ -338,8 +346,8 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void ProcessPlayerConnected(SteamId steamId) {
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 玩家接入: {steamId.ToString()}");
-		
+		MPMain.Logger.LogInfo($"[MPCore Process] 玩家接入: {steamId.ToString()}");
+
 		if (IsHost) {
 			SendInitializationDataToNewPlayer(steamId);
 		}
@@ -353,7 +361,7 @@ public class MPCore : MonoBehaviour {
 	/// <param name="steamId"></param>
 	private void ProcessPlayerDisconnected(SteamId steamId) {
 		// Debug
-		MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 玩家断连: {steamId.ToString()}");
+		MPMain.Logger.LogInfo($"[MPCore Process] 玩家断连: {steamId.ToString()}");
 		RPManager.DestroyPlayer(steamId.Value);
 	}
 
@@ -365,7 +373,7 @@ public class MPCore : MonoBehaviour {
 	private void ProcessReceiveData(ulong playId, byte[] data) {
 		//// Debug
 		//if (_debugTick.Test()) {
-		//	MPMain.Logger.LogInfo($"[MP Mod MPCore Process] 接收数据");
+		//	MPMain.Logger.LogInfo($"[MPCore Process] 接收数据");
 		//}
 
 		// 基本验证：确保数据足够读取一个整数(数据包类型)
@@ -391,12 +399,12 @@ public class MPCore : MonoBehaviour {
 	/// <param name="seed"></param>
 	private void ProcessSeedUpdate(int seed) {
 		// Debug
-		MPMain.Logger.LogInfo("[MP Mod MPCore Process] 加载世界, 种子号: " + seed.ToString());
+		MPMain.Logger.LogInfo("[MPCore Process] 加载世界, 种子号: " + seed.ToString());
 		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
 	}
 
 	// 开启多人联机模式
-	public static void StartMultiPlayerMode() { IsMultiplayerActive = true;}
+	public static void StartMultiPlayerMode() { IsMultiplayerActive = true; }
 	// 关闭多人联机模式
 	public static void CloseMultiPlayerMode() { IsMultiplayerActive = false; }
 }

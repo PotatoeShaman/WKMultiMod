@@ -37,7 +37,7 @@ public class LocalPlayerManager: MonoBehaviour {
 
 		//// Debug
 		//if(_debugTick.Test()){
-		//	MPMain.Logger.LogInfo($"[MP Mod LPManager] 发送数据 " +
+		//	MPMain.Logger.LogInfo($"[LPManager] 发送数据 " +
 		//		$"Player.Position: {playerData.Position.ToString()} " +
 		//		$"Player.Rotation: {playerData.Rotation.ToString()} " +
 		//		$"LeftHand.isFree: {playerData.LeftHand.IsFree.ToString()} " +
@@ -47,7 +47,7 @@ public class LocalPlayerManager: MonoBehaviour {
 		//}
 
 		if (playerData == null) {
-			MPMain.Logger.LogError("[MP Mod LPMan] 本地玩家信息异常");
+			MPMain.Logger.LogError("[LPMan] 本地玩家信息异常");
 			return;
 		}
 
