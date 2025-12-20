@@ -55,11 +55,38 @@ public class MPSteamworks : MonoBehaviour {
 
 		//SteamClient.Init(3195790u);
 
-		// 订阅发送事件
-		SteamNetworkEvents.OnBroadcast += HandleBroadcast;
-		SteamNetworkEvents.OnSendToPeer += HandleSendToPeer;
+		try {
+			if (!SteamClient.IsValid) {
+				MPMain.Logger.LogError("[MPSW] Steamworks初始化失败");
+				return;
+			}
 
-		Initialize();
+			MPMain.Logger.LogInfo($"[MPSW] Steamworks初始化成功 玩家: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}");
+
+			// 订阅MPCore会发送的事件
+			SteamNetworkEvents.OnSendToHost += HandleSendToHost;
+			SteamNetworkEvents.OnBroadcast += HandleBroadcast;
+			SteamNetworkEvents.OnSendToPeer += HandleSendToPeer;
+
+			// 订阅大厅事件 大部分只做转发
+			// 本机加入大厅
+			SteamMatchmaking.OnLobbyEntered += OnLobbyEntered;
+			// 该用户已经加入或正在加入大厅
+			SteamMatchmaking.OnLobbyMemberJoined += OnLobbyMemberJoined;
+			// 该用户已离开或即将离开大厅
+			SteamMatchmaking.OnLobbyMemberLeave += OnLobbyMemberLeft;
+			// 该用户在未离开大厅的情况下断线
+			SteamMatchmaking.OnLobbyMemberDisconnected += OnLobbyMemberDisconnected;
+			// 当大厅成员数据或大厅所有权发生变更
+			SteamMatchmaking.OnLobbyMemberDataChanged += OnLobbyMemberDataChanged;
+
+			// 初始化中继网络(必须调用)
+			SteamNetworkingUtils.InitRelayNetworkAccess();
+
+		} catch (Exception ex) {
+			MPMain.Logger.LogError($"[MPSW] Steamworks初始化异常: {ex.Message}");
+		}
+
 	}
 
 	void Update() {
@@ -79,42 +106,23 @@ public class MPSteamworks : MonoBehaviour {
 
 	void OnDestroy() {
 		// 取消订阅
+		SteamNetworkEvents.OnSendToHost -= HandleSendToHost;
 		SteamNetworkEvents.OnBroadcast -= HandleBroadcast;
 		SteamNetworkEvents.OnSendToPeer -= HandleSendToPeer;
 
+		// 订阅大厅事件 大部分只做转发
+		// 本机加入大厅
+		SteamMatchmaking.OnLobbyEntered -= OnLobbyEntered;
+		// 该用户已经加入或正在加入大厅
+		SteamMatchmaking.OnLobbyMemberJoined -= OnLobbyMemberJoined;
+		// 该用户已离开或即将离开大厅
+		SteamMatchmaking.OnLobbyMemberLeave -= OnLobbyMemberLeft;
+		// 该用户在未离开大厅的情况下断线
+		SteamMatchmaking.OnLobbyMemberDisconnected -= OnLobbyMemberDisconnected;
+		// 当大厅成员数据或大厅所有权发生变更
+		SteamMatchmaking.OnLobbyMemberDataChanged -= OnLobbyMemberDataChanged;
+
 		DisconnectAll();
-	}
-
-	/// <summary>
-	/// 初始化(只做网络层初始化)
-	/// </summary>
-	private void Initialize() {
-		try {
-			if (!SteamClient.IsValid) {
-				MPMain.Logger.LogError("[MPSW] Steamworks初始化失败");
-				return;
-			}
-
-			MPMain.Logger.LogInfo($"[MPSW] Steamworks初始化成功 玩家: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}");
-
-			// 订阅大厅事件(只做事件转发)
-			// 本机加入大厅
-			SteamMatchmaking.OnLobbyEntered += OnLobbyEntered;
-			// 该用户已经加入或正在加入大厅
-			SteamMatchmaking.OnLobbyMemberJoined += OnLobbyMemberJoined;
-			// 该用户已离开或即将离开大厅
-			SteamMatchmaking.OnLobbyMemberLeave += OnLobbyMemberLeft;
-			// 该用户在未离开大厅的情况下断线
-			SteamMatchmaking.OnLobbyMemberDisconnected += OnLobbyMemberDisconnected;
-			// 当大厅成员数据或大厅所有权发生变更
-			SteamMatchmaking.OnLobbyMemberDataChanged += OnLobbyMemberDataChanged;
-
-			// 初始化中继网络(必须调用)
-			SteamNetworkingUtils.InitRelayNetworkAccess();
-
-		} catch (Exception ex) {
-			MPMain.Logger.LogError($"[MPSW] Steamworks初始化异常: {ex.Message}");
-		}
 	}
 
 	/// <summary>
@@ -251,7 +259,6 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	public void OnPlayerConnected(SteamId steamId, Connection connection, bool isIncoming) {
 
-
 		// 出站连接不覆盖入站连接
 		if (_allConnections.ContainsKey(steamId) && !isIncoming) {
 			return; 
@@ -259,14 +266,14 @@ public class MPSteamworks : MonoBehaviour {
 		// 入站连接覆盖出站连接
 		if (_allConnections.ContainsKey(steamId) && isIncoming) {
 			_allConnections[steamId] = connection;
-			MPMain.Logger.LogInfo($"[] 玩家连接覆盖: {steamId.ToString()} (入站)");
+			MPMain.Logger.LogInfo($"[MPSW] 玩家连接覆盖: {steamId.ToString()} (入站)");
 			return;
 		}
 
 		_allConnections[steamId] = connection;
 
 		// 正常记录
-		MPMain.Logger.LogInfo($"[] 玩家连接建立完成: {steamId.ToString()} ({(isIncoming ? "入站" : "出站")})");
+		MPMain.Logger.LogInfo($"[MPSW] 玩家连接建立完成: {steamId.ToString()} ({(isIncoming ? "入站" : "出站")})");
 
 		HasConnections = true;
 

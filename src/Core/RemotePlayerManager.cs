@@ -99,16 +99,16 @@ public class RemotePlayerManager : MonoBehaviour {
 	// 处理玩家数据
 	public void ProcessPlayerData(ulong playId, PlayerData playerData) {
 
-		// Debug
-		if (_debugTick.Test()) {
-			MPMain.Logger.LogInfo($"[RPContainer] 接收数据 " +
-				$"Player.Position: {playerData.Position.ToString()} " +
-				$"Player.Rotation: {playerData.Rotation.ToString()} " +
-				$"LeftHand.isFree: {playerData.LeftHand.IsFree.ToString()} " +
-				$"LeftHand: {playerData.LeftHand.Position.ToString()} " +
-				$"RightHand.isFree: {playerData.RightHand.IsFree.ToString()} " +
-				$"RightHand: {playerData.RightHand.Position.ToString()} ");
-		}
+		//// Debug
+		//if (_debugTick.Test()) {
+		//	MPMain.Logger.LogInfo($"[RPContainer] 接收数据 " +
+		//		$"Player.Position: {playerData.Position.ToString()} " +
+		//		$"Player.Rotation: {playerData.Rotation.ToString()} " +
+		//		$"LeftHand.isFree: {playerData.LeftHand.IsFree.ToString()} " +
+		//		$"LeftHand: {playerData.LeftHand.Position.ToString()} " +
+		//		$"RightHand.isFree: {playerData.RightHand.IsFree.ToString()} " +
+		//		$"RightHand: {playerData.RightHand.Position.ToString()} ");
+		//}
 
 		// 以后加上时间戳处理
 		var RPcontainer = _players[playId];

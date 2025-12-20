@@ -294,12 +294,14 @@ public class MPCore : MonoBehaviour {
 
 	// 协程请求种子
 	public IEnumerator InitHandshakeRoutine() {
-		var writer = new NetDataWriter();
-		writer.Put((int)PacketType.RequestInitData);
-		var requestData = MPDataSerializer.WriterToBytes(writer);
-		while (HasInitialized) {
+		MPMain.Logger.LogInfo($"[MPCore Send] 初始化情况{HasInitialized.ToString()}");
+		while (!HasInitialized) {
+			MPMain.Logger.LogInfo($"[MPCore Send] 已向主机请求初始化数据");
+			var writer = new NetDataWriter();
+			writer.Put((int)PacketType.RequestInitData);
+			var requestData = MPDataSerializer.WriterToBytes(writer);
 			SteamNetworkEvents.TriggerSendToHost(requestData);
-			yield return new WaitForSeconds(3.0f);
+			yield return new WaitForSeconds(2.0f);
 		}
 	}
 
@@ -335,6 +337,8 @@ public class MPCore : MonoBehaviour {
 	private void ProcessLobbyEntered(Lobby lobby) {
 		// Debug
 		MPMain.Logger.LogWarning($"[MPCore Process] 正在加入房间,ID: {lobby.Id.ToString()}");
+		// 启动协程发送请求初始化数据
+		StartCoroutine(InitHandshakeRoutine());
 		//在这里连接所有玩家
 		// 遍历大厅里已经在的所有成员
 		foreach (var member in lobby.Members) {
@@ -342,8 +346,6 @@ public class MPCore : MonoBehaviour {
 			MPMain.Logger.LogInfo($"[MPCore Process] 连接已在大厅玩家: {member.Name}({member.Id.ToString()})");
 			Steamworks.ConnectToPlayer(member.Id);
 		}
-		// 启动协程发送请求初始化数据
-		InitHandshakeRoutine();
 	}
 
 	// 离开大厅
