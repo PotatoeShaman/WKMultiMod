@@ -12,4 +12,5 @@ public enum PacketType {
 	RemovePlayer = 3,       // 移除玩家
 	PlayerDataUpdate = 4,	// 玩家数据更新
 	RequestInitData = 5,	// 请求初始化世界数据
+	TalkToAllPlayers = 6,	// 向所有人控制台输出一段话
 }

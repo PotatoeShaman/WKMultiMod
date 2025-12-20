@@ -196,6 +196,7 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("chaos", ChaosMod);
 		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
 		CommandConsole.AddCommand("test", GetAllConnections);
+		CommandConsole.AddCommand("talk", TalkToPlayer);
 	}
 
 	// 命令实现
@@ -290,6 +291,25 @@ public class MPCore : MonoBehaviour {
 		foreach (var connection in Steamworks._allConnections) {
 			MPMain.Logger.LogInfo($"[MPCore] 全部连接 Id: {connection.Key.ToString()}");
 		}
+	}
+
+	public void TalkToPlayer(string[] args) {
+		if (!IsMultiplayerActive) {
+			CommandConsole.LogError("You need in online mode, \n" +
+				"please use the host or join");
+			return;
+		}
+		// 将参数数组组合成一个字符串
+		string message = string.Join(" ", args);
+
+		NetDataWriter writer = new NetDataWriter();
+		writer.Put((int)PacketType.TalkToAllPlayers);
+		writer.Put((int)PacketType.TalkToAllPlayers);
+		writer.Put(message); // 自动处理长度和编码
+
+		// 发送给所有人
+		var data = MPDataSerializer.WriterToBytes(writer);
+		SteamNetworkEvents.TriggerBroadcast(data, SendType.Reliable);
 	}
 
 	// 协程请求种子
@@ -404,6 +424,11 @@ public class MPCore : MonoBehaviour {
 			case PacketType.RequestInitData:
 				SendInitializationDataToNewPlayer(playId);
 				break;
+			case PacketType.TalkToAllPlayers:
+				string receivedMsg = reader.GetString();
+				CommandConsole.Log($"[Chat] {playId}: {receivedMsg}");
+				break;
+
 		}
 	}
 
