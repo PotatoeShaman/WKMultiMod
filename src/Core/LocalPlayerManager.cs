@@ -47,7 +47,7 @@ public class LocalPlayerManager: MonoBehaviour {
 		//}
 
 		if (playerData == null) {
-			MPMain.Logger.LogError("[LPMan] 本地玩家信息异常");
+			MPMain.Logger.LogError("[LPMan] Local player data acquisition exception.");
 			return;
 		}
 

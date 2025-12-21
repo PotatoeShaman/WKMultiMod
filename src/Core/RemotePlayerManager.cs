@@ -23,12 +23,12 @@ public class RemotePlayerManager : MonoBehaviour {
 	private static Dictionary<ulong, RemotePlayerContainer> _players = new Dictionary<ulong, RemotePlayerContainer>();
 
 	void Awake() {
-		MPMain.Logger.LogInfo("[RPMan] RemotePlayerManager Awake");
+		//MPMain.Logger.LogInfo("[RPMan] RemotePlayerManager Awake");
 
 		// 确保根对象存在
 		EnsureRootObject();
 
-		MPMain.Logger.LogInfo("[RPMan] 远程玩家管理器初始化完成");
+		//MPMain.Logger.LogInfo("[RPMan] Remote Player Manager initialization completed");
 	}
 
 	void OnDestroy() {
@@ -113,7 +113,7 @@ public class RemotePlayerManager : MonoBehaviour {
 		// 以后加上时间戳处理
 		var RPcontainer = _players[playId];
 		if (RPcontainer == null) {
-			MPMain.Logger.LogError($"[RPMan] 未找到远程对象 ID: {playId.ToString()}");
+			MPMain.Logger.LogError($"[RPMan] Remote player object not found. ID: {playId.ToString()}");
 			return;
 		}
 
@@ -160,11 +160,11 @@ public class RemotePlayerContainer {
 				PlayerObject.transform.SetParent(persistentParent, false);
 			}
 			// Debug
-			MPMain.Logger.LogInfo($"[RPCont] 远程玩家映射成功 ID: {PlayId.ToString()}");
+			MPMain.Logger.LogInfo($"[RPCont] Remote player mapping succeeded ID: {PlayId.ToString()}");
 			return true;
 		} catch (Exception ex) {
 			// Debug
-			MPMain.Logger.LogError($"[RPCont] 远程玩家映射失败 ID: {PlayId.ToString()}, Error: {ex.Message}");
+			MPMain.Logger.LogError($"[RPCont] Failed to map remote player ID: {PlayId.ToString()}, Error: {ex.Message}");
 			CleanupOnFailure();
 			return false;
 		}
@@ -384,7 +384,7 @@ public class RemotePlayerContainer {
 			_playerComponent = PlayerObject.GetComponent<RemotePlayerComponent>();
 			if (_playerComponent == null) {
 				// Debug
-				MPMain.Logger.LogError($"[RPCont] PlayerObject的组件未添加");
+				MPMain.Logger.LogError($"[RPCont] PlayerObject component not added");
 				return;
 			}
 		}
@@ -393,7 +393,7 @@ public class RemotePlayerContainer {
 			_leftHandComponent = LeftHandObject.GetComponent<RemoteHandComponent>();
 			if (_leftHandComponent == null) {
 				// Debug
-				MPMain.Logger.LogError($"[RPCont] LeftHandObject的组件未添加");
+				MPMain.Logger.LogError($"[RPCont] LeftHandObject component not added");
 				return;
 			}
 		}
@@ -402,7 +402,7 @@ public class RemotePlayerContainer {
 			_rightHandComponent = RightHandObject.GetComponent<RemoteHandComponent>();
 			if (_rightHandComponent == null) {
 				// Debug
-				MPMain.Logger.LogError($"[RPCont] RightHandObject的组件未添加");
+				MPMain.Logger.LogError($"[RPCont] RightHandObject component not added");
 				return;
 			}
 		}

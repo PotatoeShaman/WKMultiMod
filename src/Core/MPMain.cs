@@ -38,7 +38,7 @@ public class MPMain : BaseUnityPlugin {
 
 		// 日志初始化
 		Logger = base.Logger;
-		Logger.LogInfo($"[MPMain] {ModGUID} {ModVersion} 已加载");
+		Logger.LogInfo($"[MPMain] {ModGUID} {ModVersion} loaded");
 
 		//// 日后生命周期完善时使用这个单例创建
 		//// 1. 创建一个新的, GameObject
@@ -53,6 +53,6 @@ public class MPMain : BaseUnityPlugin {
 	}
 
 	private void OnDestroy() {
-		Logger.LogInfo("[MPMain] MultiPalyerMain (启动器) 已被销毁.");
+		Logger.LogInfo("[MPMain] MPMain (Launcher) has been destroyed.");
 	}
 }
