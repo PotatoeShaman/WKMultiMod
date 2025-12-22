@@ -2,6 +2,7 @@
 using Steamworks.Data;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using UnityEngine;
 using WKMultiMod.src.Data;
@@ -47,7 +48,10 @@ public class LocalPlayerManager: MonoBehaviour {
 		//}
 
 		if (playerData == null) {
-			MPMain.Logger.LogError("[LPMan] Local player data acquisition exception.");
+			MPMain.LogError(
+				"[LPMan] 本地玩家信息异常", 
+				"[LPMan] Local player data acquisition exception.");
+
 			return;
 		}
 

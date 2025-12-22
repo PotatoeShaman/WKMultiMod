@@ -161,8 +161,8 @@ WhiteKnuckleMod/
 
 * `host <名称> [最大玩家数]` - 创建大厅.
   * 示例:`host abcde`
-* `getlobbyid` - 获取大厅房间码
-* `join <房间码>` - 通过房间码,加入大厅
+* `getlobbyid` - 获取大厅大厅码
+* `join <大厅码>` - 通过大厅码,加入大厅
   * 示例: `join 109775241951624817`
 
 ## 0.12
