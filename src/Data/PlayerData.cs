@@ -61,7 +61,7 @@ public struct HandData {
 	// 手部类型
 	public PlayerData.HandType handType;
 	// 是否空闲
-	public bool IsFree;
+	public bool IsHolding;
 	// 位置
 	public float PosX;
 	public float PosY;
@@ -78,47 +78,6 @@ public struct HandData {
 
 // 封装的读取方法
 public static class MPDataSerializer {
-	/// <summary>
-	/// 创建一个玩家数据
-	/// </summary>
-	/// <param name="Id"></param>
-	/// <returns></returns>
-	public static PlayerData CreateLocalPlayerData(ulong Id) {
-		var player = ENT_Player.GetPlayer();
-		if (player == null) return null;
-
-		var data = new PlayerData {
-			playId = Id,
-			TimestampTicks = DateTime.UtcNow.Ticks
-		};
-
-		// 位置和旋转
-		data.Position = player.transform.position;
-		data.Rotation = player.transform.rotation;
-
-		// 手部数据
-		data.LeftHand = GetHandData(player.hands[(int)HandType.Left]);
-		data.RightHand = GetHandData(player.hands[(int)HandType.Right]);
-
-		return data;
-	}
-
-	/// <summary>
-	/// 获取手部数据
-	/// </summary>
-	/// <param name="hand"></param>
-	/// <returns></returns>
-	private static HandData GetHandData(ENT_Player.Hand hand) {
-		var handData = new HandData();
-		handData.IsFree = hand.IsFree();
-
-		if (!handData.IsFree) {
-			//handData.Position = hand.GetHoldPosition();
-			handData.Position = hand.GetHoldWorldPosition();
-		}
-
-		return handData;
-	}
 
 	/// <summary>
 	/// 序列化到NetDataWriter (无数据包类型)
@@ -141,16 +100,16 @@ public static class MPDataSerializer {
 		writer.Put(data.RotW);
 
 		// 左手数据
-		writer.Put(data.LeftHand.IsFree);
-		if (!data.LeftHand.IsFree) {
+		writer.Put(data.LeftHand.IsHolding);
+		if (!data.LeftHand.IsHolding) {
 			writer.Put(data.LeftHand.PosX);
 			writer.Put(data.LeftHand.PosY);
 			writer.Put(data.LeftHand.PosZ);
 		}
 
 		// 右手数据
-		writer.Put(data.RightHand.IsFree);
-		if (!data.RightHand.IsFree) {
+		writer.Put(data.RightHand.IsHolding);
+		if (!data.RightHand.IsHolding) {
 			writer.Put(data.RightHand.PosX);
 			writer.Put(data.RightHand.PosY);
 			writer.Put(data.RightHand.PosZ);
@@ -183,7 +142,7 @@ public static class MPDataSerializer {
 
 		// 左手数据
 		bool leftFree = reader.GetBool();
-		data.LeftHand.IsFree = leftFree;
+		data.LeftHand.IsHolding = leftFree;
 		if (!leftFree) {
 			data.LeftHand.PosX = reader.GetFloat();
 			data.LeftHand.PosY = reader.GetFloat();
@@ -192,7 +151,7 @@ public static class MPDataSerializer {
 
 		// 右手数据
 		bool rightFree = reader.GetBool();
-		data.RightHand.IsFree = rightFree;
+		data.RightHand.IsHolding = rightFree;
 		if (!rightFree) {
 			data.RightHand.PosX = reader.GetFloat();
 			data.RightHand.PosY = reader.GetFloat();

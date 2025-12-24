@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<AssemblyName>WKMultiMod</AssemblyName>
 		<Product>WKMultiMod</Product>
-		<Version>0.13.6.3</Version>
+		<Version>0.13.7.0</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
@@ -31,49 +31,9 @@
 
 	<ItemGroup>
 		<!-- BepInEx 相关 DLL -->
-		<Reference Include="lib\BepInEx\0Harmony20.dll">
-		  <HintPath>lib\BepInEx\0Harmony20.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\BepInEx.dll">
-		  <HintPath>lib\BepInEx\BepInEx.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\BepInEx.Harmony.dll">
-		  <HintPath>lib\BepInEx\BepInEx.Harmony.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\BepInEx.Preloader.dll">
-		  <HintPath>lib\BepInEx\BepInEx.Preloader.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\HarmonyXInterop.dll">
-		  <HintPath>lib\BepInEx\HarmonyXInterop.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\Mono.Cecil.dll">
-		  <HintPath>lib\BepInEx\Mono.Cecil.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\Mono.Cecil.Mdb.dll">
-		  <HintPath>lib\BepInEx\Mono.Cecil.Mdb.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\Mono.Cecil.Pdb.dll">
-		  <HintPath>lib\BepInEx\Mono.Cecil.Pdb.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\Mono.Cecil.Rocks.dll">
-		  <HintPath>lib\BepInEx\Mono.Cecil.Rocks.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\MonoMod.RuntimeDetour.dll">
-		  <HintPath>lib\BepInEx\MonoMod.RuntimeDetour.dll</HintPath>
-		  <Private>false</Private>
-		</Reference>
-		<Reference Include="lib\BepInEx\MonoMod.Utils.dll">
-		  <HintPath>lib\BepInEx\MonoMod.Utils.dll</HintPath>
-		  <Private>false</Private>
+		<Reference Include="lib\BepInEx\**\*.dll">
+			<HintPath>%(Identity)</HintPath>
+			<Private>false</Private>
 		</Reference>
 
 		<!-- 游戏相关 DLL -->

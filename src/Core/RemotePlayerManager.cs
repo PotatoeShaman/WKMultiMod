@@ -424,13 +424,13 @@ public class RemotePlayerContainer {
 		if (playerData.IsTeleport || isInInitPhase) {
 			// 使用组件的传送方法
 			_playerComponent.Teleport(playerData.Position, playerData.Rotation);
-			Vector3 leftTarget = playerData.LeftHand.IsFree
+			Vector3 leftTarget = playerData.LeftHand.IsHolding
 					? PlayerObject.transform.TransformPoint(_leftHandComponent.DefaultLocalPosition)
 					: playerData.LeftHand.Position;
 			_leftHandComponent.Teleport(leftTarget);
 
 			// 3. 处理右手传送
-			Vector3 rightTarget = playerData.RightHand.IsFree
+			Vector3 rightTarget = playerData.RightHand.IsHolding
 				? PlayerObject.transform.TransformPoint(_rightHandComponent.DefaultLocalPosition)
 				: playerData.RightHand.Position;
 			_rightHandComponent.Teleport(rightTarget);

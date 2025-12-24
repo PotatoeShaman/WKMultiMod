@@ -200,7 +200,7 @@ public class MPSteamworks : MonoBehaviour {
 	private void HandleBroadcast(byte[] data, SendType sendType, ushort laneIndex) {
 
 		// Debug
-		bool canLog = _debugTick.Test();
+		bool canLog = _debugTick.IsTick();
 		if (canLog) {
 			MPMain.LogInfo(
 				$"[MPSW] 开始广播数据,当前连接数: {_allConnections.Count.ToString()}",

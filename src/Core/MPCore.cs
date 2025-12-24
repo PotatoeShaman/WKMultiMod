@@ -28,7 +28,12 @@ public class MPCore : MonoBehaviour {
 	// Steam网络管理器 远程玩家管理器 本地数据获取类
 	internal MPSteamworks Steamworks { get; private set; }
 	internal RemotePlayerManager RPManager { get; private set; }
-	internal LocalPlayerManager LPManager { get; private set; }
+	// 本地数据获取类已经变成静态类
+	//internal LocalPlayerManager LPManager { get; private set; }
+
+	// 玩家数据发送时间 每秒30次
+	private TickTimer _playerDataTick = new TickTimer(30);
+	private readonly NetDataWriter _playerDataWriter = new NetDataWriter();
 
 	// Steam ID
 	public static SteamId steamId { get; private set; }
@@ -69,6 +74,52 @@ public class MPCore : MonoBehaviour {
 		SceneManager.sceneLoaded += OnSceneLoaded;
 	}
 
+	void Update() {
+		// 没有开启多人时停止更新
+		if (MPCore.IsMultiplayerActive == false)
+			return;
+		// 没有链接时停止更新
+		if (!MPCore.Instance.Steamworks.HasConnections)
+			return;
+		// 发送本地玩家数据
+		SeedLocalPlayerData();
+	}
+
+	/// <summary>
+	/// 发送本地玩家数据
+	/// </summary>
+	private void SeedLocalPlayerData() {
+		// 限制发送频率(20Hz)
+		if (!_playerDataTick.IsTick())
+			return;
+
+		var playerData = LocalPlayerManager.CreateLocalPlayerData(SteamClient.SteamId);
+		if (playerData == null) {
+			MPMain.LogError(
+				"[LPMan] 本地玩家信息异常",
+				"[LPMan] Local player data acquisition exception.");
+			return;
+		}
+
+		//// Debug
+		//playerData.IsTeleport = true;
+
+		// 进行数据写入
+		_playerDataWriter.Put((int)PacketType.PlayerDataUpdate);
+		MPDataSerializer.WriteToNetData(_playerDataWriter, playerData);
+		// 触发Steam数据发送
+		// 转为byte[]
+		// 使用不可靠+立即发送
+		// 广播所有人
+		SteamNetworkEvents.TriggerBroadcast(
+			MPDataSerializer.WriterToBytes(_playerDataWriter),
+			SendType.Unreliable | SendType.NoNagle);
+
+		_playerDataWriter.Reset();
+		return;
+	}
+
+
 	/// <summary>
 	/// 初始化所有管理器
 	/// </summary>
@@ -80,8 +131,8 @@ public class MPCore : MonoBehaviour {
 			// 创建远程玩家管理器
 			RPManager = gameObject.AddComponent<RemotePlayerManager>();
 
-			// 创建本地信息获取发送管理器
-			LPManager = gameObject.AddComponent<LocalPlayerManager>();
+			//// 创建本地信息获取发送管理器
+			//LPManager = gameObject.AddComponent<LocalPlayerManager>();
 
 			// 初始化SteamID
 			steamId = SteamClient.SteamId;
@@ -388,9 +439,13 @@ public class MPCore : MonoBehaviour {
 		MPMain.LogInfo(
 			$"[MPCore] 正在加入大厅,ID: {lobby.Id.ToString()}",
 			$"[MPCore] Joining the lobby, ID: {lobby.Id.ToString()}");
+
+		// 这个触发可能比Join回调更快
+		IsMultiplayerActive = true;
+
 		// 启动协程发送请求初始化数据
 		StartCoroutine(InitHandshakeRoutine());
-		//在这里连接所有玩家
+		// 在这里连接所有玩家
 		// 遍历大厅里已经在的所有成员
 		foreach (var member in lobby.Members) {
 			if (member.Id == SteamClient.SteamId) continue; // 跳过自己
