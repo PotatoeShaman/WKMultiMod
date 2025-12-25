@@ -12,6 +12,7 @@ using UnityEngine.SceneManagement;
 using WKMultiMod.src.Data;
 using WKMultiMod.src.NetWork;
 using WKMultiMod.src.Util;
+using static SessionEventModule_SendMessageToModules;
 using static WKMultiMod.src.Data.MPDataSerializer;
 namespace WKMultiMod.src.Core;
 
@@ -257,7 +258,7 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("chaos", ChaosMod);
 		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
 		CommandConsole.AddCommand("allconnections", GetAllConnections);
-		CommandConsole.AddCommand("talk", TalkToPlayer);
+		CommandConsole.AddCommand("talk", Talk);
 	}
 
 	// 命令实现
@@ -367,7 +368,7 @@ public class MPCore : MonoBehaviour {
 		}
 	}
 
-	public void TalkToPlayer(string[] args) {
+	public void Talk(string[] args) {
 		if (!IsMultiplayerActive) {
 			CommandConsole.LogError("You need in online mode, \n" +
 				"please use the host or join");
@@ -508,6 +509,8 @@ public class MPCore : MonoBehaviour {
 			// 发送信息
 			case PacketType.TalkToAllPlayers:
 				string receivedMsg = reader.GetString();
+				string playerName = new Friend(playId).Name;
+				CommandConsole.Log($"{playerName}: {receivedMsg}");
 				RPManager.GetContainerByPlayerId(playId).UpdateNameTag(receivedMsg);
 				break;
 

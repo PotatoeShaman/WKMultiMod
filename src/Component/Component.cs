@@ -161,8 +161,8 @@ public class LootAtComponent : MonoBehaviour {
 
 	[Header("Scaling Settings")]
 	public bool maintainScreenSize = true;
-	public float baseScale = 1f; // 初始缩放比例
-	public float minScale = 0.5f;  // 最小缩放
+	public float baseScale = 0.5f; // 初始缩放比例
+	public float minScale = 0.3f;  // 最小缩放
 
 	void LateUpdate() {
 		// 持续检查并尝试获取主摄像机
@@ -229,15 +229,8 @@ public class PlayerNameTag : MonoBehaviour {
 
 		// 示例：显示 "名字: 消息内容"
 		string playerName = new Friend(_steamId).Name;
-		_textMesh.text = $"{playerName}: {message}";
+		_textMesh.text = 
+			$"{playerName}: {(message.Length <= 10 ? message : message.Substring(0, 10))}";
 
-		// 可选：启动一个协程，5秒后改回原名
-		StopAllCoroutines();
-		StartCoroutine(ResetNameAfterDelay(5f));
-	}
-
-	private IEnumerator ResetNameAfterDelay(float delay) {
-		yield return new WaitForSeconds(delay);
-		RefreshName();
 	}
 }
