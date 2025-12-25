@@ -505,9 +505,10 @@ public class MPCore : MonoBehaviour {
 			case PacketType.RequestInitData:
 				SendInitializationDataToNewPlayer(playId);
 				break;
+			// 发送信息
 			case PacketType.TalkToAllPlayers:
 				string receivedMsg = reader.GetString();
-				CommandConsole.Log($"[Chat] {playId.ToString()}: {receivedMsg}");
+				RPManager.GetContainerByPlayerId(playId).
 				break;
 
 		}

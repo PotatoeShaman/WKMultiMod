@@ -49,10 +49,9 @@ public static class LocalPlayerManager{
 	private static HandData GetHandData(ENT_Player.Hand hand) {
 		var handData = new HandData();
 
-			//handData.Position = hand.GetHoldPosition();
-			handData.Position = hand.GetHoldWorldPosition();
+		//handData.Position = hand.GetHoldPosition();
+		handData.Position = hand.GetHoldWorldPosition();
 		
-
 		return handData;
 	}
 }

@@ -122,6 +122,9 @@ public class RemotePlayerManager : MonoBehaviour {
 		return;
 	}
 
+	public RemotePlayerContainer GetContainerByPlayerId(ulong playId) { 
+		return _players[playId];
+	}
 }
 
 
@@ -138,7 +141,7 @@ public class RemotePlayerContainer {
 	private RemotePlayerComponent _playerComponent;
 	private RemoteHandComponent _leftHandComponent;
 	private RemoteHandComponent _rightHandComponent;
-	private PlayerNameTag _nameTextMesh;
+	private PlayerNameTag _nameTagController;
 
 	// 初始化时直接传送玩家
 	private float _initializationTime;
@@ -173,6 +176,100 @@ public class RemotePlayerContainer {
 			CleanupOnFailure();
 			return false;
 		}
+	}
+
+	// 销毁方法 - 清理所有资源
+	public void Destroy() {
+		SafeDestroy(PlayerObject);
+		SafeDestroy(LeftHandObject);
+		SafeDestroy(RightHandObject);
+		SafeDestroy(NameTagObject);
+
+		// 清理引用
+		PlayerObject = null;
+		LeftHandObject = null;
+		RightHandObject = null;
+		NameTagObject = null;
+		_playerComponent = null;
+		_leftHandComponent = null;
+		_rightHandComponent = null;
+		_nameTagController = null;
+	}
+
+	// 通过数据进行更新
+	public void UpdatePlayerData(PlayerData playerData) {
+
+		// 缺少部分对象
+		if (PlayerObject == null || LeftHandObject == null
+			|| RightHandObject == null || NameTagObject == null)
+			return;
+
+		// 检查组件是否存在,如果不存在尝试获取
+		if (_playerComponent == null) {
+			_playerComponent = PlayerObject.GetComponent<RemotePlayerComponent>();
+			if (_playerComponent == null) {
+				// Debug
+				MPMain.LogError(
+					"[RPCont] PlayerObject的组件未添加",
+					"[RPCont] PlayerObject component not added");
+				return;
+			}
+		}
+
+		if (_leftHandComponent == null) {
+			_leftHandComponent = LeftHandObject.GetComponent<RemoteHandComponent>();
+			if (_leftHandComponent == null) {
+				// Debug
+				MPMain.LogError(
+					"[RPCont] LeftHandObject的组件未添加",
+					"[RPCont] LeftHandObject component not added");
+				return;
+			}
+		}
+
+		if (_rightHandComponent == null) {
+			_rightHandComponent = RightHandObject.GetComponent<RemoteHandComponent>();
+			if (_rightHandComponent == null) {
+				// Debug
+				MPMain.LogError(
+					"[RPCont] RightHandObject的组件未添加",
+					"[RPCont] RightHandObject component not added");
+				return;
+			}
+		}
+
+		// 判断是否处于初始化 5 秒内
+		bool isInInitPhase = (Time.time - _initializationTime) < FORCED_TELEPORT_DURATION;
+
+		if (playerData.IsTeleport || isInInitPhase) {
+			// 使用组件的传送方法
+			_playerComponent.Teleport(playerData.Position, playerData.Rotation);
+			Vector3 leftTarget = playerData.LeftHand.Position;
+			_leftHandComponent.Teleport(leftTarget);
+
+			// 3. 处理右手传送
+			Vector3 rightTarget = playerData.RightHand.Position;
+			_rightHandComponent.Teleport(rightTarget);
+		} else {
+			// 使用插值更新
+			_playerComponent.UpdatePosition(playerData.Position);
+			_playerComponent.UpdateRotation(playerData.Rotation);
+			_leftHandComponent.UpdateFromHandData(playerData.LeftHand);
+			_rightHandComponent.UpdateFromHandData(playerData.RightHand);
+		}
+	}
+
+	// 进行头部文字更新
+	public void UpdateNameTag(string text) { 
+		if (string.IsNullOrEmpty(text)) { return; }
+		if (_nameTagController == null) {
+			MPMain.LogError(
+				"[RPCont] PlayerNameTag的组件未添加",
+				"[RPCont] PlayerNameTag component not added");
+			return;
+		}
+		_nameTagController.SetDynamicMessage(text);
+		return;
 	}
 
 	// 创建并组装对象
@@ -325,7 +422,7 @@ public class RemotePlayerContainer {
 		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
 
 		var textMesh = textObject.AddComponent<TextMesh>();
-		textMesh.text = "Player: " + PlayId;
+		textMesh.text = "play Id: " + PlayId;
 		textMesh.fontSize = 20;
 		textMesh.characterSize = 1.0f;
 		textMesh.anchor = TextAnchor.MiddleCenter;
@@ -333,12 +430,11 @@ public class RemotePlayerContainer {
 		textMesh.fontStyle = FontStyle.Bold;
 		textMesh.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-		// 添加看板与缩放组件
-		var billboard = textObject.AddComponent<LootAtComponent>();
-		billboard.baseScale = 0.1f; // 这里的缩放决定了文字在屏幕上的视觉大小
-		billboard.minScale = 0.05f;
+		textObject.AddComponent<LootAtComponent>(); // 负责面向相机和缩放
 
-		_nameTextMesh = textObject.AddComponent<PlayerNameTag>();
+		// 挂载管理组件并初始化
+		_nameTagController = textObject.AddComponent<PlayerNameTag>();
+		_nameTagController.Initialize(PlayId); // 传入 ID 即可
 
 		return textObject;
 	}
@@ -359,87 +455,6 @@ public class RemotePlayerContainer {
 			} else {
 				GameObject.DestroyImmediate(obj);
 			}
-		}
-	}
-
-	// 销毁方法 - 清理所有资源
-	public void Destroy() {
-		SafeDestroy(PlayerObject);
-		SafeDestroy(LeftHandObject);
-		SafeDestroy(RightHandObject);
-		SafeDestroy(NameTagObject);
-
-		// 清理引用
-		PlayerObject = null;
-		LeftHandObject = null;
-		RightHandObject = null;
-		NameTagObject = null;
-		_playerComponent = null;
-		_leftHandComponent = null;
-		_rightHandComponent = null;
-		_nameTextMesh = null;
-	}
-
-	// 通过数据进行更新
-	public void UpdatePlayerData(PlayerData playerData) {
-
-		// 缺少部分对象
-		if (PlayerObject == null || LeftHandObject == null
-			|| RightHandObject == null || NameTagObject == null)
-			return;
-
-		// 检查组件是否存在,如果不存在尝试获取
-		if (_playerComponent == null) {
-			_playerComponent = PlayerObject.GetComponent<RemotePlayerComponent>();
-			if (_playerComponent == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] PlayerObject的组件未添加",
-					"[RPCont] PlayerObject component not added");
-				return;
-			}
-		}
-
-		if (_leftHandComponent == null) {
-			_leftHandComponent = LeftHandObject.GetComponent<RemoteHandComponent>();
-			if (_leftHandComponent == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] LeftHandObject的组件未添加",
-					"[RPCont] LeftHandObject component not added");
-				return;
-			}
-		}
-
-		if (_rightHandComponent == null) {
-			_rightHandComponent = RightHandObject.GetComponent<RemoteHandComponent>();
-			if (_rightHandComponent == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] RightHandObject的组件未添加",
-					"[RPCont] RightHandObject component not added");
-				return;
-			}
-		}
-
-		// 判断是否处于初始化 5 秒内
-		bool isInInitPhase = (Time.time - _initializationTime) < FORCED_TELEPORT_DURATION;
-
-		if (playerData.IsTeleport || isInInitPhase) {
-			// 使用组件的传送方法
-			_playerComponent.Teleport(playerData.Position, playerData.Rotation);
-			Vector3 leftTarget = playerData.LeftHand.Position;
-			_leftHandComponent.Teleport(leftTarget);
-
-			// 3. 处理右手传送
-			Vector3 rightTarget = playerData.RightHand.Position;
-			_rightHandComponent.Teleport(rightTarget);
-		} else {
-			// 使用插值更新
-			_playerComponent.UpdatePosition(playerData.Position);
-			_playerComponent.UpdateRotation(playerData.Rotation);
-			_leftHandComponent.UpdateFromHandData(playerData.LeftHand);
-			_rightHandComponent.UpdateFromHandData(playerData.RightHand);
 		}
 	}
 

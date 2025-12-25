@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Steamworks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -196,15 +197,47 @@ public class LootAtComponent : MonoBehaviour {
 // 这个组件用来修改玩家名字
 public class PlayerNameTag : MonoBehaviour {
 	private TextMesh _textMesh;
+	private SteamId _steamId;
 
 	void Awake() {
 		_textMesh = GetComponent<TextMesh>();
 	}
 
-	// 提供一个公开方法供外部调用
-	public void SetText(string newText) {
-		if (_textMesh != null) {
-			_textMesh.text = newText;
-		}
+	/// <summary>
+	/// 初始化设置（由 CreateNameTagObject 调用一次）
+	/// </summary>
+	public void Initialize(ulong playId) {
+		_steamId = playId;
+		// 初始显示 Steam 名称
+		RefreshName();
+	}
+
+	/// <summary>
+	/// 更新名称
+	/// </summary>
+	public void RefreshName() {
+		if (_textMesh == null) return;
+		// 直接通过 SteamId 获取名称
+		_textMesh.text = new Friend(_steamId).Name;
+	}
+
+	/// <summary>
+	/// 接收远程消息：例如玩家说话、头衔变更等
+	/// </summary>
+	public void SetDynamicMessage(string message) {
+		if (_textMesh == null) return;
+
+		// 示例：显示 "名字: 消息内容"
+		string playerName = new Friend(_steamId).Name;
+		_textMesh.text = $"{playerName}: {message}";
+
+		// 可选：启动一个协程，5秒后改回原名
+		StopAllCoroutines();
+		StartCoroutine(ResetNameAfterDelay(5f));
+	}
+
+	private IEnumerator ResetNameAfterDelay(float delay) {
+		yield return new WaitForSeconds(delay);
+		RefreshName();
 	}
 }
