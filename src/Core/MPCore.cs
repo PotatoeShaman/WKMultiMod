@@ -508,7 +508,7 @@ public class MPCore : MonoBehaviour {
 			// 发送信息
 			case PacketType.TalkToAllPlayers:
 				string receivedMsg = reader.GetString();
-				RPManager.GetContainerByPlayerId(playId).
+				RPManager.GetContainerByPlayerId(playId).UpdateNameTag(receivedMsg);
 				break;
 
 		}

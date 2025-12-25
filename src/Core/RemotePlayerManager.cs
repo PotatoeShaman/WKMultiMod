@@ -434,7 +434,7 @@ public class RemotePlayerContainer {
 
 		// 挂载管理组件并初始化
 		_nameTagController = textObject.AddComponent<PlayerNameTag>();
-		_nameTagController.Initialize(PlayId); // 传入 ID 即可
+		_nameTagController.Initialize(PlayId); // 传入 SteamID
 
 		return textObject;
 	}
@@ -448,6 +448,7 @@ public class RemotePlayerContainer {
 		SafeDestroy(NameTagObject);
 	}
 
+	// 安全销毁
 	private void SafeDestroy(GameObject obj) {
 		if (obj != null) {
 			if (Application.isPlaying) {

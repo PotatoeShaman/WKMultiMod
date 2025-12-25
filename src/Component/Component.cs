@@ -161,7 +161,7 @@ public class LootAtComponent : MonoBehaviour {
 
 	[Header("Scaling Settings")]
 	public bool maintainScreenSize = true;
-	public float baseScale = 1.0f; // 初始缩放比例
+	public float baseScale = 1f; // 初始缩放比例
 	public float minScale = 0.5f;  // 最小缩放
 
 	void LateUpdate() {
@@ -184,7 +184,7 @@ public class LootAtComponent : MonoBehaviour {
 			float distance = Vector3.Distance(transform.position, mainCamera.transform.position);
 
 			// 核心公式：缩放值 = 距离 * 基础大小 * 修正系数
-			float newScale = distance * baseScale * 0.1f;
+			float newScale = distance * baseScale * 0.01f;
 
 			// 限制最小值，防止离太近时消失
 			newScale = Mathf.Max(newScale, minScale);
@@ -194,7 +194,7 @@ public class LootAtComponent : MonoBehaviour {
 	}
 }
 
-// 这个组件用来修改玩家名字
+// 这个组件用来修改头部显示文字
 public class PlayerNameTag : MonoBehaviour {
 	private TextMesh _textMesh;
 	private SteamId _steamId;
