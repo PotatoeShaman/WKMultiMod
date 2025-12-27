@@ -162,7 +162,7 @@ public class LootAtComponent : MonoBehaviour {
 	[Header("Scaling Settings")]
 	public bool maintainScreenSize = true;
 	public float baseScale = 0.5f; // 初始缩放比例
-	public float minScale = 0.3f;  // 最小缩放
+	public float minScale = 0.5f;  // 最小缩放
 
 	void LateUpdate() {
 		// 持续检查并尝试获取主摄像机

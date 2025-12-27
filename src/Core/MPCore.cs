@@ -329,6 +329,7 @@ public class MPCore : MonoBehaviour {
 			"[MPCore] All connections have been disconnected, remote players have been cleaned up.");
 	}
 
+	// 没什么用 
 	public void ChaosMod(string[] args) {
 		if (args.Length <= 0) {
 			IsChaosMod = !IsChaosMod;
