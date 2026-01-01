@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<AssemblyName>WKMultiMod</AssemblyName>
 		<Product>WKMultiMod</Product>
-		<Version>0.13.10.1</Version>
+		<Version>0.13.12.1</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
@@ -41,5 +41,11 @@
 			<HintPath>%(Identity)</HintPath>
 			<Private>false</Private>
 		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="temp\**" />
+	  <EmbeddedResource Remove="temp\**" />
+	  <None Remove="temp\**" />
 	</ItemGroup>
 </Project>

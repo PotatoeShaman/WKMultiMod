@@ -20,6 +20,12 @@ public static class MPReaderPool {
 		_threadReader.SetSource(payload.Array, payload.Offset, payload.Count);
 		return _threadReader;
 	}
+	public static NetDataReader GetReader(byte[] data) {
+		if (data == null) return null;
+
+		// 将整个 byte[] 包装成 ArraySegment，Offset 为 0，长度为 data.Length
+		return GetReader(new ArraySegment<byte>(data));
+	}
 }
 
 public static class MPWriterPool {

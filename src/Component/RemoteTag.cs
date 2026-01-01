@@ -72,7 +72,7 @@ public class RemoteTag : MonoBehaviour {
 		string playerName = new Friend(SteamId).Name;
 		_textMesh.text =
 			$"{playerName}\n" +
-			$"ID: {SteamId}\n";
+			$"ID: {SteamId.ToString()}\n";
 	}
 
 	/// <summary>
@@ -85,8 +85,8 @@ public class RemoteTag : MonoBehaviour {
 		string playerName = new Friend(SteamId).Name;
 		_textMesh.text =
 			$"{playerName}\n" +
-			$"ID: {SteamId}\n" +
-			$"{(message.Length <= 10 ? message : message.Substring(0, 10))}";
+			$"ID: {SteamId.ToString()}\n" +
+			$"{(message.Length <= 15 ? message : message.Substring(0, 15))}";
 
 	}
 }

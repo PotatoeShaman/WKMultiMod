@@ -473,8 +473,6 @@ public class RemotePlayerContainer {
 		ObjectTagger tagger = gameObject.AddComponent<ObjectTagger>();
 		if (tagger != null) {
 			tagger.tags.Add("Handhold");    //攀爬标签
-			tagger.tags.Add("Damageable");  //被伤害标签
-			tagger.tags.Add("Entity");      //实体标签
 		}
 
 		// 添加 CL_Handhold 组件 (攀爬逻辑)

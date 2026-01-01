@@ -37,8 +37,8 @@ public class MPSteamworks : MonoBehaviour {
 	private ConcurrentQueue<NetworkMessage> _messageQueue = new ConcurrentQueue<NetworkMessage>();
 
 	// 本机SteamId
-	private SteamId _mySteamId;
-	public SteamId MySteamId { get => _mySteamId; private set => _mySteamId = value; }
+	private SteamId _userSteamId;
+	public SteamId UserSteamId { get => _userSteamId; private set => _userSteamId = value; }
 
 	// 获取当前大厅ID
 	public ulong CurrentLobbyId {
@@ -70,17 +70,12 @@ public class MPSteamworks : MonoBehaviour {
 				return;
 			}
 
-			MySteamId = SteamClient.SteamId;
+			UserSteamId = SteamClient.SteamId;
 			MPMain.LogInfo(
 				$"[MPSW] Steamworks初始化成功 玩家: " +
 				$"玩家: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}",
 				$"[MPSW] Steamworks initialization succeeded. " +
 				$"Player: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}");
-
-			// 订阅MPCore会发送的事件
-			SteamNetworkEvents.OnSendToHost += HandleSendToHost;
-			SteamNetworkEvents.OnBroadcast += HandleBroadcast;
-			SteamNetworkEvents.OnSendToPeer += HandleSendToPeer;
 
 			// 订阅大厅事件 大部分只做转发
 			// 本机加入大厅
@@ -121,11 +116,6 @@ public class MPSteamworks : MonoBehaviour {
 	}
 
 	void OnDestroy() {
-		// 取消订阅
-		SteamNetworkEvents.OnSendToHost -= HandleSendToHost;
-		SteamNetworkEvents.OnBroadcast -= HandleBroadcast;
-		SteamNetworkEvents.OnSendToPeer -= HandleSendToPeer;
-
 		// 订阅大厅事件 大部分只做转发
 		// 本机加入大厅
 		SteamMatchmaking.OnLobbyEntered -= OnLobbyEntered;
@@ -192,7 +182,9 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->主机玩家
 	/// </summary>
-	private void HandleSendToHost(byte[] data, SendType sendType, ushort laneIndex) {
+	public void HandleSendToHost(
+		byte[] data, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+
 		if (_currentLobby.Id.IsValid) {
 			var hostSteamId = _currentLobby.Owner.Id;
 			if (hostSteamId != SteamClient.SteamId && _allConnections.TryGetValue(hostSteamId, out var connection)) {
@@ -204,7 +196,8 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->所有连接玩家
 	/// </summary>
-	private void HandleBroadcast(byte[] data, SendType sendType, ushort laneIndex) {
+	public void HandleBroadcast(
+		byte[] data, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		// Debug
 		bool canLog = _debugTick.TryTick();
@@ -241,7 +234,9 @@ public class MPSteamworks : MonoBehaviour {
 	/// <param name="steamId"></param>
 	/// <param name="sendType"></param>
 	/// <param name="laneIndex"></param>
-	private void HandleSendToPeer(byte[] data, SteamId steamId, SendType sendType, ushort laneIndex) {
+	public void HandleSendToPeer(
+		SteamId steamId, byte[] data, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+
 		try {
 			_allConnections[steamId].SendMessage(data, sendType, laneIndex);
 		} catch (Exception ex) {
@@ -272,7 +267,7 @@ public class MPSteamworks : MonoBehaviour {
 		while (processedCount < maxMessagesPerFrame && _messageQueue.TryDequeue(out var message)) {
 			try {
 				// 直接转发到总线,不处理业务逻辑
-				SteamNetworkEvents.TriggerReceiveSteamData(message.SenderId.Value, message.Data);
+				MPEventBus.Net.NotifyReceive(message.SenderId.Value, message.Data);
 				processedCount++;
 			} catch (Exception ex) {
 				MPMain.LogError(
@@ -314,7 +309,7 @@ public class MPSteamworks : MonoBehaviour {
 		HasConnections = true;
 
 		// 触发总线 RemotePlayerManager
-		SteamNetworkEvents.TriggerPlayerConnected(steamId);
+		MPEventBus.Net.NotifyPlayerConnected(steamId);
 	}
 
 	/// <summary>
@@ -337,7 +332,7 @@ public class MPSteamworks : MonoBehaviour {
 			HasConnections = _allConnections.Count > 0;
 
 			// 触发业务层销毁玩家
-			SteamNetworkEvents.TriggerPlayerDisconnected(steamId);
+			MPEventBus.Net.NotifyPlayerDisconnected(steamId);
 		}
 	}
 
@@ -612,7 +607,7 @@ public class MPSteamworks : MonoBehaviour {
 			$"[MPSW] Entered lobby. LobbyId: {lobby.Id.ToString()}");
 
 		// 发布事件到总线
-		SteamNetworkEvents.TriggerLobbyEntered(lobby);
+		MPEventBus.Net.NotifyLobbyEntered(lobby);
 	}
 
 	/// <summary>
@@ -625,7 +620,7 @@ public class MPSteamworks : MonoBehaviour {
 				$"[MPSW] Player joined room. SteamId: {friend.Name}");
 
 			// 发布事件到总线
-			SteamNetworkEvents.TriggerLobbyMemberJoined(friend.Id);
+			MPEventBus.Net.NotifyLobbyMemberJoined(friend.Id);
 
 			// 连接到新玩家
 			if (friend.Id != SteamClient.SteamId) {
@@ -644,7 +639,7 @@ public class MPSteamworks : MonoBehaviour {
 				$"[MPSW] Player left the room. SteamId: {friend.Name}");
 
 			// 发布事件到总线
-			SteamNetworkEvents.TriggerLobbyMemberLeft(friend.Id);
+			MPEventBus.Net.NotifyLobbyMemberLeft(friend.Id);
 
 			// 只在这里处理连接清理
 			OnPlayerDisconnected(friend.Id);
@@ -686,7 +681,7 @@ public class MPSteamworks : MonoBehaviour {
 					$"[MPCore] Host change: {_lastKnownHostId.ToString()} -> {currentOwnerId.ToString()}");
 
 				// 触发主机变更总线
-				SteamNetworkEvents.TriggerLobbyHostChanged(lobby, _lastKnownHostId);
+				MPEventBus.Net.NotifyLobbyHostChanged(lobby, _lastKnownHostId);
 			}
 					
 		}
