@@ -40,9 +40,19 @@
     <Project Path="src/WKMultiPlayerMod.csproj" />
   </Folder>
   <Folder Name="/temp/">
-    <Project Path="temp/temp.csproj" Id="cec0fa87-33da-43fe-a511-0b8b29d68ab2" />
+    <Project Path="temp/temp.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test/test.csproj" Id="243fee3e-d411-4df2-ab9e-d6b638cc46ee" />
+    <Project Path="test/test.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/解决方案项/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+    <File Path="README_CN.md" />
   </Folder>
 </Solution>
