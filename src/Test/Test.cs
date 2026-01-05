@@ -13,6 +13,17 @@ namespace WKMultiMod.Test;
 
 public static class Test {
 	public static void Main(string[] arg) {
+		float x = 0.0f;
+		float y = 2.0f;
+		float z = 0.0f;
+
+		if (arg.Length >= 1)
+			float.TryParse(arg[0], out x);
+		if (arg.Length >= 2)
+			float.TryParse(arg[1], out y);
+		if (arg.Length >= 3)
+			float.TryParse(arg[2], out z);
+
 		var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 		player.name = "RemoteEntity";
 
@@ -43,7 +54,7 @@ public static class Test {
 		// 添加组件
 		AddComponents(player);
 
-		player.transform.position = new Vector3(0.0f, 2.0f, 0.0f);
+		player.transform.position = new Vector3(x, y, z);
 	}
 	// 赋予可攀爬组件 和 实体组件 和 标签组件
 	public static void AddComponents(GameObject gameObject) {

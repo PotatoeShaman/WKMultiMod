@@ -36,6 +36,7 @@
     <File Path="lib/GameData/UnityEngine.TextRenderingModule.dll" />
     <File Path="lib/GameData/UnityEngine.UI.dll" />
   </Folder>
+  <Folder Name="/lib/Temp/" />
   <Folder Name="/src/">
     <Project Path="src/WKMultiPlayerMod.csproj" />
   </Folder>
