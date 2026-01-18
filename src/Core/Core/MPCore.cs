@@ -18,6 +18,7 @@ using static Steamworks.InventoryItem;
 using static WKMPMod.Data.MPEventBusNet;
 using static WKMPMod.Util.MPReaderPool;
 using static WKMPMod.Util.MPWriterPool;
+using WKMPMod.RemoteManager;
 
 namespace WKMPMod.Core;
 
@@ -409,7 +410,7 @@ public class MPCore : MonoBehaviour {
 			CommandConsole.LogError("Please use this command after online");
 			return;
 		}
-		CommandConsole.Log($"Lobby Id: {Steamworks.GetLobbyId().ToString()}");
+		CommandConsole.Log($"Lobby Id: {Steamworks.LobbyId.ToString()}");
 	}
 
 	/// <summary>
@@ -555,6 +556,7 @@ public class MPCore : MonoBehaviour {
 	/// 协程请求种子
 	/// </summary>
 	public IEnumerator InitHandshakeRoutine() {
+		yield return new WaitForSeconds(1.0f);
 		// 在大厅并且未加载
 		while (IsInLobby && !IsInitialized) {
 			MPMain.LogInfo(
@@ -563,7 +565,7 @@ public class MPCore : MonoBehaviour {
 			var writer = GetWriter();
 			writer.Put((int)PacketType.WorldInitRequest);
 			Steamworks.HandleSendToHost(writer);
-			yield return new WaitForSeconds(2.0f);
+			yield return new WaitForSeconds(4.0f);
 		}
 	}
 

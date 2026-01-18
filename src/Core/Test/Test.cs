@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Numerics;
-using System.Text;
-using Unity.Mathematics.Geometry;
 using UnityEngine;
 using WKMPMod.Component;
 using WKMPMod.Core;
-using WKMPMod.Util;
+using WKMPMod.RemoteManager;
+using WKMPMod.Shared.MK_Component;
+using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 
@@ -76,7 +73,7 @@ public class Test : MonoBehaviour{
 			return;
 		}
 
-		PrefabComponentMapper.ProcessPrefabMarkers(slugcatPrefab);
+		RemotePlayerManager.ProcessPrefabMarkers(slugcatPrefab);
 
 		var slugcatInstance = Instantiate(slugcatPrefab, Vector3.zero, Quaternion.identity);
 		Debug.LogError($"Slugcat已在位置 {slugcatInstance.transform.position} 生成");
@@ -95,6 +92,7 @@ public class Test : MonoBehaviour{
 		}
 		var slugcatInstance = Instantiate(slugcatPrefab, vector3, Quaternion.identity);
 	}
+
 	public static void GetGraphicsAPI(string[] args) {
 		// 方法1：直接获取当前API
 		Debug.Log($"当前图形API: {SystemInfo.graphicsDeviceType}");
@@ -112,4 +110,5 @@ public class Test : MonoBehaviour{
 		Debug.Log($"支持曲面细分: {SystemInfo.supportsTessellationShaders}");
 		Debug.Log($"支持GPU实例化: {SystemInfo.supportsInstancing}");
 	}
+
 }

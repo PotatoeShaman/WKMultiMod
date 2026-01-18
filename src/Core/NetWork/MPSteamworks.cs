@@ -10,7 +10,6 @@ using UnityEngine;
 using WKMPMod.Core;
 using WKMPMod.Data;
 using WKMPMod.Util;
-using WKMPMod.Data;
 
 namespace WKMPMod.NetWork;
 
@@ -67,6 +66,11 @@ public class MPSteamworks : MonoBehaviour {
 			if (_currentLobby.Id == 0) return false;
 			return _currentLobby.Owner.Id == SteamClient.SteamId;
 		}
+	}
+
+	// 获取大厅ID
+	public ulong LobbyId {
+		get => _currentLobby.Id.Value;
 	}
 
 	#region[生命周期函数]
@@ -181,13 +185,6 @@ public class MPSteamworks : MonoBehaviour {
 			"[MPSW] All network connections have been disconnected.");
 	}
 	#endregion
-
-	/// <summary>
-	/// 获取大厅ID
-	/// </summary>
-	public ulong GetLobbyId() {
-		return _currentLobby.Id.Value;
-	}
 
 	#region[发送数据函数]
 
@@ -393,6 +390,7 @@ public class MPSteamworks : MonoBehaviour {
 	}
 	#endregion
 
+	#region[连接/断连 回调函数]
 
 	/// <summary>
 	/// 接收数据: 任意玩家->本机 / 本机->任意玩家 连接成功 -> Player(In/Out)Connected总线
@@ -422,12 +420,12 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	public void OnPlayerDisconnected(SteamId steamId) {
 		if (_allConnections.ContainsKey(steamId)) {
-			_allConnections.Remove(steamId);
 
-			// 如果你维护了主动连接字典,也要清理
-			if (_outgoingConnections.ContainsKey(steamId)) {
-				_outgoingConnections.Remove(steamId);
-			}
+			_allConnections.Remove(steamId);
+			_outgoingConnections.Remove(steamId);
+
+			// 重连检测
+			StartCoroutine(CheckAndAttemptReconnect(steamId));
 
 			MPMain.LogInfo(
 				$"[MPSW] 玩家断开,已清理连接. SteamId: {steamId.ToString()}",
@@ -441,7 +439,9 @@ public class MPSteamworks : MonoBehaviour {
 		}
 	}
 
-	#region[创建/加入大厅 连接函数]
+	#endregion
+
+	#region[创建/加入大厅/连接玩家函数]
 	/// <summary>
 	/// 连接到指定玩家(纯网络连接,不处理业务逻辑)
 	/// </summary>
@@ -701,6 +701,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	private void OnLobbyMemberJoined(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
+			_currentLobby = lobby;
 			MPMain.LogInfo(
 				$"[MPSW] 玩家加入大厅. SteamId: {friend.Name}",
 				$"[MPSW] Player joined room. SteamId: {friend.Name}");
@@ -720,6 +721,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	private void OnLobbyMemberLeft(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
+			_currentLobby = lobby;
 			MPMain.LogInfo(
 				$"[MPSW] 玩家离开大厅. SteamId: {friend.Name}",
 				$"[MPSW] Player left the room. SteamId: {friend.Name}");
@@ -737,6 +739,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	private void OnLobbyMemberDisconnected(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
+			_currentLobby = lobby;
 			MPMain.LogInfo(
 				$"[MPSW] 玩家断开大厅连接. SteamId: {friend.Name}",
 				$"[MPSW] Player disconnected from the lobby. SteamId: {friend.Name}");
@@ -783,8 +786,8 @@ public class MPSteamworks : MonoBehaviour {
 		// 有玩家正在接入
 		public override void OnConnecting(Connection connection, ConnectionInfo info) {
 			MPMain.LogInfo(
-				$"[MPSW] 玩家正在连接. SteamId{info.Identity.SteamId.ToString()}",
-				$"[MPSW] Player is connecting. SteamId{info.Identity.SteamId.ToString()}");
+				$"[MPSW] 玩家正在连接. SteamId: {info.Identity.SteamId.ToString()}",
+				$"[MPSW] Player is connecting. SteamId: {info.Identity.SteamId.ToString()}");
 			connection.Accept();
 		}
 
@@ -809,6 +812,9 @@ public class MPSteamworks : MonoBehaviour {
 
 		// 连接被本地或远程关闭
 		public override void OnDisconnected(Connection connection, ConnectionInfo info) {
+			MPMain.LogError(
+				$"[MPSW] 连接断开详情: {info.ToString()}",
+				$"[MPSW] Disconnected details: {info.ToString()}");
 			_instance?.OnPlayerDisconnected(info.Identity.SteamId);
 		}
 	}
@@ -840,6 +846,35 @@ public class MPSteamworks : MonoBehaviour {
 			_instance?.OnPlayerDisconnected(info.Identity.SteamId);
 		}
 	}
+	#endregion
+
+	#region[重连机制]
+
+	private IEnumerator CheckAndAttemptReconnect(SteamId targetId) {
+		// 延迟一小会儿重连,避开底层 Socket 还没清理干净的瞬间
+		yield return new WaitForSeconds(1f);
+
+		// 条件 A: 我在大厅里吗？
+		if (!IsInLobby) yield break;
+
+		// 条件 B: 对方还在大厅列表里吗？
+		bool isStillInLobby = false;
+		foreach (var member in _currentLobby.Members) {
+			if (member.Id == targetId) {
+				isStillInLobby = true;
+				break;
+			}
+		}
+
+		if (isStillInLobby) {
+			MPMain.LogWarning(
+				$"[MPSW] 玩家 {targetId.ToString()} 连接异常断开,但仍在 Steam 大厅中. 准备尝试物理重连...",
+				$"[MPSW] Player {targetId.ToString()} disconnected but still in lobby. Attempting physical reconnection...");
+
+			ConnectToPlayer(targetId);
+		}
+	}
+
 	#endregion
 
 }

@@ -16,7 +16,7 @@ public class LocalPlayer: MonoBehaviour{
 	private const float ROTATION_CHANGE_THRESHOLD_DEG = 0.5f;    // 最小旋转角度
 
 	// 网络发送控制
-	public bool ShouldSendData { get; set; } = false;  // 改为属性，更清晰
+	public bool ShouldSendData { get; set; } = false;  // 改为属性,更清晰
 
 	// 玩家标识
 	public ulong UserId { get; private set; }          // 本地玩家SteamID
@@ -190,7 +190,7 @@ public class LocalPlayer: MonoBehaviour{
 	#region 工具方法
 	/// 优化版的旋转相似性检查（避免Quaternion.Angle的开方运算）
 	private bool IsRotationSimilar(Quaternion a, Quaternion b, float thresholdDegrees) {
-		// 使用点积判断，比Quaternion.Angle更快
+		// 使用点积判断,比Quaternion.Angle更快
 		float cosThreshold = Mathf.Cos(thresholdDegrees * Mathf.Deg2Rad * 0.5f);
 		float dot = Mathf.Abs(Quaternion.Dot(a, b));
 		return dot > cosThreshold;
