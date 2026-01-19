@@ -29,8 +29,23 @@ public class MPSteamworks : MonoBehaviour {
 	private TickTimer _debugTick = new TickTimer(5f);
 	// 大厅Id
 	private Lobby _currentLobby;
-	// 房主Id
-	private SteamId _lastKnownHostId;
+	// 获取当前大厅ID
+	public ulong CurrentLobbyId {
+		get { return _currentLobby.Id.Value; }
+	}
+	// 检查是否在大厅中
+	public bool IsInLobby {
+		get { return _currentLobby.Id.IsValid; }
+	}
+
+	// 本机Id
+	public ulong UserSteamId { get; private set; }
+	// 之前的主机Id
+	public ulong HostSteamId { get; private set; }
+	// 广播Id
+	public ulong BroadcastId { get; } = 0;
+	// 特殊Id (必须解包)
+	public ulong SpecialId { get; } = 1;
 
 	// 监听socket
 	internal SteamSocketManager _socketManager;
@@ -47,19 +62,6 @@ public class MPSteamworks : MonoBehaviour {
 	// 数据池
 	private static readonly ArrayPool<byte> _messagePool = ArrayPool<byte>.Shared;
 
-	// 本机SteamId
-	private SteamId _userSteamId;
-	public SteamId UserSteamId { get => _userSteamId; private set => _userSteamId = value; }
-
-	// 获取当前大厅ID
-	public ulong CurrentLobbyId {
-		get { return _currentLobby.Id.Value; }
-	}
-	// 检查是否在大厅中
-	public bool IsInLobby {
-		get { return _currentLobby.Id.IsValid; }
-	}
-
 	// 检查是否是大厅所有者
 	public bool IsHost {
 		get {
@@ -71,6 +73,14 @@ public class MPSteamworks : MonoBehaviour {
 	// 获取大厅ID
 	public ulong LobbyId {
 		get => _currentLobby.Id.Value;
+	}
+
+	// 判断玩家是否在大厅
+	public bool IsMemberInLobby(SteamId targetId) {
+		foreach (var member in _currentLobby.Members) { 
+			if(member.Id == targetId) return true;	
+		}
+		return false;
 	}
 
 	#region[生命周期函数]
@@ -167,7 +177,7 @@ public class MPSteamworks : MonoBehaviour {
 
 		// 状态重置
 		HasConnections = false;
-		_lastKnownHostId = 0;
+		HostSteamId = 0;
 
 		// 离开大厅(如果有)
 		if (_currentLobby.Id.IsValid) {
@@ -200,8 +210,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->主机玩家
 	/// </summary>
-	public void SendToHost(byte[] data, SendType sendType = SendType.Reliable,
-								 ushort laneIndex = 0) {
+	public void SendToHost(byte[] data, SendType sendType = SendType.Reliable,ushort laneIndex = 0) {
 
 		if (_currentLobby.Id.IsValid) {
 			var hostSteamId = _currentLobby.Owner.Id;
@@ -215,7 +224,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// 发送数据: 本机->总线->主机玩家
 	/// </summary>
 	public void SendToHost(byte[] data, int offset, int length,
-								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+						   SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		if (_currentLobby.Id.IsValid) {
 			var hostSteamId = _currentLobby.Owner.Id;
@@ -237,8 +246,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->所有连接玩家
 	/// </summary>
-	public void Broadcast(byte[] data, SendType sendType = SendType.Reliable,
-								ushort laneIndex = 0) {
+	public void Broadcast(byte[] data, SendType sendType = SendType.Reliable,ushort laneIndex = 0) {
 
 		// Debug
 		bool canLog = _debugTick.TryTick();
@@ -271,7 +279,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// 发送数据: 本机->总线->所有连接玩家
 	/// </summary>
 	public void Broadcast(byte[] data, int offset, int length,
-								SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+						  SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		// Debug
 		bool canLog = _debugTick.TryTick();
@@ -303,7 +311,8 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 专门为 DataWriter 准备的重载,实现零拷贝转发
 	/// </summary>
-	public void SendToPeer(SteamId steamId, DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+	public void SendToPeer(SteamId steamId, DataWriter writer, 
+						   SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 		// 从 Writer 获取视图(ArraySegment 是结构体,包装它是轻量级的)
 		var segment = writer.Data;
 		SendToPeer(steamId, segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
@@ -313,7 +322,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// 发送数据: 本机->总线->特定玩家
 	/// </summary>
 	public void SendToPeer(SteamId steamId, byte[] data,
-								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+						   SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		try {
 			_allConnections[steamId].SendMessage(data, sendType, laneIndex);
@@ -325,10 +334,10 @@ public class MPSteamworks : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 发送数据: 本机->总线->特定玩家
+	/// 发送数据: 本机->特定玩家
 	/// </summary>
 	public void SendToPeer(SteamId steamId, byte[] data, int offset, int length,
-								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+						   SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		try {
 			_allConnections[steamId].SendMessage(data, offset, length, sendType, laneIndex);
@@ -339,6 +348,45 @@ public class MPSteamworks : MonoBehaviour {
 		}
 	}
 
+	/// <summary>
+	/// 发送数据: 本机->除个别玩家外所有连接玩家
+	/// </summary>
+	/// <param name="steamId">被排除的玩家</param>
+	private void BroadcastExcept(ulong steamId, byte[] data, SendType sendType = SendType.Reliable, 
+								 ushort laneIndex = 0) {
+		foreach (var (tempSteamId, connection) in _allConnections) {
+			if (steamId == tempSteamId)
+				continue;
+			try {
+
+				connection.SendMessage(data, sendType, laneIndex);
+			} catch (Exception ex) {
+				MPMain.LogError(
+					$"[MPSW] 广播数据异常: {ex.Message}",
+					$"[MPSW] Broadcasting data exception: {ex.Message}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// 发送数据: 本机->除个别玩家外所有连接玩家
+	/// </summary>
+	/// <param name="steamId">被排除的玩家</param>
+	internal void BroadcastExcept(ulong steamId, byte[] data, int offset, int length,
+								  SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+
+		foreach (var (tempSteamId, connection) in _allConnections) {
+			if (steamId == tempSteamId)
+				continue;
+			try {
+				connection.SendMessage(data, offset, length, sendType, laneIndex);
+			} catch (Exception ex) {
+				MPMain.LogError(
+					$"[MPSW] 广播数据异常: {ex.Message}",
+					$"[MPSW] Broadcasting data exception: {ex.Message}");
+			}
+		}
+	}
 	#endregion
 
 	#region[消息处理函数]
@@ -346,13 +394,13 @@ public class MPSteamworks : MonoBehaviour {
 	/// 接收数据: 任意玩家->消息队列
 	/// </summary>
 	private void HandleIncomingRawData(SteamId senderId, IntPtr data, int size) {
-		// 1. 从池里借出一块内存。注意：buffer.Length 可能 >= size
+		// 从池里借出一块内存。注意：buffer.Length 可能 >= size
 		byte[] buffer = _messagePool.Rent(size);
 
-		// 2. 将非托管指针数据拷贝到借来的数组中
+		// 将非托管指针数据拷贝到借来的数组中
 		System.Runtime.InteropServices.Marshal.Copy(data, buffer, 0, size);
 
-		// 3. 入队
+		// 入队
 		_messageQueue.Enqueue(new NetworkMessage {
 			SenderId = senderId.Value,
 			Data = buffer,
@@ -425,7 +473,8 @@ public class MPSteamworks : MonoBehaviour {
 			_outgoingConnections.Remove(steamId);
 
 			// 重连检测
-			StartCoroutine(CheckAndAttemptReconnect(steamId));
+			if (IsInLobby || IsMemberInLobby(steamId));
+				StartCoroutine(CheckAndAttemptReconnect(steamId));
 
 			MPMain.LogInfo(
 				$"[MPSW] 玩家断开,已清理连接. SteamId: {steamId.ToString()}",
@@ -434,8 +483,9 @@ public class MPSteamworks : MonoBehaviour {
 			// 检查是否还有剩余连接
 			HasConnections = _allConnections.Count > 0;
 
-			// 触发业务层销毁玩家
-			MPEventBusNet.NotifyPlayerDisconnected(steamId);
+			// 没有重连成功 触发业务层销毁玩家
+			if(!_allConnections.ContainsKey(steamId))
+				MPEventBusNet.NotifyPlayerDisconnected(steamId);
 		}
 	}
 
@@ -677,7 +727,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	private void OnLobbyEntered(Lobby lobby) {
 		_currentLobby = lobby;
-		_lastKnownHostId = lobby.Owner.Id;
+		HostSteamId = lobby.Owner.Id;
 		MPMain.LogInfo(
 			$"[MPSW] 进入大厅. 大厅Id: {lobby.Id.ToString()}",
 			$"[MPSW] Entered lobby. LobbyId: {lobby.Id.ToString()}");
@@ -764,15 +814,15 @@ public class MPSteamworks : MonoBehaviour {
 			// 获取当前大厅真正的主机(Owner)
 			SteamId currentOwnerId = lobby.Owner.Id;
 			// 检查所有权是否发生了变更
-			if (_lastKnownHostId != 0 && _lastKnownHostId != currentOwnerId) {
+			if (HostSteamId != 0 && HostSteamId != currentOwnerId) {
 				MPMain.LogInfo(
-					$"[MPCore] 主机变更: {_lastKnownHostId.ToString()} -> {currentOwnerId.ToString()}",
-					$"[MPCore] Host change: {_lastKnownHostId.ToString()} -> {currentOwnerId.ToString()}");
+					$"[MPCore] 主机变更: {HostSteamId.ToString()} -> {currentOwnerId.ToString()}",
+					$"[MPCore] Host change: {HostSteamId.ToString()} -> {currentOwnerId.ToString()}");
 
 				// 触发主机变更总线
-				MPEventBusNet.NotifyLobbyHostChanged(lobby, _lastKnownHostId);
+				MPEventBusNet.NotifyLobbyHostChanged(lobby, HostSteamId);
 			}
-			_lastKnownHostId = currentOwnerId;
+			HostSteamId = currentOwnerId;
 		}
 	}
 	#endregion
@@ -851,28 +901,47 @@ public class MPSteamworks : MonoBehaviour {
 	#region[重连机制]
 
 	private IEnumerator CheckAndAttemptReconnect(SteamId targetId) {
-		// 延迟一小会儿重连,避开底层 Socket 还没清理干净的瞬间
-		yield return new WaitForSeconds(1f);
+		// 1. 等待底层彻底清理（Steam 内部清理 Socket 需要一点时间）
+		yield return new WaitForSeconds(1.5f);
 
-		// 条件 A: 我在大厅里吗？
-		if (!IsInLobby) yield break;
+		if (!IsInLobby || !IsMemberInLobby(targetId)) yield break;
 
-		// 条件 B: 对方还在大厅列表里吗？
-		bool isStillInLobby = false;
-		foreach (var member in _currentLobby.Members) {
-			if (member.Id == targetId) {
-				isStillInLobby = true;
-				break;
+		// 2. 核心：通过 ID 大小决定谁先动手
+		bool isInitiator = SteamClient.SteamId < targetId;
+
+		if (isInitiator) {
+			// ID 小的：立即尝试重连
+			MPMain.LogInfo($"[MPSW] 作为发起者 (ID较小) 尝试重连玩家: {targetId}");
+			ExecuteConnection(targetId);
+		} else {
+			// ID 大的：多等 10 秒，看看对方连不连我
+			MPMain.LogInfo($"[MPSW] 作为接收者 (ID较大) 等待玩家 {targetId} 连接");
+			float timer = 0;
+			while (timer < 10f) {
+				// 如果在此期间，入站连接成功建立了，直接退出重连协程
+				if (_allConnections.ContainsKey(targetId)) {
+					yield break;
+				}
+				timer += Time.deltaTime;
+				yield return null;
 			}
-		}
 
-		if (isStillInLobby) {
-			MPMain.LogWarning(
-				$"[MPSW] 玩家 {targetId.ToString()} 连接异常断开,但仍在 Steam 大厅中. 准备尝试物理重连...",
-				$"[MPSW] Player {targetId.ToString()} disconnected but still in lobby. Attempting physical reconnection...");
-
-			ConnectToPlayer(targetId);
+			// 10秒后还没连上，说明对方可能出问题了，我再反向尝试
+			MPMain.LogWarning($"[MPSW] 10秒内未收到对方连接, 切换为我方发起重连");
+			ExecuteConnection(targetId);
 		}
+	}
+
+	// 清理连接并重连玩家
+	private void ExecuteConnection(SteamId targetId) {
+		// 先物理清理，防止 Already connected 错误
+		if (_outgoingConnections.TryGetValue(targetId, out var oldMgr)) {
+			oldMgr.Connection.Close();
+			_outgoingConnections.Remove(targetId);
+		}
+		_allConnections.Remove(targetId);
+
+		ConnectToPlayer(targetId);
 	}
 
 	#endregion

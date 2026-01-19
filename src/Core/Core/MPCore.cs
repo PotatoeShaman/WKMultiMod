@@ -2,23 +2,18 @@
 using Steamworks;
 using Steamworks.Data;
 using System;
+using System.Buffers.Binary;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using WKMPMod.Component;
 using WKMPMod.Data;
 using WKMPMod.NetWork;
+using WKMPMod.RemoteManager;
 using WKMPMod.Util;
-using WKMPMod.Component;
-using static MonoMod.Cil.RuntimeILReferenceBag.FastDelegateInvokers;
-using static MonoMod.RuntimeDetour.Platforms.DetourNativeMonoPosixPlatform;
-using static Steamworks.InventoryItem;
-using static WKMPMod.Data.MPEventBusNet;
+using static System.Buffers.Binary.BinaryPrimitives;
 using static WKMPMod.Util.MPReaderPool;
 using static WKMPMod.Util.MPWriterPool;
-using WKMPMod.RemoteManager;
 
 namespace WKMPMod.Core;
 
@@ -61,8 +56,6 @@ public class MPCore : MonoBehaviour {
 		|| (MultiplayerStatus & MPStatus.LOBBY_MASK) == MPStatus.JoiningLobby;
 	public static bool IsInitialized =>
 		(MultiplayerStatus & MPStatus.INIT_MASK) == MPStatus.Initialized;
-	// 混乱模式开关
-	public static bool IsChaosMod { get; private set; } = false;
 
 
 	// 注意：日志通过 MultiPlayerMain.Logger 访问
@@ -128,7 +121,7 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void SubscribeToEvents() {
 		// 订阅网络数据接收事件
-		MPEventBusNet.OnReceiveData += HandleReceiveData;
+		MPEventBusNet.OnReceiveData += ProcessReceiveData;
 
 		// 订阅大厅事件
 		MPEventBusNet.OnLobbyEntered += HandleLobbyEntered;
@@ -141,8 +134,8 @@ public class MPCore : MonoBehaviour {
 
 		// 订阅游戏事件
 		MPEventBusGame.OnPlayerMove += SeedLocalPlayerData;
-		MPEventBusGame.OnPlayerDamage += ProcessPlayerDamage;
-		MPEventBusGame.OnPlayerAddForce += ProcessPlayerAddForce;
+		MPEventBusGame.OnPlayerDamage += HandlePlayerDamage;
+		MPEventBusGame.OnPlayerAddForce += HandlePlayerAddForce;
 		MPEventBusGame.OnPlayerDeath += ResetStateVariables;
 	}
 
@@ -151,7 +144,7 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void UnsubscribeFromEvents() {
 		// 退订网络数据接收事件
-		MPEventBusNet.OnReceiveData -= HandleReceiveData;
+		MPEventBusNet.OnReceiveData -= ProcessReceiveData;
 
 		// 退订大厅事件
 		MPEventBusNet.OnLobbyEntered -= HandleLobbyEntered;
@@ -164,8 +157,8 @@ public class MPCore : MonoBehaviour {
 
 		// 退订游戏事件
 		MPEventBusGame.OnPlayerMove -= SeedLocalPlayerData;
-		MPEventBusGame.OnPlayerDamage -= ProcessPlayerDamage;
-		MPEventBusGame.OnPlayerAddForce -= ProcessPlayerAddForce;
+		MPEventBusGame.OnPlayerDamage -= HandlePlayerDamage;
+		MPEventBusGame.OnPlayerAddForce -= HandlePlayerAddForce;
 		MPEventBusGame.OnPlayerDeath -= ResetStateVariables;
 		
 	}
@@ -199,8 +192,6 @@ public class MPCore : MonoBehaviour {
 		MPMain.LogInfo(
 			$"[MPCore] 场景加载完成: {scene.name}",
 			$"[MPCore] Scene loading completed: {scene.name}");
-
-		IsChaosMod = false;
 
 		switch (scene.name) {
 			case "Game-Main":
@@ -247,10 +238,9 @@ public class MPCore : MonoBehaviour {
 	/// 发送本地玩家数据
 	/// </summary>
 	private void SeedLocalPlayerData(PlayerData data) {
-		var writer = GetWriter();
+		var writer = GetWriter(Steamworks.UserSteamId,Steamworks.BroadcastId,PacketType.PlayerDataUpdate);
 
 		// 进行数据写入
-		writer.Put((int)PacketType.PlayerDataUpdate);
 		MPDataSerializer.WriteToNetData(writer, data);
 		// 触发Steam数据发送
 		// 转为byte[]
@@ -263,9 +253,8 @@ public class MPCore : MonoBehaviour {
 	/// <summary>
 	/// 发送伤害其他玩家数据
 	/// </summary>
-	private void ProcessPlayerDamage(ulong steamId, float amount, string type) {
-		var writer = GetWriter();
-		writer.Put((int)PacketType.PlayerDamage);
+	private void HandlePlayerDamage(ulong steamId, float amount, string type) {
+		var writer = GetWriter(Steamworks.UserSteamId,steamId,PacketType.PlayerDamage);
 		writer.Put(amount);
 		writer.Put(type);
 		Steamworks.SendToPeer(steamId, writer);
@@ -274,9 +263,8 @@ public class MPCore : MonoBehaviour {
 	/// <summary>
 	/// 发送给予其他玩家冲击力数据
 	/// </summary>
-	private void ProcessPlayerAddForce(ulong steamId, Vector3 force, string source) {
-		var writer = GetWriter();
-		writer.Put((int)PacketType.PlayerAddForce);
+	private void HandlePlayerAddForce(ulong steamId, Vector3 force, string source) {
+		var writer = GetWriter(Steamworks.UserSteamId, steamId, PacketType.PlayerAddForce);
 		writer.Put(force.x);
 		writer.Put(force.y);
 		writer.Put(force.z);
@@ -294,7 +282,6 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("host", Host);
 		CommandConsole.AddCommand("join", Join);
 		CommandConsole.AddCommand("leave", Leave);
-		CommandConsole.AddCommand("chaos", ChaosMod);
 		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
 		CommandConsole.AddCommand("allconnections", GetAllConnections);
 		CommandConsole.AddCommand("talk", Talk);
@@ -333,7 +320,7 @@ public class MPCore : MonoBehaviour {
 		Steamworks.CreateRoom(roomName, maxPlayers, (success) => {
 			if (success) {
 				MultiplayerStatus = MPStatus.InLobby | MPStatus.Initialized;
-				HandleWorldInitRequest(WorldLoader.instance.seed);
+				WorldLoader.ReloadWithSeed(new string[] { WorldLoader.instance.seed.ToString() });
 			} else {
 				MultiplayerStatus = MPStatus.LobbyConnectionError;
 				CommandConsole.LogError("Fail to create lobby");
@@ -388,21 +375,6 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 没什么用 
-	/// </summary>
-	public void ChaosMod(string[] args) {
-		if (args.Length <= 0) {
-			IsChaosMod = !IsChaosMod;
-		} else {
-			try {
-				IsChaosMod = TypeConverter.ToBool(args[0]);
-			} catch {
-				CommandConsole.LogError("Usage: chaos <bool> \nbool value can be: true false 1 0");
-			}
-		}
-	}
-
-	/// <summary>
 	/// 获取大厅ID
 	/// </summary>
 	public void GetLobbyId(string[] args) {
@@ -447,8 +419,7 @@ public class MPCore : MonoBehaviour {
 		// 将参数数组组合成一个字符串
 		string message = string.Join(" ", args);
 
-		var writer = GetWriter();
-		writer.Put((int)PacketType.BroadcastMessage);
+		var writer = GetWriter(Steamworks.UserSteamId, Steamworks.BroadcastId, PacketType.BroadcastMessage);
 		writer.Put(message); // 自动处理长度和编码
 
 		// 发送给所有人
@@ -485,8 +456,7 @@ public class MPCore : MonoBehaviour {
 				return;
 			}
 			// 找到对应id,发出传送请求
-			var writer = GetWriter();
-			writer.Put((int)PacketType.PlayerTeleport);
+			var writer = GetWriter(Steamworks.UserSteamId,ids[0],PacketType.PlayerTeleport);
 			Steamworks.SendToPeer(ids[0], writer);
 		}
 	}
@@ -562,33 +532,18 @@ public class MPCore : MonoBehaviour {
 			MPMain.LogInfo(
 				"[MPCore] 已向主机请求初始化数据",
 				"[MPCore] Requested initialization data from the host.");
-			var writer = GetWriter();
-			writer.Put((int)PacketType.WorldInitRequest);
+			var writer = GetWriter(Steamworks.UserSteamId, Steamworks.HostSteamId, PacketType.WorldInitRequest);
 			Steamworks.SendToHost(writer);
 			yield return new WaitForSeconds(4.0f);
 		}
 	}
 
 	/// <summary>
-	/// 加载世界种子
-	/// </summary>
-	/// <param name="seed"></param>
-	private void HandleWorldInitRequest(int seed) {
-		// Debug
-		MPMain.LogInfo(
-			$"[MPCore] 加载世界, 种子号: {seed.ToString()}",
-			$"[MPCore] Loaging world, seed: {seed.ToString()}");
-		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
-		MultiplayerStatus |= MPStatus.Initialized;
-	}
-
-	/// <summary>
 	/// 发送初始化数据给新玩家
 	/// </summary>
-	private void HandleWorldInit(SteamId steamId) {
+	private void ProcessWorldInitRequest(ulong steamId) {
 		// 发送世界种子
-		var writer = GetWriter();
-		writer.Put((int)PacketType.WorldInitData);
+		var writer = GetWriter(Steamworks.UserSteamId, steamId, PacketType.WorldInitData);
 		writer.Put(WorldLoader.instance.seed);
 		Steamworks.SendToPeer(steamId, writer);
 
@@ -601,15 +556,57 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
+	/// 加载世界种子
+	/// </summary>
+	/// <param name="seed"></param>
+	private void ProcessWorldInit(ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
+		// 获取种子
+		int seed = reader.GetInt();
+		// Debug
+		MPMain.LogInfo(
+			$"[MPCore] 加载世界, 种子号: {seed.ToString()}",
+			$"[MPCore] Loaging world, seed: {seed.ToString()}");
+		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
+		MultiplayerStatus |= MPStatus.Initialized;
+	}
+
+	/// <summary>
+	/// 处理玩家数据更新
+	/// </summary>
+	private void ProcessPlayerDataUpdate(ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
+
+		// 如果是从转发给自己的,忽略
+		var playerData = MPDataSerializer.ReadFromNetData(reader);
+		var playId = playerData.playId;
+		if (playId == Steamworks.UserSteamId) {
+			return;
+		}
+		RPManager.ProcessPlayerData(playId, playerData);
+	}
+
+	/// <summary>
+	/// 主机/客户端接收BroadcastMessage: 处理玩家标签更新
+	/// </summary>
+	private void ProcessPlayerTagUpdate(ulong senderId, ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
+
+		string msg = reader.GetString();    // 读取消息
+		string playerName = new Friend(senderId).Name;
+		CommandConsole.Log($"{playerName}: {msg}");
+		RPManager.Players[senderId].UpdateNameTag(msg);
+	}
+
+	/// <summary>
 	/// 处理玩家传送请求
 	/// </summary>
 	/// <param name="senderId">发送方ID</param>
-	private void HandleRequestTeleport(SteamId senderId) {
+	private void ProcessPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
 		// 获取数据
 		var deathFloorData = DEN_DeathFloor.instance.GetSaveData();
 		var positionData = ENT_Player.GetPlayer().transform.position;
-		var writer = GetWriter();
-		writer.Put((int)PacketType.RespondPlayerTeleport);
+		var writer = GetWriter(Steamworks.UserSteamId,senderId, PacketType.RespondPlayerTeleport);
 		writer.Put(deathFloorData.relativeHeight);
 		writer.Put(deathFloorData.active);
 		writer.Put(deathFloorData.speed);
@@ -624,7 +621,8 @@ public class MPCore : MonoBehaviour {
 	/// 处理玩家传送响应
 	/// </summary>
 	/// <param name="senderId">发送ID</param>
-	private void HandleRespondTeleport(SteamId senderId, DataReader reader) {
+	private void ProcessRespondPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
 		var deathFloorData = new DEN_DeathFloor.SaveData {
 			relativeHeight = reader.GetFloat(),
 			active = reader.GetBool(),
@@ -646,7 +644,8 @@ public class MPCore : MonoBehaviour {
 	/// <summary>
 	/// 主机/客户端接收PlayerDamage: 受到伤害
 	/// </summary>
-	private void HandlePlayerDamage(DataReader reader) {
+	private void ProcessPlayerDamage(ulong senderId, ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
 		float amount = reader.GetFloat();
 		string type = reader.GetString();
 		var baseDamage = amount * MPConfig.AllPassive;
@@ -684,7 +683,8 @@ public class MPCore : MonoBehaviour {
 	/// <summary>
 	/// 主机/客户端接收PlayerAddForce: 受到冲击力
 	/// </summary>
-	private void HandlePlayerAddForce(DataReader reader) {
+	private void ProcessPlayerAddForce(ulong senderId, ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
 		Vector3 force = new Vector3 {
 			x = reader.GetFloat(),
 			y = reader.GetFloat(),
@@ -697,56 +697,141 @@ public class MPCore : MonoBehaviour {
 	/// <summary>
 	/// 处理网络接收数据
 	/// </summary>
-	private void HandleReceiveData(ulong senderId, ArraySegment<byte> data) {
-
+	private void ProcessReceiveData(ulong connectionId, ArraySegment<byte> data) {
+		if (data.Array == null || data.Count < 20) return;
 		// 基本验证：确保数据足够读取一个整数(数据包类型)
-		var reader = GetReader(data);
-		PacketType packetType = (PacketType)reader.GetInt();
+
+		// 直接解析头部
+		ReadOnlySpan<byte> span = data;
+		// 发送方ID
+		ulong senderId = ReadUInt64LittleEndian(span);
+		// 接收方ID
+		ulong targetId = ReadUInt64LittleEndian(span.Slice(8));
+
+		// 验证：如果发件人 ID 和物理连接 ID 对不上,可能是伪造包
+		if (senderId != connectionId) return;
+
+		// 转发：目标不是我,也不是广播,也不是特殊判断ID
+		if (targetId != Steamworks.UserSteamId 
+			&& targetId != Steamworks.BroadcastId
+			&& targetId != Steamworks.SpecialId) {
+			ProcessForwardToPeer(targetId, data);
+			return; // 结束
+		}
+
+		// 广播：如果是广播,且不是我发出的
+		if (targetId == Steamworks.BroadcastId 
+			&& senderId != Steamworks.UserSteamId) {
+			ProcessBroadcastExcept(senderId, data);
+			// 继续往下走,因为主机也要处理广播包
+		}
+
+		// 包类型
+		PacketType packetType = (PacketType)ReadInt32LittleEndian(span.Slice(16));
+		// 包具体数据
+		var payload = data.Slice(20);
 
 		switch (packetType) {
-			// 接收种子加载
-			case PacketType.WorldInitData:
-				HandleWorldInitRequest(reader.GetInt());
-				break;
-			// 接收玩家数据更新
-			case PacketType.PlayerDataUpdate:
-				var playerData = MPDataSerializer.ReadFromNetData(reader);
-				RPManager.ProcessPlayerData(senderId, playerData);
-				break;
 			// 接收世界初始化请求
-			case PacketType.WorldInitRequest:
-				HandleWorldInit(senderId);
+			case PacketType.WorldInitRequest:{
+				ProcessWorldInitRequest(senderId);
 				break;
+			}
+			// 接收种子加载
+			case PacketType.WorldInitData:{
+				ProcessWorldInit(payload);
+				break;
+			}
+			// 接收玩家数据更新
+			case PacketType.PlayerDataUpdate:{
+				ProcessPlayerDataUpdate(payload);
+				break;
+			}
+			// 接收: 世界状态同步
+			case PacketType.WorldStateSync: {
+				break;
+			}
 			// 接收信息
-			case PacketType.BroadcastMessage:
-				string receivedMsg = reader.GetString();
-				CommandConsole.Log($"{senderId.ToString()}: {receivedMsg}");
-				// 控制台目前不支持中文
-				//string playerName = new Friend(playerId).Name;
-				//CommandConsole.Log($"{playerName}: {receivedMsg}");
-				RPManager.Players.TryGetValue(senderId, out var RPcontainer);
-				RPcontainer?.UpdateNameTag(receivedMsg);
+			case PacketType.BroadcastMessage:{
+				ProcessPlayerTagUpdate(senderId, payload);
 				break;
-			// 接收传送请求
-			case PacketType.PlayerTeleport:
-				HandleRequestTeleport(senderId);
-				break;
-			// 接收传送响应
-			case PacketType.RespondPlayerTeleport:
-				HandleRespondTeleport(senderId, reader);
-				break;
+			}
 			// 接收: 受到伤害
 			case PacketType.PlayerDamage: {
-				HandlePlayerDamage(reader);
+				ProcessPlayerDamage(senderId, payload);
 				break;
 			}
 			// 接收: 受到冲击力
 			case PacketType.PlayerAddForce: {
-				HandlePlayerAddForce(reader);
+				ProcessPlayerAddForce(senderId, payload);
+				break;
+			}
+
+			// 接收传送请求
+			case PacketType.PlayerTeleport: {
+				ProcessPlayerTeleport(senderId, payload);
+				break;
+			}
+			// 接收传送响应
+			case PacketType.RespondPlayerTeleport: {
+				ProcessRespondPlayerTeleport(senderId, payload);
 				break;
 			}
 		}
 	}
 	#endregion
 
+	#region[网络发送工具类]
+	/// <summary>
+	/// 转发网络数据包到指定的客户端
+	/// </summary>
+	private void ProcessForwardToPeer(ulong targetId, ArraySegment<byte> data) {
+		// 直接从 segment 获取偏移和长度
+		int offset = data.Offset;
+		int count = data.Count;
+		// 解析类型
+		PacketType type = (PacketType)BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(16, 4));
+		SendType st = (type == PacketType.PlayerDataUpdate)
+			? SendType.Unreliable : SendType.Reliable;
+
+		Steamworks.SendToPeer(targetId, data.Array, offset, count, st);
+	}
+
+	/// <summary>
+	/// 广播数据包到所有客户端
+	/// </summary>
+	public void ProcessBroadcast(ArraySegment<byte> data) {
+		// 直接从 segment 获取偏移和长度
+		int offset = data.Offset;
+		int count = data.Count;
+
+		// 解析类型
+		PacketType type = (PacketType)BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(16, 4));
+
+		SendType st = (type == PacketType.PlayerDataUpdate)
+			? SendType.Unreliable : SendType.Reliable;
+
+		// 将全套参数传给底层
+		Steamworks.Broadcast(data.Array, offset, count, st);
+	}
+
+	/// <summary>
+	/// 广播数据包到所有客户端 (除了发送者)
+	/// </summary>
+	/// <param name="senderId">发送方ID</param>
+	public void ProcessBroadcastExcept(ulong senderId, ArraySegment<byte> data) {
+		// 直接从 segment 获取偏移和长度
+		int offset = data.Offset;
+		int count = data.Count;
+
+		// 解析类型
+		PacketType type = (PacketType)BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(16, 4));
+
+		SendType st = (type == PacketType.PlayerDataUpdate)
+			? SendType.Unreliable : SendType.Reliable;
+
+		// 将全套参数传给底层
+		Steamworks.BroadcastExcept(senderId, data.Array, offset, count, st);
+	}
+	#endregion
 }

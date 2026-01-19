@@ -184,6 +184,7 @@ public class DataWriter : IDisposable {
 		}
 	}
 
+	// 清空
 	public void Dispose() {
 		if (_buffer != null) {
 			_pool.Return(_buffer);
