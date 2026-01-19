@@ -256,7 +256,7 @@ public class MPCore : MonoBehaviour {
 		// 转为byte[]
 		// 使用不可靠+立即发送
 		// 广播所有人
-		Steamworks.HandleBroadcast(writer, SendType.Unreliable | SendType.NoNagle);
+		Steamworks.Broadcast(writer, SendType.Unreliable | SendType.NoNagle);
 		return;
 	}
 
@@ -268,7 +268,7 @@ public class MPCore : MonoBehaviour {
 		writer.Put((int)PacketType.PlayerDamage);
 		writer.Put(amount);
 		writer.Put(type);
-		Steamworks.HandleSendToPeer(steamId, writer);
+		Steamworks.SendToPeer(steamId, writer);
 	}
 
 	/// <summary>
@@ -281,7 +281,7 @@ public class MPCore : MonoBehaviour {
 		writer.Put(force.y);
 		writer.Put(force.z);
 		writer.Put(source);
-		Steamworks.HandleSendToPeer(steamId, writer);
+		Steamworks.SendToPeer(steamId, writer);
 	}
 	#endregion
 
@@ -452,7 +452,7 @@ public class MPCore : MonoBehaviour {
 		writer.Put(message); // 自动处理长度和编码
 
 		// 发送给所有人
-		Steamworks.HandleBroadcast(writer);
+		Steamworks.Broadcast(writer);
 	}
 
 	/// <summary>
@@ -487,7 +487,7 @@ public class MPCore : MonoBehaviour {
 			// 找到对应id,发出传送请求
 			var writer = GetWriter();
 			writer.Put((int)PacketType.PlayerTeleport);
-			Steamworks.HandleSendToPeer(ids[0], writer);
+			Steamworks.SendToPeer(ids[0], writer);
 		}
 	}
 	#endregion
@@ -564,7 +564,7 @@ public class MPCore : MonoBehaviour {
 				"[MPCore] Requested initialization data from the host.");
 			var writer = GetWriter();
 			writer.Put((int)PacketType.WorldInitRequest);
-			Steamworks.HandleSendToHost(writer);
+			Steamworks.SendToHost(writer);
 			yield return new WaitForSeconds(4.0f);
 		}
 	}
@@ -590,7 +590,7 @@ public class MPCore : MonoBehaviour {
 		var writer = GetWriter();
 		writer.Put((int)PacketType.WorldInitData);
 		writer.Put(WorldLoader.instance.seed);
-		Steamworks.HandleSendToPeer(steamId, writer);
+		Steamworks.SendToPeer(steamId, writer);
 
 		// 可以添加其他初始化数据,如游戏状态、物品状态等
 
@@ -617,7 +617,7 @@ public class MPCore : MonoBehaviour {
 		writer.Put(positionData.x);
 		writer.Put(positionData.y);
 		writer.Put(positionData.z);
-		Steamworks.HandleSendToPeer(senderId, writer);
+		Steamworks.SendToPeer(senderId, writer);
 	}
 
 	/// <summary>

@@ -191,16 +191,16 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 专门为 DataWriter 准备的重载,实现零拷贝转发
 	/// </summary>
-	public void HandleSendToHost(DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+	public void SendToHost(DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 		// 从 Writer 获取视图(ArraySegment 是结构体,包装它是轻量级的)
 		var segment = writer.Data;
-		HandleSendToHost(segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
+		SendToHost(segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
 	}
 
 	/// <summary>
 	/// 发送数据: 本机->总线->主机玩家
 	/// </summary>
-	public void HandleSendToHost(byte[] data, SendType sendType = SendType.Reliable,
+	public void SendToHost(byte[] data, SendType sendType = SendType.Reliable,
 								 ushort laneIndex = 0) {
 
 		if (_currentLobby.Id.IsValid) {
@@ -214,7 +214,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->主机玩家
 	/// </summary>
-	public void HandleSendToHost(byte[] data, int offset, int length,
+	public void SendToHost(byte[] data, int offset, int length,
 								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		if (_currentLobby.Id.IsValid) {
@@ -228,16 +228,16 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 专门为 DataWriter 准备的重载,实现零拷贝转发
 	/// </summary>
-	public void HandleBroadcast(DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+	public void Broadcast(DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 		// 从 Writer 获取视图(ArraySegment 是结构体,包装它是轻量级的)
 		var segment = writer.Data;
-		HandleBroadcast(segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
+		Broadcast(segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
 	}
 
 	/// <summary>
 	/// 发送数据: 本机->总线->所有连接玩家
 	/// </summary>
-	public void HandleBroadcast(byte[] data, SendType sendType = SendType.Reliable,
+	public void Broadcast(byte[] data, SendType sendType = SendType.Reliable,
 								ushort laneIndex = 0) {
 
 		// Debug
@@ -270,7 +270,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->所有连接玩家
 	/// </summary>
-	public void HandleBroadcast(byte[] data, int offset, int length,
+	public void Broadcast(byte[] data, int offset, int length,
 								SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		// Debug
@@ -303,16 +303,16 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 专门为 DataWriter 准备的重载,实现零拷贝转发
 	/// </summary>
-	public void HandleSendToPeer(SteamId steamId, DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
+	public void SendToPeer(SteamId steamId, DataWriter writer, SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 		// 从 Writer 获取视图(ArraySegment 是结构体,包装它是轻量级的)
 		var segment = writer.Data;
-		HandleSendToPeer(steamId, segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
+		SendToPeer(steamId, segment.Array, segment.Offset, segment.Count, sendType, laneIndex);
 	}
 
 	/// <summary>
 	/// 发送数据: 本机->总线->特定玩家
 	/// </summary>
-	public void HandleSendToPeer(SteamId steamId, byte[] data,
+	public void SendToPeer(SteamId steamId, byte[] data,
 								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		try {
@@ -327,7 +327,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// <summary>
 	/// 发送数据: 本机->总线->特定玩家
 	/// </summary>
-	public void HandleSendToPeer(SteamId steamId, byte[] data, int offset, int length,
+	public void SendToPeer(SteamId steamId, byte[] data, int offset, int length,
 								 SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		try {
