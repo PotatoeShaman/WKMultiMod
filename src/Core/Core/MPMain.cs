@@ -68,7 +68,7 @@ public class MPMain : BaseUnityPlugin {
 	}
 
 	public static void LogInfo(string chineseLog, string englishLog) {
-		if (MPConfig.DebugLogLanguage == 0) Logger.LogInfo(chineseLog);
+		if (MPConfig.LogLanguage == 0) Logger.LogInfo(chineseLog);
 		else Logger.LogInfo(englishLog);
 	}
 	public static void LogInfo(string log) {
@@ -76,7 +76,7 @@ public class MPMain : BaseUnityPlugin {
 	}
 
 	public static void LogWarning(string chineseLog, string englishLog) {
-		if (MPConfig.DebugLogLanguage == 0) Logger.LogWarning(chineseLog);
+		if (MPConfig.LogLanguage == 0) Logger.LogWarning(chineseLog);
 		else Logger.LogWarning(englishLog);
 	}
 
@@ -85,7 +85,7 @@ public class MPMain : BaseUnityPlugin {
 	}
 
 	public static void LogError(string chineseLog, string englishLog) {
-		if (MPConfig.DebugLogLanguage == 0) Logger.LogError(chineseLog);
+		if (MPConfig.LogLanguage == 0) Logger.LogError(chineseLog);
 		else Logger.LogError(englishLog);
 	}
 

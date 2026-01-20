@@ -51,7 +51,7 @@ public class TickTimer {
 	}
 
 	/// <summary>
-	/// 尝试触发一次Tick。如果到达间隔时间,则更新计时器并返回true
+	/// 尝试触发一次Tick. 如果到达间隔时间,则更新计时器并返回true
 	/// </summary>
 	public bool TryTick() {
 		if (Time.time - _lastTickTime >= _interval) {

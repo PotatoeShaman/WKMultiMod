@@ -16,6 +16,8 @@ public enum PacketType {
 	BroadcastMessage = 6,   // 客机->主机->客机: 广播信息
 	PlayerDamage = 7,       // 客机->主机->客机: 玩家造成伤害
 	PlayerAddForce = 8,     // 客机->主机->客机: 玩家添加冲击力
+	PlayerDeath = 9,        // 客机->主机->客机: 玩家死亡, 发送广播
+
 
 	// 临时措施
 	PlayerTeleport = 40,        // 客机->主机->客机: 请求传送

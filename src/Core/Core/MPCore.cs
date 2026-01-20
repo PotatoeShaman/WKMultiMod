@@ -12,8 +12,8 @@ using WKMPMod.NetWork;
 using WKMPMod.RemoteManager;
 using WKMPMod.Util;
 using static System.Buffers.Binary.BinaryPrimitives;
-using static WKMPMod.Util.MPReaderPool;
-using static WKMPMod.Util.MPWriterPool;
+using static WKMPMod.Data.MPReaderPool;
+using static WKMPMod.Data.MPWriterPool;
 
 namespace WKMPMod.Core;
 
@@ -136,7 +136,7 @@ public class MPCore : MonoBehaviour {
 		MPEventBusGame.OnPlayerMove += SeedLocalPlayerData;
 		MPEventBusGame.OnPlayerDamage += HandlePlayerDamage;
 		MPEventBusGame.OnPlayerAddForce += HandlePlayerAddForce;
-		MPEventBusGame.OnPlayerDeath += ResetStateVariables;
+		MPEventBusGame.OnPlayerDeath += HandlePlayerDeath;
 	}
 
 	/// <summary>
@@ -159,7 +159,7 @@ public class MPCore : MonoBehaviour {
 		MPEventBusGame.OnPlayerMove -= SeedLocalPlayerData;
 		MPEventBusGame.OnPlayerDamage -= HandlePlayerDamage;
 		MPEventBusGame.OnPlayerAddForce -= HandlePlayerAddForce;
-		MPEventBusGame.OnPlayerDeath -= ResetStateVariables;
+		MPEventBusGame.OnPlayerDeath -= HandlePlayerDeath;
 		
 	}
 
@@ -194,8 +194,7 @@ public class MPCore : MonoBehaviour {
 			$"[MPCore] Scene loading completed: {scene.name}");
 
 		switch (scene.name) {
-			case "Game-Main":
-			case "Playground":
+			case "Game-Main":{
 				// 注册命令和初始化世界数据
 				if (CommandConsole.instance != null) {
 					RegisterCommands();
@@ -206,7 +205,20 @@ public class MPCore : MonoBehaviour {
 						"[MPCore] After scene loading, the CommandConsole instance is still null; cannot register commands.");
 				}
 				break;
-
+			}
+			case "Playground": {
+				// 注册命令和初始化世界数据
+				if (CommandConsole.instance != null) {
+					RegisterCommands();
+					MultiplayerStatus = MPStatus.Initialized;
+				} else {
+					// Debug
+					MPMain.LogError(
+						"[MPCore] 场景加载后 CommandConsole 实例仍为 null, 无法注册命令.",
+						"[MPCore] After scene loading, the CommandConsole instance is still null; cannot register commands.");
+				}
+				break;
+			}
 			case "Main-Menu":
 				ResetStateVariables();
 				break;
@@ -215,6 +227,15 @@ public class MPCore : MonoBehaviour {
 				ResetStateVariables();
 				break;
 		}
+	}
+
+	/// <summary>
+	/// 死亡时延迟退出联机模式
+	/// </summary>
+	private IEnumerator OnDeathSequence() {
+		yield return new WaitForSeconds(0.5f);
+		ResetStateVariables();
+		yield break;
 	}
 
 	/// <summary>
@@ -270,6 +291,16 @@ public class MPCore : MonoBehaviour {
 		writer.Put(force.z);
 		writer.Put(source);
 		Steamworks.SendToPeer(steamId, writer);
+	}
+
+	/// <summary>
+	/// 发送玩家死亡信息
+	/// </summary>
+	private void HandlePlayerDeath(string type) {
+		var writer = GetWriter(Steamworks.UserSteamId, Steamworks.BroadcastId, PacketType.PlayerDeath);
+		writer.Put(type);
+		Steamworks.Broadcast(writer);
+		StartCoroutine(OnDeathSequence());
 	}
 	#endregion
 
@@ -460,6 +491,16 @@ public class MPCore : MonoBehaviour {
 			Steamworks.SendToPeer(ids[0], writer);
 		}
 	}
+
+	/// <summary>
+	/// 获取全部玩家
+	/// </summary>
+	public void GetAllPlayer(string[] args) {
+		foreach (var friend in Steamworks.Friends) {
+			CommandConsole.Log($"Name: {friend.Name}, Id: {friend.Id}");
+		}
+	}
+
 	#endregion
 
 	#region[大厅/连接事件触发函数]
@@ -567,7 +608,9 @@ public class MPCore : MonoBehaviour {
 		MPMain.LogInfo(
 			$"[MPCore] 加载世界, 种子号: {seed.ToString()}",
 			$"[MPCore] Loaging world, seed: {seed.ToString()}");
-		WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
+		// 种子相同默认为已经联机过,只不过断开了
+		if(seed != WorldLoader.instance.seed)
+			WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
 		MultiplayerStatus |= MPStatus.Initialized;
 	}
 
@@ -694,6 +737,17 @@ public class MPCore : MonoBehaviour {
 		ENT_Player.GetPlayer().AddForce(force, source);
 	}
 
+	private void ProcessPlayerDeath(ulong senderId, ArraySegment<byte> payload) { 
+		var reader = GetReader(payload);
+		string type = reader.GetString();
+		string playerName = new Friend(senderId).Name;
+		if (MPConfig.LogLanguage == 0)
+			CommandConsole.Log($"{playerName} 因 {type} 而死");
+		else
+			CommandConsole.Log($"{playerName} died due to {type}");
+
+	}
+
 	/// <summary>
 	/// 处理网络接收数据
 	/// </summary>
@@ -764,6 +818,10 @@ public class MPCore : MonoBehaviour {
 			// 接收: 受到冲击力
 			case PacketType.PlayerAddForce: {
 				ProcessPlayerAddForce(senderId, payload);
+				break;
+			}
+			case PacketType.PlayerDeath: {
+				ProcessPlayerDeath(senderId, payload);
 				break;
 			}
 

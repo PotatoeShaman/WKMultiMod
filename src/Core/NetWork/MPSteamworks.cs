@@ -83,6 +83,9 @@ public class MPSteamworks : MonoBehaviour {
 		return false;
 	}
 
+	// 获取全部在线玩家
+	public IEnumerable<Friend> Friends { get; private set; }
+
 	#region[生命周期函数]
 	void Awake() {
 
@@ -394,7 +397,7 @@ public class MPSteamworks : MonoBehaviour {
 	/// 接收数据: 任意玩家->消息队列
 	/// </summary>
 	private void HandleIncomingRawData(SteamId senderId, IntPtr data, int size) {
-		// 从池里借出一块内存。注意：buffer.Length 可能 >= size
+		// 从池里借出一块内存. 注意：buffer.Length 可能 >= size
 		byte[] buffer = _messagePool.Rent(size);
 
 		// 将非托管指针数据拷贝到借来的数组中
@@ -473,8 +476,8 @@ public class MPSteamworks : MonoBehaviour {
 			_outgoingConnections.Remove(steamId);
 
 			// 重连检测
-			if (IsInLobby || IsMemberInLobby(steamId));
-				StartCoroutine(CheckAndAttemptReconnect(steamId));
+			if (IsInLobby || IsMemberInLobby(steamId))
+				StartCoroutine(ConnectionController(steamId, true));
 
 			MPMain.LogInfo(
 				$"[MPSW] 玩家断开,已清理连接. SteamId: {steamId.ToString()}",
@@ -605,7 +608,7 @@ public class MPSteamworks : MonoBehaviour {
 
 			_currentLobby = lobby;
 			string roomName = _currentLobby.GetData("name")
-				?? (MPConfig.DebugLogLanguage == 0 ? "未知大厅" : "Unknown lobby");
+				?? (MPConfig.LogLanguage == 0 ? "未知大厅" : "Unknown lobby");
 			MPMain.LogInfo(
 				$"[MPSW] 加入大厅成功: {roomName}",
 				$"[MPSW] Successfully joined lobby: {roomName}");
@@ -732,9 +735,6 @@ public class MPSteamworks : MonoBehaviour {
 			$"[MPSW] 进入大厅. 大厅Id: {lobby.Id.ToString()}",
 			$"[MPSW] Entered lobby. LobbyId: {lobby.Id.ToString()}");
 
-		// 发布事件到总线
-		MPEventBusNet.NotifyLobbyEntered(lobby);
-
 		// 在这里连接所有玩家
 		// 遍历大厅里已经在的所有成员
 		foreach (var member in lobby.Members) {
@@ -742,8 +742,11 @@ public class MPSteamworks : MonoBehaviour {
 			MPMain.LogInfo(
 				$"[MPCore] 连接已在大厅玩家: {member.Name}({member.Id.ToString()})",
 				$"[MPCore] Connected to player in the lobby: {member.Name}({member.Id.ToString()})");
-			ConnectToPlayer(member.Id);
+			StartCoroutine(ConnectionController(member.Id, false));
 		}
+
+		// 发布事件到总线
+		MPEventBusNet.NotifyLobbyEntered(lobby);
 	}
 
 	/// <summary>
@@ -761,7 +764,7 @@ public class MPSteamworks : MonoBehaviour {
 
 			// 连接到新玩家
 			if (friend.Id != SteamClient.SteamId) {
-				ConnectToPlayer(friend.Id);
+				StartCoroutine(ConnectionController(friend.Id, false));
 			}
 		}
 	}
@@ -900,41 +903,81 @@ public class MPSteamworks : MonoBehaviour {
 
 	#region[重连机制]
 
-	private IEnumerator CheckAndAttemptReconnect(SteamId targetId) {
-		// 1. 等待底层彻底清理（Steam 内部清理 Socket 需要一点时间）
-		yield return new WaitForSeconds(1.5f);
+	/// <summary>
+	/// 通用的连接控制器：支持初始连接和断线重连
+	/// </summary>
+	private IEnumerator ConnectionController(SteamId targetId, bool isReconnect) {
+		// 1. 如果是重连, 先等待清理；如果是初始连接, 可以缩短时间
+		yield return new WaitForSeconds(isReconnect ? 1.5f : 0.2f);
 
 		if (!IsInLobby || !IsMemberInLobby(targetId)) yield break;
 
-		// 2. 核心：通过 ID 大小决定谁先动手
+		// 2. 身份判定
 		bool isInitiator = SteamClient.SteamId < targetId;
 
+		// 3. 尝试循环 (你要求的尝试3次, 间隔3秒)
+		int maxAttempts = 3;
+		float retryInterval = 3f;
+
 		if (isInitiator) {
-			// ID 小的：立即尝试重连
-			MPMain.LogInfo($"[MPSW] 作为发起者 (ID较小) 尝试重连玩家: {targetId}");
-			ExecuteConnection(targetId);
-		} else {
-			// ID 大的：多等 10 秒，看看对方连不连我
-			MPMain.LogInfo($"[MPSW] 作为接收者 (ID较大) 等待玩家 {targetId} 连接");
-			float timer = 0;
-			while (timer < 10f) {
-				// 如果在此期间，入站连接成功建立了，直接退出重连协程
+			MPMain.LogInfo(
+				$"[MPSW] 发起者连接流程开始 -> {targetId}",
+				$"Initiator connection process begins -> {targetId}");
+			for (int i = 0; i < maxAttempts; i++) {
 				if (_allConnections.ContainsKey(targetId)) {
-					yield break;
+					// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
+					yield return new WaitForSeconds(1.0f);
+					if (_allConnections.ContainsKey(targetId)) {
+						yield break;
+					}
 				}
-				timer += Time.deltaTime;
+
+				ExecuteConnection(targetId);
+
+				// 等待一段时间看是否连上
+				float timer = 0;
+				while (timer < retryInterval) {
+					if (_allConnections.ContainsKey(targetId)) {
+						// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
+						yield return new WaitForSeconds(1.0f);
+						if (_allConnections.ContainsKey(targetId)) {
+							yield break;
+						}
+					}
+					timer += Time.deltaTime;
+					yield return null;
+				}
+				MPMain.LogWarning(
+					$"[MPSW] 第 {i + 1} 次尝试连接 {targetId} 失败",
+					$"The {i+1} attempt to connect to {targetId} failed");
+			}
+		} else {
+			// 接收者：等待发起者连接
+			MPMain.LogInfo($"[MPSW] 接收者等待流程开始 <- {targetId}");
+			float waitTimer = 0;
+			// 这里的 10 秒即为你要求的“B 等待 A”的时间
+			while (waitTimer < 10f) {
+				if (_allConnections.ContainsKey(targetId)) {
+					// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
+					yield return new WaitForSeconds(1.0f);
+					if (_allConnections.ContainsKey(targetId)) {
+						yield break;
+					}
+				}
+				waitTimer += Time.deltaTime;
 				yield return null;
 			}
 
-			// 10秒后还没连上，说明对方可能出问题了，我再反向尝试
-			MPMain.LogWarning($"[MPSW] 10秒内未收到对方连接, 切换为我方发起重连");
+			// 10秒超时, 反向尝试连接
+			MPMain.LogWarning($"[MPSW] 10秒内未收到 {targetId} 的连接, 开始反向尝试...");
 			ExecuteConnection(targetId);
+			// 反向连接也可以套用上面的 for 循环重试逻辑
 		}
 	}
 
 	// 清理连接并重连玩家
 	private void ExecuteConnection(SteamId targetId) {
-		// 先物理清理，防止 Already connected 错误
+		// 先物理清理, 防止 Already connected 错误
 		if (_outgoingConnections.TryGetValue(targetId, out var oldMgr)) {
 			oldMgr.Connection.Close();
 			_outgoingConnections.Remove(targetId);

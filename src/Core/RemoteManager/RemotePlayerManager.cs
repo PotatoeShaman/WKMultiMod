@@ -11,7 +11,6 @@ using WKMPMod.Data;
 using WKMPMod.Shared.MK_Component;
 using WKMPMod.Util;
 using Object = UnityEngine.Object;
-using Vector3 = UnityEngine.Vector3;
 
 namespace WKMPMod.RemoteManager;
 
@@ -141,7 +140,7 @@ public class RemotePlayerManager : MonoBehaviour {
 		return;
 	}
 
-	#region 将标记组件替换为真实组件
+	#region[将标记组件替换为真实组件]
 
 	public static void ProcessPrefabMarkers(GameObject prefab) {
 		Stack<Transform> stack = new Stack<Transform>();
@@ -152,7 +151,7 @@ public class RemotePlayerManager : MonoBehaviour {
 			Transform current = stack.Pop();
 
 			try {
-				MapMarkersToRealComponents(current.gameObject);
+				SetRealComponents(current.gameObject);
 			} catch (Exception ex) {
 				MPMain.LogError(
 					$"[MPPrefab] 处理节点 {current.name} 时崩溃: {ex.Message}",
@@ -167,17 +166,17 @@ public class RemotePlayerManager : MonoBehaviour {
 		return;
 	}
 
-	private static void MapMarkersToRealComponents(GameObject prefab) {
+	private static void SetRealComponents(GameObject prefab) {
 		MapMarkersToRemoteEntity(prefab);
 		MapMarkersToObjectTagger(prefab);
 		MapMarkersToCL_Handhold(prefab);
+		SetLookAt(prefab);
 	}
 
 	private static void MapMarkersToRemoteEntity(GameObject prefab) {
 		MK_RemoteEntity mk_component = prefab.GetComponent<MK_RemoteEntity>();
-		if (mk_component == null) {
+		if (mk_component == null) 
 			return;
-		}
 		var component = prefab.AddComponent<RemoteEntity>();
 		if (component != null) {
 			component.AllActive = MPConfig.AllActive;
@@ -200,9 +199,8 @@ public class RemotePlayerManager : MonoBehaviour {
 
 	private static void MapMarkersToObjectTagger(GameObject prefab) {
 		MK_ObjectTagger mk_component = prefab.GetComponent<MK_ObjectTagger>();
-		if (mk_component == null) {
+		if (mk_component == null) 
 			return;
-		}
 		// 先找是否已有, 没有再加
 		var component = prefab.GetComponent<ObjectTagger>() ?? prefab.AddComponent<ObjectTagger>();
 		if (component != null) {
@@ -222,9 +220,8 @@ public class RemotePlayerManager : MonoBehaviour {
 
 	private static void MapMarkersToCL_Handhold(GameObject prefab) {
 		MK_CL_Handhold mk_component = prefab.GetComponent<MK_CL_Handhold>();
-		if (mk_component == null) {
+		if (mk_component == null) 
 			return;
-		}
 		var component = prefab.AddComponent<CL_Handhold>();
 		if (component != null) {
 			component.activeEvent = mk_component.activeEvent;
@@ -239,6 +236,13 @@ public class RemotePlayerManager : MonoBehaviour {
 				"[MPPrefab] Failed to add the CL_Handhold component to preform");
 		}
 		Object.DestroyImmediate(mk_component);
+	}
+
+	private static void SetLookAt(GameObject prefab) {
+		LookAt lookAt = prefab.GetComponent<LookAt>();
+		if (lookAt == null)
+			return;
+		lookAt.userScale = MPConfig.NameTagScale;
 	}
 
 	#endregion
