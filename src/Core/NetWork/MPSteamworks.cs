@@ -395,7 +395,7 @@ public class MPSteamworks : MonoBehaviour {
 
 	#endregion
 
-	#region[创建/加入大厅/连接玩家函数]
+	#region[连接器管理函数]
 
 	/// <summary>
 	/// 创建监听socket
@@ -403,6 +403,7 @@ public class MPSteamworks : MonoBehaviour {
 	public void CreateListeningSocket() {
 		try {
 			_socketManager = SteamNetworkingSockets.CreateRelaySocket<SteamSocketManager>(1);
+			_socketManager.Interface = _socketManager;
 			_socketManager.Instance = this;
 		} catch (Exception socketEx) {
 			MPMain.LogError(
@@ -410,6 +411,96 @@ public class MPSteamworks : MonoBehaviour {
 				$"[MPSW] Create Socket exception: {socketEx.Message}");
 		}
 	}
+
+	/// <summary>
+	/// 连接到指定玩家(纯网络连接,不处理业务逻辑)
+	/// </summary>
+	public void ConnectToPlayer(SteamId steamId) {
+		try {
+			if (_outgoingConnections.ContainsKey(steamId)) {
+				MPMain.LogWarning(
+					$"[MPSW] 已经连接过玩家. SteamId: {steamId.ToString()}",
+					$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
+				return;
+			}
+
+			var connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(steamId, 1);
+			connectionManager.Interface = connectionManager;
+			connectionManager.Instance = this;
+			_outgoingConnections[steamId] = connectionManager;
+			_allConnections[steamId] = connectionManager.Connection;
+			MPMain.LogInfo(
+				$"[MPSW] 正在出站连接玩家. SteamId: {steamId.ToString()}",
+				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
+		} catch (Exception ex) {
+			MPMain.LogError(
+				$"[MPSW] 连接玩家异常: {ex.Message}",
+				$"[MPSW] Exception while connecting to player: {ex.Message}");
+		}
+	}
+
+	/// <summary>
+	/// 连接到指定玩家 - 异步版本
+	/// </summary>
+	public async Task<bool> ConnectToPlayerAsync(SteamId steamId) {
+		SteamConnectionManager connectionManager = null;
+		float timeout = 5f;
+		float startTime = Time.time;
+
+		// 初始检查
+		if (_outgoingConnections.ContainsKey(steamId) || _allConnections.ContainsKey(steamId)) {
+			MPMain.LogWarning(
+				$"[MPSW] 已经连接到玩家. SteamId: {steamId.ToString()}",
+				$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
+			return true;
+		}
+
+		// 1. 同步建立连接
+		try {
+			MPMain.LogInfo(
+				$"[MPSW] 正在连接玩家. SteamId: {steamId.ToString()}",
+				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
+
+			// 建立连接
+			connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(steamId, 1);
+			connectionManager.Instance = this;
+			_outgoingConnections[steamId] = connectionManager;
+			_allConnections[steamId] = connectionManager.Connection;
+
+		} catch (Exception ex) {
+			MPMain.LogError(
+				$"[MPSW] 建立连接异常: {ex.Message}",
+				$"[MPSW] Exception while connecting to player: {ex.Message}");
+			return false;
+		}
+
+		// 2. 异步等待连接建立
+		if (connectionManager != null) {
+			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
+				if (Time.time - startTime > timeout) {
+					MPMain.LogError(
+						$"[MPSW] 连接玩家超时. SteamId: {steamId.ToString()}",
+						$"[MPSW] Connection to player timed out. SteamId: {steamId.ToString()}");
+					_outgoingConnections.Remove(steamId);
+					_allConnections.Remove(steamId);
+					return false;
+				}
+				// 替换 yield return null
+				await Task.Yield();
+			}
+		} else {
+			return false;
+		}
+
+		MPMain.LogInfo(
+			$"[MPSW] 连接玩家成功. SteamId: {steamId.ToString()}",
+			$"[MPSW] Successfully connected to player. SteamId: {steamId.ToString()}");
+		return true;
+	}
+
+	#endregion
+
+	#region[创建/加入大厅函数]
 
 	/// <summary>
 	/// 创建大厅(主机模式)- 异步版本
@@ -517,113 +608,6 @@ public class MPSteamworks : MonoBehaviour {
 		StartCoroutine(RunAsync(JoinRoomAsync(lobby), callback));
 	}
 
-	/// <summary>
-	/// 连接到指定玩家(纯网络连接,不处理业务逻辑)
-	/// </summary>
-	public void ConnectToPlayer(SteamId steamId) {
-		try {
-			if (_outgoingConnections.ContainsKey(steamId)) {
-				MPMain.LogWarning(
-					$"[MPSW] 已经连接过玩家. SteamId: {steamId.ToString()}",
-					$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
-				return;
-			}
-
-			var connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(steamId, 1);
-			connectionManager.Instance = this;
-			_outgoingConnections[steamId] = connectionManager;
-			_allConnections[steamId] = connectionManager.Connection;
-
-			MPMain.LogInfo(
-				$"[MPSW] 正在出站连接玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
-		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 连接玩家异常: {ex.Message}",
-				$"[MPSW] Exception while connecting to player: {ex.Message}");
-		}
-	}
-
-	/// <summary>
-	/// 连接到指定玩家 - 异步版本
-	/// </summary>
-	public async Task<bool> ConnectToPlayerAsync(SteamId steamId) {
-		SteamConnectionManager connectionManager = null;
-		float timeout = 5f;
-		float startTime = Time.time;
-
-		// 初始检查
-		if (_outgoingConnections.ContainsKey(steamId) || _allConnections.ContainsKey(steamId)) {
-			MPMain.LogWarning(
-				$"[MPSW] 已经连接到玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
-			return true;
-		}
-
-		// 1. 同步建立连接
-		try {
-			MPMain.LogInfo(
-				$"[MPSW] 正在连接玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
-
-			// 建立连接
-			connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(steamId, 1);
-			connectionManager.Instance = this;
-			_outgoingConnections[steamId] = connectionManager;
-			_allConnections[steamId] = connectionManager.Connection;
-
-		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 建立连接异常: {ex.Message}",
-				$"[MPSW] Exception while connecting to player: {ex.Message}");
-			return false;
-		}
-
-		// 2. 异步等待连接建立
-		if (connectionManager != null) {
-			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
-				if (Time.time - startTime > timeout) {
-					MPMain.LogError(
-						$"[MPSW] 连接玩家超时. SteamId: {steamId.ToString()}",
-						$"[MPSW] Connection to player timed out. SteamId: {steamId.ToString()}");
-					_outgoingConnections.Remove(steamId);
-					_allConnections.Remove(steamId);
-					return false;
-				}
-				// 替换 yield return null
-				await Task.Yield();
-			}
-		} else {
-			return false;
-		}
-
-		MPMain.LogInfo(
-			$"[MPSW] 连接玩家成功. SteamId: {steamId.ToString()}",
-			$"[MPSW] Successfully connected to player. SteamId: {steamId.ToString()}");
-		return true;
-	}
-
-	/// <summary>
-	/// 这是一个通用的辅助方法,用于将 async Task<bool> 包装到 Unity 的 StartCoroutine 中,
-	/// 并将结果传递给 Action<bool> 回调.
-	/// </summary>
-	private IEnumerator RunAsync(Task<bool> task, Action<bool> callback) {
-		// 等待 Task 完成
-		yield return new WaitWhile(() => !task.IsCompleted);
-
-		// 强制等待一帧,确保 Task 内部的上下文完全释放
-		yield return null;
-
-		if (task.IsFaulted) {
-			MPMain.LogError(
-				$"[MPSW] 异步任务执行失败: {task.Exception.InnerException.Message}",
-				$"[MPSW] Async task execution failed: {task.Exception.InnerException.Message}");
-			callback?.Invoke(false);
-		} else {
-			// Task.Result 即为异步方法的返回值 (bool)
-			callback?.Invoke(task.Result);
-		}
-	}
 	#endregion
 
 	#region[SteamMatchmaking事件处理函数]
@@ -825,7 +809,7 @@ public class MPSteamworks : MonoBehaviour {
 	#endregion
 
 	#region[Steam 监听socket管理器]
-	internal class SteamSocketManager : SocketManager {
+	internal class SteamSocketManager : SocketManager, ISocketManager {
 
 		private MPSteamworks _instance;
 		public MPSteamworks Instance { get => _instance; set => _instance = value; }
@@ -872,7 +856,7 @@ public class MPSteamworks : MonoBehaviour {
 	#endregion
 
 	#region[Steam 连接Connection管理器]
-	internal class SteamConnectionManager : ConnectionManager {
+	internal class SteamConnectionManager : ConnectionManager, IConnectionManager {
 
 		private MPSteamworks _instance;
 		public MPSteamworks Instance { get => _instance; set => _instance = value; }
@@ -901,5 +885,30 @@ public class MPSteamworks : MonoBehaviour {
 	}
 	#endregion
 
+	#region[工具函数]
+
+	/// <summary>
+	/// 这是一个通用的辅助方法,用于将 async Task<bool> 包装到 Unity 的 StartCoroutine 中,
+	/// 并将结果传递给 Action<bool> 回调.
+	/// </summary>
+	private IEnumerator RunAsync(Task<bool> task, Action<bool> callback) {
+		// 等待 Task 完成
+		yield return new WaitWhile(() => !task.IsCompleted);
+
+		// 强制等待一帧,确保 Task 内部的上下文完全释放
+		yield return null;
+
+		if (task.IsFaulted) {
+			MPMain.LogError(
+				$"[MPSW] 异步任务执行失败: {task.Exception.InnerException.Message}",
+				$"[MPSW] Async task execution failed: {task.Exception.InnerException.Message}");
+			callback?.Invoke(false);
+		} else {
+			// Task.Result 即为异步方法的返回值 (bool)
+			callback?.Invoke(task.Result);
+		}
+	}
+
+	#endregion
 
 }
