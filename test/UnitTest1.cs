@@ -1,3 +1,6 @@
+using System.Net.NetworkInformation;
+using WKMPMod.Core;
+
 namespace test {
     public class Tests {
         [SetUp]
@@ -8,5 +11,20 @@ namespace test {
         public void Test1() {
             Assert.Pass();
         }
-    }
+
+		[Test]
+		public void Test_SetField_ChangesStatus() {
+			// Arrange
+			MPStatus myStatus = MPStatus.NotInitialized;
+
+			// Act
+			// 注意：这里必须使用 ref，否则 myStatus 永远是 NotInitialized
+			myStatus.SetField(MPStatus.INIT_MASK, MPStatus.Initialized);
+			myStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
+
+			// Assert
+			Assert.That(myStatus.IsInitialized(), Is.True, "应该标记为已初始化");
+			Assert.That(myStatus.GetField(MPStatus.LOBBY_MASK), Is.EqualTo(MPStatus.InLobby), "大厅状态应该是 InLobby");
+		}
+	}
 }

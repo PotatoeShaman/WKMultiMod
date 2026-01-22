@@ -130,43 +130,6 @@ public class RemotePlayerContainer {
 	// 通过数据进行更新
 	public void UpdatePlayerData(PlayerData playerData) {
 
-		/*
-		 * 旧获取组件方法
-		// 检查组件是否存在,如果不存在尝试获取
-		if (_remotePlayer == null) {
-			_remotePlayer = PlayerObject.GetComponent<RemotePlayer>();
-			if (_remotePlayer == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] PlayerObject的组件未添加",
-					"[RPCont] PlayerObject component not added");
-				return;
-			}
-		}
-
-		if (_remoteLeftHand == null) {
-			_remoteLeftHand = LeftHandObject.GetComponent<RemoteHand>();
-			if (_remoteLeftHand == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] LeftHandObject的组件未添加",
-					"[RPCont] LeftHandObject component not added");
-				return;
-			}
-		}
-
-		if (_remoteRightHand == null) {
-			_remoteRightHand = RightHandObject.GetComponent<RemoteHand>();
-			if (_remoteRightHand == null) {
-				// Debug
-				MPMain.LogError(
-					"[RPCont] RightHandObject的组件未添加",
-					"[RPCont] RightHandObject component not added");
-				return;
-			}
-		}
-		*/
-
 		// 判断是否处于初始化 5 秒内
 		bool isInInitPhase = (Time.time - _initializationTime) < FORCED_TELEPORT_DURATION;
 
@@ -197,7 +160,7 @@ public class RemotePlayerContainer {
 				"[RPCont] PlayerNameTag component not added");
 			return;
 		}
-		_remoteTag.SetDynamicMessage(text);
+		_remoteTag.Message = text;
 		return;
 	}
 

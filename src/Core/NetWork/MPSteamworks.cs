@@ -448,12 +448,12 @@ public class MPSteamworks : MonoBehaviour {
 	/// </summary>
 	public void OnPlayerConnected(SteamId steamId, Connection connection, bool isIncoming) {
 		// 入站连接覆盖出站连接
-		if (_allConnections.ContainsKey(steamId) && isIncoming) {
+		if (isIncoming) {
 			_allConnections[steamId] = connection;
 			MPMain.LogInfo(
-				$"[MPSW] 玩家入站连接覆盖: " +
+				$"[MPSW] 玩家入站连接: " +
 				$"SteamId: {steamId.ToString()} 连接Id: {connection.Id.ToString()}",
-				$"[MPSW] Player incoming connection overridden. " +
+				$"[MPSW] Player incoming connection. " +
 				$"SteamId: {steamId.ToString()} ConnectionId: {connection.Id.ToString()}");
 			return;
 		}
@@ -847,9 +847,6 @@ public class MPSteamworks : MonoBehaviour {
 		// 有玩家已经接入
 		public override void OnConnected(Connection connection, ConnectionInfo info) {
 			_instance?.OnPlayerConnected(info.Identity.SteamId, connection, true);
-			_instance?.HasConnections = true;
-			// 触发总线 RemotePlayerManager
-			MPEventBusNet.NotifyPlayerConnected(info.Identity.SteamId);
 		}
 
 		public override void OnConnectionChanged(Connection connection, ConnectionInfo info) {
@@ -883,11 +880,7 @@ public class MPSteamworks : MonoBehaviour {
 		public override void OnConnecting(ConnectionInfo info) { }
 
 		// 连接已建立
-		public override void OnConnected(ConnectionInfo info) {
-			Instance?.HasConnections = true;
-			// 触发总线 RemotePlayerManager
-			MPEventBusNet.NotifyPlayerConnected(info.Identity.SteamId);
-		}
+		public override void OnConnected(ConnectionInfo info) {}
 
 		// 接收消息
 		public override void OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel) {
@@ -907,71 +900,74 @@ public class MPSteamworks : MonoBehaviour {
 	/// 通用的连接控制器：支持初始连接和断线重连
 	/// </summary>
 	private IEnumerator ConnectionController(SteamId targetId, bool isReconnect) {
-		// 1. 如果是重连, 先等待清理；如果是初始连接, 可以缩短时间
 		yield return new WaitForSeconds(isReconnect ? 1.5f : 0.2f);
-
 		if (!IsInLobby || !IsMemberInLobby(targetId)) yield break;
 
-		// 2. 身份判定
-		bool isInitiator = SteamClient.SteamId < targetId;
-
-		// 3. 尝试循环 (你要求的尝试3次, 间隔3秒)
-		int maxAttempts = 3;
-		float retryInterval = 3f;
-
-		if (isInitiator) {
-			MPMain.LogInfo(
-				$"[MPSW] 发起者连接流程开始 -> {targetId}",
-				$"Initiator connection process begins -> {targetId}");
+		// 核心重用逻辑：尝试并验证连接
+		IEnumerator AttemptAndVerify(int maxAttempts) {
 			for (int i = 0; i < maxAttempts; i++) {
+				// 检查现有连接（可能在循环开始前已连上）
 				if (_allConnections.ContainsKey(targetId)) {
-					// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
 					yield return new WaitForSeconds(1.0f);
 					if (_allConnections.ContainsKey(targetId)) {
-						yield break;
+						HasConnections = true;
+						MPEventBusNet.NotifyPlayerConnected(targetId);
+						yield break; // 成功退出
 					}
 				}
 
 				ExecuteConnection(targetId);
 
-				// 等待一段时间看是否连上
+				// 等待重试间隔，期间持续检查状态
 				float timer = 0;
-				while (timer < retryInterval) {
+				while (timer < 3.0f) { // 3秒重试间隔
 					if (_allConnections.ContainsKey(targetId)) {
-						// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
 						yield return new WaitForSeconds(1.0f);
 						if (_allConnections.ContainsKey(targetId)) {
-							yield break;
+							HasConnections = true;
+							MPEventBusNet.NotifyPlayerConnected(targetId);
+							yield break; // 成功退出
 						}
 					}
 					timer += Time.deltaTime;
 					yield return null;
 				}
-				MPMain.LogWarning(
-					$"[MPSW] 第 {i + 1} 次尝试连接 {targetId} 失败",
-					$"The {i+1} attempt to connect to {targetId} failed");
+				MPMain.LogWarning($"[MPSW] 第 {i + 1} 次尝试连接 {targetId} 失败");
 			}
-		} else {
-			// 接收者：等待发起者连接
-			MPMain.LogInfo($"[MPSW] 接收者等待流程开始 <- {targetId}");
-			float waitTimer = 0;
-			// 这里的 10 秒即为你要求的“B 等待 A”的时间
-			while (waitTimer < 10f) {
-				if (_allConnections.ContainsKey(targetId)) {
-					// 假设我们收到了任何数据包, 或者仅仅是底层 Connected 状态维持了 1 秒
-					yield return new WaitForSeconds(1.0f);
-					if (_allConnections.ContainsKey(targetId)) {
-						yield break;
-					}
-				}
-				waitTimer += Time.deltaTime;
-				yield return null;
-			}
+		}
 
-			// 10秒超时, 反向尝试连接
-			MPMain.LogWarning($"[MPSW] 10秒内未收到 {targetId} 的连接, 开始反向尝试...");
+		bool isInitiator = SteamClient.SteamId < targetId;
+
+		if (isInitiator) {
 			ExecuteConnection(targetId);
-			// 反向连接也可以套用上面的 for 循环重试逻辑
+
+			//MPMain.LogInfo($"[MPSW] 发起者连接流程开始 -> {targetId}");
+			//yield return AttemptAndVerify(3);
+		} else {
+
+
+			//MPMain.LogInfo($"[MPSW] 接收者等待流程开始 <- {targetId}");
+			//float waitTimer = 0;
+			//bool alreadyConnected = false;
+
+			//while (waitTimer < 10f) {
+			//	if (_allConnections.ContainsKey(targetId)) {
+			//		yield return new WaitForSeconds(1.0f);
+			//		if (_allConnections.ContainsKey(targetId)) {
+			//			HasConnections = true;
+			//			MPEventBusNet.NotifyPlayerConnected(targetId);
+			//			alreadyConnected = true;
+			//			break;
+			//		}
+			//	}
+			//	waitTimer += Time.deltaTime;
+			//	yield return null;
+			//}
+
+			//if (!alreadyConnected) {
+			//	MPMain.LogWarning($"[MPSW] 10秒超时, 开始反向尝试...");
+			//	yield return AttemptAndVerify(3);
+			//}
 		}
 	}
 

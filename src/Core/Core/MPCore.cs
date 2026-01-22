@@ -31,6 +31,28 @@ public enum MPStatus {
 	LOBBY_MASK = 0b11_0,// 大厅状态掩码
 }
 
+public static class MPStatusExtension {
+	// 设置特定字段
+	public static MPStatus SetField(this ref MPStatus status, MPStatus mask, MPStatus value) {
+		// 清除原有值，设置新值
+		return status = (status & ~mask) | (value & mask);
+	}
+
+	// 获取特定字段
+	public static MPStatus GetField(this MPStatus status, MPStatus mask) {
+		return status & mask;
+	}
+
+	public static bool IsInLobby(this MPStatus status) {
+		return GetField(status, MPStatus.LOBBY_MASK) == MPStatus.InLobby
+			|| GetField(status, MPStatus.LOBBY_MASK) == MPStatus.JoiningLobby;
+	}
+
+	public static bool IsInitialized(this MPStatus status) { 
+		return GetField(status, MPStatus.INIT_MASK) == MPStatus.Initialized;
+	}
+}
+
 public class MPCore : MonoBehaviour {
 
 	// Debug日志输出间隔
@@ -49,13 +71,12 @@ public class MPCore : MonoBehaviour {
 	// 世界种子 - 用于同步游戏世界生成
 	public int WorldSeed { get; private set; }
 	// 多人模式状态
-	public static MPStatus MultiplayerStatus { get; private set; } = MPStatus.NotInitialized;
+	private static MPStatus _multiPlayerStatus = MPStatus.NotInitialized;
+	public static MPStatus MultiPlayerStatus { get => _multiPlayerStatus; private set => _multiPlayerStatus = value; }
 	// 是否处于大厅中
-	public static bool IsInLobby =>
-		(MultiplayerStatus & MPStatus.LOBBY_MASK) == MPStatus.InLobby 
-		|| (MultiplayerStatus & MPStatus.LOBBY_MASK) == MPStatus.JoiningLobby;
-	public static bool IsInitialized =>
-		(MultiplayerStatus & MPStatus.INIT_MASK) == MPStatus.Initialized;
+	public static bool IsInLobby => MultiPlayerStatus.IsInLobby();
+	public static bool IsInitialized => MultiPlayerStatus.IsInitialized();
+
 
 
 	// 注意：日志通过 MultiPlayerMain.Logger 访问
@@ -102,6 +123,7 @@ public class MPCore : MonoBehaviour {
 
 			// 创建本地信息获取发送管理器
 			LPManager = gameObject.AddComponent<LocalPlayer>();
+			LPManager.Initialize(Steamworks.UserSteamId);
 
 			// 订阅网络事件
 			SubscribeToEvents();
@@ -210,7 +232,7 @@ public class MPCore : MonoBehaviour {
 				// 注册命令和初始化世界数据
 				if (CommandConsole.instance != null) {
 					RegisterCommands();
-					MultiplayerStatus = MPStatus.Initialized;
+					_multiPlayerStatus.SetField(MPStatus.INIT_MASK, MPStatus.Initialized);
 				} else {
 					// Debug
 					MPMain.LogError(
@@ -240,17 +262,13 @@ public class MPCore : MonoBehaviour {
 
 	/// <summary>
 	/// 退出联机模式时重置设置
-	/// </summary>
+	/// </summary>F
 	private void ResetStateVariables() {
-		CloseMultiPlayerMode();
+		MultiPlayerStatus = MPStatus.NotInitialized | MPStatus.NotInLobby;
 		Steamworks.DisconnectAll();
 		RPManager.ResetAll();
 	}
 
-	// 关闭多人联机模式
-	public static void CloseMultiPlayerMode() {
-		MultiplayerStatus = MPStatus.NotInitialized | MPStatus.NotInLobby;
-	}
 	#endregion
 
 	#region[游戏数据收集处理]
@@ -300,7 +318,19 @@ public class MPCore : MonoBehaviour {
 		var writer = GetWriter(Steamworks.UserSteamId, Steamworks.BroadcastId, PacketType.PlayerDeath);
 		writer.Put(type);
 		Steamworks.Broadcast(writer);
-		StartCoroutine(OnDeathSequence());
+
+		switch (SceneManager.GetActiveScene().name){
+			case "Game-Main": {
+				// 断开网络连接
+				StartCoroutine(OnDeathSequence());
+				break;
+			}
+			default: {
+
+				break;
+			}
+		}
+
 	}
 	#endregion
 
@@ -317,9 +347,8 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("allconnections", GetAllConnections);
 		CommandConsole.AddCommand("talk", Talk);
 		CommandConsole.AddCommand("tpto", TpToPlayer);
-		CommandConsole.AddCommand("test0", Test.Test.LoadSlugcat, false);
-		CommandConsole.AddCommand("test1", Test.Test.CreateSlugcat, false);
-		CommandConsole.AddCommand("test2", Test.Test.GetGraphicsAPI, false);
+		CommandConsole.AddCommand("test0", Test.Test.GetGraphicsAPI, false);
+		CommandConsole.AddCommand("test1", Test.Test.GetMPStatus, false);
 	}
 
 	// 命令实现
@@ -345,15 +374,27 @@ public class MPCore : MonoBehaviour {
 			$"[MPCore] Creating lobby: {roomName}...");
 
 		//设置为正在连接
-		MultiplayerStatus = MPStatus.JoiningLobby;
+		_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.JoiningLobby);
 
 		// 使用协程版本(内部已改为异步)
 		Steamworks.CreateRoom(roomName, maxPlayers, (success) => {
 			if (success) {
-				MultiplayerStatus = MPStatus.InLobby | MPStatus.Initialized;
-				WorldLoader.ReloadWithSeed(new string[] { WorldLoader.instance.seed.ToString() });
+				// 这个触发比加入大厅回调触发慢
+				_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
+				_multiPlayerStatus.SetField(MPStatus.INIT_MASK, MPStatus.Initialized);
+
+				switch (SceneManager.GetActiveScene().name) {
+					case "Game-Main": {
+						WorldLoader.ReloadWithSeed(new string[] { WorldLoader.instance.seed.ToString() });
+						break;
+					}
+					default: {
+						break;
+					}
+				}
+
 			} else {
-				MultiplayerStatus = MPStatus.LobbyConnectionError;
+				_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
 				CommandConsole.LogError("Fail to create lobby");
 			}
 		});
@@ -379,13 +420,13 @@ public class MPCore : MonoBehaviour {
 				$"[MPCore] Joining lobby: {lobbyId.ToString()}...");
 
 			//设置为正在连接
-			MultiplayerStatus = MPStatus.JoiningLobby;
+			_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.JoiningLobby);
 
 			Steamworks.JoinRoom(lobbyId, (success) => {
 				if (success) {
-					MultiplayerStatus = MPStatus.InLobby;
+					_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
 				} else {
-					MultiplayerStatus = MPStatus.LobbyConnectionError;
+					_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
 					CommandConsole.LogError("Fail to join lobby");
 				}
 			});
@@ -611,7 +652,7 @@ public class MPCore : MonoBehaviour {
 		// 种子相同默认为已经联机过,只不过断开了
 		if(seed != WorldLoader.instance.seed)
 			WorldLoader.ReloadWithSeed(new string[] { seed.ToString() });
-		MultiplayerStatus |= MPStatus.Initialized;
+		_multiPlayerStatus.SetField(MPStatus.INIT_MASK,MPStatus.Initialized);
 	}
 
 	/// <summary>
