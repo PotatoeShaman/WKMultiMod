@@ -340,13 +340,13 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void RegisterCommands() {
 		// 将命令注册到 CommandConsole
-		CommandConsole.AddCommand("host", Host);
-		CommandConsole.AddCommand("join", Join);
-		CommandConsole.AddCommand("leave", Leave);
-		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
-		CommandConsole.AddCommand("allconnections", GetAllConnections);
-		CommandConsole.AddCommand("talk", Talk);
-		CommandConsole.AddCommand("tpto", TpToPlayer);
+		CommandConsole.AddCommand("host", Host, false);
+		CommandConsole.AddCommand("join", Join, false);
+		CommandConsole.AddCommand("leave", Leave, false);
+		CommandConsole.AddCommand("getlobbyid", GetLobbyId, false);
+		CommandConsole.AddCommand("allconnections", GetAllConnections, false);
+		CommandConsole.AddCommand("talk", Talk, false);
+		CommandConsole.AddCommand("tpto", TpToPlayer, false);
 		CommandConsole.AddCommand("test0", Test.Test.GetGraphicsAPI, false);
 		CommandConsole.AddCommand("test1", Test.Test.GetMPStatus, false);
 	}

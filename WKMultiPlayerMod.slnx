@@ -83,7 +83,7 @@
     </Project>
   </Folder>
   <Folder Name="/temp/SteamWorks/">
-    <File Path="temp/SteamWorks/SteamWorks.csproj" />
+    <Project Path="temp/SteamWorks/SteamWorks.csproj" />
   </Folder>
   <Folder Name="/temp/WKLib/">
     <Project Path="temp/WKLib/WKLib.csproj">

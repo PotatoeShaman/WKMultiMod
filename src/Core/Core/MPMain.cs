@@ -14,7 +14,7 @@ public class MPMain : BaseUnityPlugin {
 
 	public const string ModGUID = "shenxl.MultiPlayerMod";
 	public const string ModName = "MultiPlayer Mod";
-	public const string ModVersion = "1.1.2.9";
+	public const string ModVersion = "1.1.2.10";
 
 	public static string path = Paths.PluginPath;
 
