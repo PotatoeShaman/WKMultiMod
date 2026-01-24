@@ -9,10 +9,6 @@ public class MPConfig {
 	private static ConfigEntry<int> _dataSendFrequency;
 	public static int DataSendFrequency { get { return _dataSendFrequency.Value; } }
 
-	// Debug日志语言类型
-	private static ConfigEntry<int> _logLanguage;
-	public static int LogLanguage { get { return _logLanguage.Value; } }
-
 	// 头顶名称标签字体最大值
 	private static ConfigEntry<float> _nameTagScale;
 	public static float NameTagScale { get { return _nameTagScale.Value; } }
@@ -123,10 +119,6 @@ Passive配置项控制玩家受到的伤害倍率
 			"Network", "DataSendFrequency", 20,
 			"Sets how many times per second data is sent to other players.\n" +
 			"设置每秒向其他玩家发送数据的次数.");
-
-		_logLanguage = config.Bind<int>(
-			"Debug", "LogLanguage", 1,
-			"值为0时使用中文输出日志, Use English logs when the value is 1.");
 
 		_nameTagScale = config.Bind<float>(
 			"RemotePlayer", "NameTagScale", 1f,

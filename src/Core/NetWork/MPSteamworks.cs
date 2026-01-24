@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using UnityEngine;
 using WKMPMod.Core;
@@ -94,18 +95,12 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		try {
 			if (!SteamClient.IsValid) {
 
-				MPMain.LogError(
-					"[MPSW] Steamworks初始化失败,请检查Steam在线情况",
-					"[MPSW] Failed to initialize Steamworks. Please check your Steam login status.");
+				MPMain.LogError(Localization.Get("MPSteamworks","SteamworksInitFailed"));
 				return;
 			}
 
 			UserSteamId = SteamClient.SteamId;
-			MPMain.LogInfo(
-				$"[MPSW] Steamworks初始化成功 玩家: " +
-				$"玩家: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}",
-				$"[MPSW] Steamworks initialization succeeded. " +
-				$"Player: {SteamClient.Name} ID: {SteamClient.SteamId.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "SteamworksInitSuccess", SteamClient.Name, SteamClient.SteamId.ToString()));
 
 			// 订阅大厅事件 大部分只做转发
 			// 本机加入大厅
@@ -123,9 +118,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			SteamNetworkingUtils.InitRelayNetworkAccess();
 
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] Steamworks初始化异常: {ex.Message}",
-				$"[MPSW] Steamworks initialization exception: {ex.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "SteamworksInitException", ex.Message));
 		}
 
 	}
@@ -190,9 +183,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		// 清空消息队列
 		while (_messageQueue.TryDequeue(out _)) { }
 
-		MPMain.LogInfo(
-			"[MPSW] 所有网络连接已断开",
-			"[MPSW] All network connections have been disconnected.");
+		MPMain.LogInfo(Localization.Get("MPSteamworks", "AllConnectionsDisconnected"));
 	}
 	#endregion
 
@@ -239,26 +230,18 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		// Debug
 		bool canLog = _debugTick.TryTick();
 		if (canLog) {
-			MPMain.LogInfo(
-				$"[MPSW] 开始广播数据,当前连接数: {_allConnections.Count.ToString()}",
-				$"[MPSW] Started broadcasting data, current connections: {_allConnections.Count.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "StartedBroadcasting",_allConnections.Count.ToString()));
 		}
 
 		foreach (var (steamId, connection) in _allConnections) {
 			try {
 				if (canLog) {
-					MPMain.LogInfo(
-						$"[MPSW] 广播数据,当前连接: " +
-						$"SteamId: {steamId.ToString()} 连接Id: {connection.Id.ToString()}",
-						$"[MPSW] Sending data to connections. " +
-						$"SteamId: {steamId.ToString()} ConnectionId: {connection.Id.ToString()}");
+					MPMain.LogInfo(Localization.Get("MPSteamworks", "SendingToConnection",steamId.ToString(),connection.Id.ToString()));
 				}
 
 				connection.SendMessage(data, offset, length, sendType, laneIndex);
 			} catch (Exception ex) {
-				MPMain.LogError(
-					$"[MPSW] 广播数据异常: {ex.Message}",
-					$"[MPSW] Broadcasting data exception: {ex.Message}");
+				MPMain.LogError(Localization.Get("MPSteamworks", "BroadcastingException",ex.Message));
 			}
 		}
 	}
@@ -282,9 +265,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		try {
 			_allConnections[steamId].SendMessage(data, offset, length, sendType, laneIndex);
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 单播数据异常: {ex.Message} SteamId: {steamId.ToString()}",
-				$"[MPSW] Unicast data exception: {ex.Message} SteamId: {steamId.ToString()}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "UnicastException",ex.Message,steamId.ToString()));
 		}
 	}
 
@@ -301,9 +282,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			try {
 				connection.SendMessage(data, offset, length, sendType, laneIndex);
 			} catch (Exception ex) {
-				MPMain.LogError(
-					$"[MPSW] 广播数据异常: {ex.Message}",
-					$"[MPSW] Broadcasting data exception: {ex.Message}");
+				MPMain.LogError(Localization.Get("MPSteamworks", "BroadcastingException",ex.Message));
 			}
 		}
 	}
@@ -346,9 +325,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 				processedCount++;
 			} catch (Exception ex) {
-				MPMain.LogError(
-					$"[MPSW] 消息队列转发消息异常: {ex.Message}",
-					$"[MPSW] MessageQueue forwarding message to MPCore exception: {ex.Message}");
+				MPMain.LogError(Localization.Get("MPSteamworks", "MessageQueueException", ex.Message));
 
 			} finally {
 				// 数据归还缓冲区
@@ -380,9 +357,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			if (IsInLobby || IsMemberInLobby(steamId))
 				StartCoroutine(ConnectionController(steamId, true));
 
-			MPMain.LogInfo(
-				$"[MPSW] 玩家断开,已清理连接. SteamId: {steamId.ToString()}",
-				$"[MPSW] Player disconnected, connection cleaned up. SteamId: {steamId.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerDisconnectedCleaned",steamId.ToString()));
 
 			// 检查是否还有剩余连接
 			HasConnections = _allConnections.Count > 0;
@@ -405,9 +380,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			_socketManager = SteamNetworkingSockets.CreateRelaySocket<SocketManager>(1);
 			_socketManager.Interface = this;
 		} catch (Exception socketEx) {
-			MPMain.LogError(
-				$"[MPSW] 创建Socket失败: {socketEx.Message}",
-				$"[MPSW] Create Socket exception: {socketEx.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "SocketCreateException",socketEx.Message));
 		}
 	}
 
@@ -417,9 +390,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	public void ConnectToPlayer(SteamId steamId) {
 		try {
 			if (_outgoingConnections.ContainsKey(steamId)) {
-				MPMain.LogWarning(
-					$"[MPSW] 已经连接过玩家. SteamId: {steamId.ToString()}",
-					$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
+				MPMain.LogWarning(Localization.Get("MPSteamworks", "AlreadyConnected",steamId.ToString()));
 				return;
 			}
 
@@ -428,13 +399,9 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			connectionManager.Instance = this;
 			_outgoingConnections[steamId] = connectionManager;
 			_allConnections[steamId] = connectionManager.Connection;
-			MPMain.LogInfo(
-				$"[MPSW] 正在出站连接玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "ConnectingToPlayer",steamId.ToString()));
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 连接玩家异常: {ex.Message}",
-				$"[MPSW] Exception while connecting to player: {ex.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "ConnectToPlayerException",ex.Message));
 		}
 	}
 
@@ -448,17 +415,13 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 		// 初始检查
 		if (_outgoingConnections.ContainsKey(steamId) || _allConnections.ContainsKey(steamId)) {
-			MPMain.LogWarning(
-				$"[MPSW] 已经连接到玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Already connected to player. SteamId: {steamId.ToString()}");
+			MPMain.LogWarning(Localization.Get("MPSteamworks", "AlreadyConnected", steamId.ToString()));
 			return true;
 		}
 
 		// 1. 同步建立连接
 		try {
-			MPMain.LogInfo(
-				$"[MPSW] 正在连接玩家. SteamId: {steamId.ToString()}",
-				$"[MPSW] Connecting to player. SteamId: {steamId.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "ConnectingToPlayer",steamId.ToString()));
 
 			// 建立连接
 			connectionManager = SteamNetworkingSockets.ConnectRelay<SteamConnectionManager>(steamId, 1);
@@ -467,9 +430,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			_allConnections[steamId] = connectionManager.Connection;
 
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 建立连接异常: {ex.Message}",
-				$"[MPSW] Exception while connecting to player: {ex.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "ConnectToPlayerException",ex.Message));
 			return false;
 		}
 
@@ -477,9 +438,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		if (connectionManager != null) {
 			while (connectionManager.ConnectionInfo.State != ConnectionState.Connected) {
 				if (Time.time - startTime > timeout) {
-					MPMain.LogError(
-						$"[MPSW] 连接玩家超时. SteamId: {steamId.ToString()}",
-						$"[MPSW] Connection to player timed out. SteamId: {steamId.ToString()}");
+					MPMain.LogError(Localization.Get("MPSteamworks", "ConnectionTimeout",steamId.ToString()));
 					_outgoingConnections.Remove(steamId);
 					_allConnections.Remove(steamId);
 					return false;
@@ -491,9 +450,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			return false;
 		}
 
-		MPMain.LogInfo(
-			$"[MPSW] 连接玩家成功. SteamId: {steamId.ToString()}",
-			$"[MPSW] Successfully connected to player. SteamId: {steamId.ToString()}");
+		MPMain.LogInfo(Localization.Get("MPSteamworks", "ConnectSuccess",steamId.ToString()));
 		return true;
 	}
 
@@ -511,9 +468,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 		try {
 			if (!SteamClient.IsValid) {
-				MPMain.LogError(
-					"[MPSW] SteamClient 无效,请检查Steam在线情况",
-					"[MPSW] SteamClient is invalid. Please check your Steam login status.");
+				MPMain.LogError(Localization.Get("MPSteamworks", "SteamClientInvalid"));
 				return false;
 			}
 
@@ -522,17 +477,13 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 			// 只检查结果并返回,移除所有同步大厅设置和 Socket 创建！
 			if (!lobbyResult.HasValue) {
-				MPMain.LogError(
-					"[MPSW] 创建大厅失败",
-					"[MPSW] Failed to create lobby");
+				MPMain.LogError(Localization.Get("MPSteamworks", "CreateLobbyFailed"));
 				return false;
 			}
 
 			_currentLobby = lobbyResult.Value;
 
-			MPMain.LogInfo(
-				$"[MPSW] 大厅创建成功,ID: {_currentLobby.Id.ToString()}",
-				$"[MPSW] Lobby created successfully.Lobby ID: {_currentLobby.Id.ToString()}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "LobbyCreatedSuccess",_currentLobby.Id.ToString()));
 
 			// 设置大厅信息
 			_currentLobby.SetData("name", roomName);
@@ -547,9 +498,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 			return true; // 成功
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 创建大厅异常: {ex.Message}",
-				$"[MPSW] Create Lobby exception: {ex.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "CreateLobbyException",ex.Message));
 			return false; // 失败
 		}
 	}
@@ -580,10 +529,8 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 			_currentLobby = lobby;
 			string roomName = _currentLobby.GetData("name")
-				?? (MPConfig.LogLanguage == 0 ? "未知大厅" : "Unknown lobby");
-			MPMain.LogInfo(
-				$"[MPSW] 加入大厅成功: {roomName}",
-				$"[MPSW] Successfully joined lobby: {roomName}");
+				?? Localization.Get("MPSteamworks", "NullLobbyName");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "JoinLobbySuccess", roomName));
 
 			// 获取Socket
 			CreateListeningSocket();
@@ -591,9 +538,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			return true;
 
 		} catch (Exception ex) {
-			MPMain.LogError(
-				$"[MPSW] 加入大厅异常: {ex.Message}",
-				$"[MPSW] Join lobby exception: {ex.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "JoinLobbyException",ex.Message));
 			return false;
 		}
 	}
@@ -616,17 +561,13 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	private void OnLobbyEntered(Lobby lobby) {
 		_currentLobby = lobby;
 		HostSteamId = lobby.Owner.Id;
-		MPMain.LogInfo(
-			$"[MPSW] 进入大厅. 大厅Id: {lobby.Id.ToString()}",
-			$"[MPSW] Entered lobby. LobbyId: {lobby.Id.ToString()}");
+		MPMain.LogInfo(Localization.Get("MPSteamworks", "EnteredLobby",lobby.Id.ToString()));
 
 		// 在这里连接所有玩家
 		// 遍历大厅里已经在的所有成员
 		foreach (var member in lobby.Members) {
 			if (member.Id == UserSteamId) continue; // 跳过自己
-			MPMain.LogInfo(
-				$"[MPCore] 连接已在大厅玩家: {member.Name}({member.Id.ToString()})",
-				$"[MPCore] Connected to player in the lobby: {member.Name}({member.Id.ToString()})");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "ConnectedToLobbyPlayer",member.Name,member.Id.ToString()));
 			StartCoroutine(ConnectionController(member.Id, false));
 		}
 
@@ -640,9 +581,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	private void OnLobbyMemberJoined(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
-			MPMain.LogInfo(
-				$"[MPSW] 玩家加入大厅. SteamId: {friend.Name}",
-				$"[MPSW] Player joined room. SteamId: {friend.Name}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerJoinedRoom",friend.Name));
 
 			// 发布事件到总线
 			MPEventBusNet.NotifyLobbyMemberJoined(friend.Id);
@@ -660,9 +599,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	private void OnLobbyMemberLeft(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
-			MPMain.LogInfo(
-				$"[MPSW] 玩家离开大厅. SteamId: {friend.Name}",
-				$"[MPSW] Player left the room. SteamId: {friend.Name}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerLeftRoom",friend.Name));
 
 			// 发布事件到总线
 			MPEventBusNet.NotifyLobbyMemberLeft(friend.Id);
@@ -678,9 +615,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	private void OnLobbyMemberDisconnected(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
-			MPMain.LogInfo(
-				$"[MPSW] 玩家断开大厅连接. SteamId: {friend.Name}",
-				$"[MPSW] Player disconnected from the lobby. SteamId: {friend.Name}");
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerDisconnectedFromLobby",friend.Name));
 
 			// 重复分发
 			// 发布断开事件到总线
@@ -703,9 +638,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 			SteamId currentOwnerId = lobby.Owner.Id;
 			// 检查所有权是否发生了变更
 			if (HostSteamId != 0 && HostSteamId != currentOwnerId) {
-				MPMain.LogInfo(
-					$"[MPCore] 主机变更: {HostSteamId.ToString()} -> {currentOwnerId.ToString()}",
-					$"[MPCore] Host change: {HostSteamId.ToString()} -> {currentOwnerId.ToString()}");
+				MPMain.LogInfo(Localization.Get("MPSteamworks", "HostChanged",HostSteamId.ToString(),currentOwnerId.ToString()));
 
 				// 触发主机变更总线
 				MPEventBusNet.NotifyLobbyHostChanged(lobby, HostSteamId);
@@ -727,7 +660,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		// 核心重用逻辑：尝试并验证连接
 		IEnumerator AttemptAndVerify(int maxAttempts) {
 			for (int i = 0; i < maxAttempts; i++) {
-				// 检查现有连接（可能在循环开始前已连上）
+				// 检查现有连接(可能在循环开始前已连上)
 				if (_allConnections.ContainsKey(targetId)) {
 					yield return new WaitForSeconds(1.0f);
 					if (_allConnections.ContainsKey(targetId)) {
@@ -812,20 +745,14 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 	// 有玩家正在接入
 	void ISocketManager.OnConnecting(Connection connection, ConnectionInfo info) {
-		MPMain.LogInfo(
-			$"[MPSW] 玩家正在连接. SteamId: {info.Identity.SteamId.ToString()}",
-			$"[MPSW] Player is connecting. SteamId: {info.Identity.SteamId.ToString()}");
+		MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerConnecting",info.Identity.SteamId.ToString()));
 		connection.Accept();
 	}
 
 	// 有玩家已经接入
 	void ISocketManager.OnConnected(Connection connection, ConnectionInfo info) {
 		var steamId = info.Identity.SteamId;
-		MPMain.LogInfo(
-			$"[MPSW] 玩家已经接入. SteamId: {steamId.ToString()} " +
-			$"连接Id: {connection.Id} 连接状态: {info.State}",
-			$"[MPSW] The player has already connected. SteamId{steamId.ToString()}" +
-			$"Connection Id: {connection.Id} Connection state: {info.State}");
+		MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerConnected",steamId.ToString(),connection.Id,info.State));
 		_allConnections[steamId] = connection;
 		HasConnections = true;
 		OnPlayerConnected(steamId, connection, true);
@@ -840,9 +767,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 	// 连接被本地或远程关闭
 	void ISocketManager.OnDisconnected(Connection connection, ConnectionInfo info) {
-		MPMain.LogError(
-			$"[MPSW] 连接断开详情: {info.ToString()}",
-			$"[MPSW] Disconnected details: {info.ToString()}");
+		MPMain.LogError(Localization.Get("MPSteamworks", "DisconnectedDetails",info.ToString()));
 		OnPlayerDisconnected(info.Identity.SteamId);
 	}
 
@@ -859,10 +784,11 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 		// 连接已建立
 		public override void OnConnected(ConnectionInfo info) {
-			MPMain.LogInfo(
-				$"[MPSW] 已经主动连接玩家. SteamId: {info.Identity.SteamId.ToString()} 连接状态: {info.State}",
-				$"[MPSW] Already actively connected to the player. SteamId{info.Identity.SteamId.ToString()}" +
-				$"Connection state: {info.State}");
+			SteamId steamId = info.Identity.SteamId;
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "AlreadyActiveConnected",steamId.ToString(),info.State));
+
+			MPEventBusNet.NotifyPlayerConnected(steamId);
+
 			Instance?.HasConnections = true;
 		}
 
@@ -892,9 +818,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		yield return null;
 
 		if (task.IsFaulted) {
-			MPMain.LogError(
-				$"[MPSW] 异步任务执行失败: {task.Exception.InnerException.Message}",
-				$"[MPSW] Async task execution failed: {task.Exception.InnerException.Message}");
+			MPMain.LogError(Localization.Get("MPSteamworks", "AsyncTaskFailed",task.Exception.InnerException.Message));
 			callback?.Invoke(false);
 		} else {
 			// Task.Result 即为异步方法的返回值 (bool)

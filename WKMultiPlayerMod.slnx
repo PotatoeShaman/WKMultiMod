@@ -110,6 +110,8 @@
     <File Path=".gitignore" />
     <File Path="README.md" />
     <File Path="README_CN.md" />
+    <File Path="texts_en.json" />
+    <File Path="texts_zh.json" />
     <File Path="TODO.md" />
   </Folder>
 </Solution>

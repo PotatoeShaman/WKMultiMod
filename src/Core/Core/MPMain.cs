@@ -14,7 +14,7 @@ public class MPMain : BaseUnityPlugin {
 
 	public const string ModGUID = "shenxl.MultiPlayerMod";
 	public const string ModName = "MultiPlayer Mod";
-	public const string ModVersion = "1.1.2.10";
+	public const string ModVersion = "1.1.3.0";
 
 	public static string path = Paths.PluginPath;
 
@@ -59,36 +59,22 @@ public class MPMain : BaseUnityPlugin {
 
 		// 配置初始化
 		MPConfig.Initialize(base.Config);
+
+		// 文本配置
+		Localization.Load();
 	}
 
 	private void OnDestroy() {
-		LogInfo(
-			"[MPMain] MPMain (启动器) 已被销毁.",
-			"[MPMain] MPMain (Launcher) has been destroyed.");
+		LogInfo(Localization.Get("MPMain", "Destroy"));
 	}
 
-	public static void LogInfo(string chineseLog, string englishLog) {
-		if (MPConfig.LogLanguage == 0) Logger.LogInfo(chineseLog);
-		else Logger.LogInfo(englishLog);
-	}
 	public static void LogInfo(string log) {
 		Logger.LogInfo(log);
-	}
-
-	public static void LogWarning(string chineseLog, string englishLog) {
-		if (MPConfig.LogLanguage == 0) Logger.LogWarning(chineseLog);
-		else Logger.LogWarning(englishLog);
 	}
 
 	public static void LogWarning(string log) {
 		Logger.LogWarning(log);
 	}
-
-	public static void LogError(string chineseLog, string englishLog) {
-		if (MPConfig.LogLanguage == 0) Logger.LogError(chineseLog);
-		else Logger.LogError(englishLog);
-	}
-
 	public static void LogError(string log) {
 		Logger.LogError(log);
 	}

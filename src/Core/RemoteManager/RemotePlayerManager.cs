@@ -99,17 +99,13 @@ public class RemotePlayerManager : MonoBehaviour {
 	private void CreateSlugcatPrefab() {
 		var bundle = AssetBundle.LoadFromFile($"{MPMain.path}/{SLUGCAT_FILE_NAME}");
 		if (bundle == null) {
-			MPMain.LogError(
-				"[MP RPManager] 无法加载资源", 
-				"[MP RPManager] Unable to load resources");
+			MPMain.LogError(Localization.Get("RemotePlayerManager", "UnableToLoadResources"));
 			return;
 		}
 		// 加载资源
 		slugcatPrefab = bundle.LoadAsset<GameObject>(SLUGCAT_PREFAB_NAME); // 按名称
 		if (slugcatPrefab == null) {
-			MPMain.LogError(
-				"[MP RPManager] 找不到Slugcat预制体",
-				"[MP RPManager] Unable to find Slugcat Prefab");
+			MPMain.LogError(Localization.Get("RemotePlayerManager", "SlugcatPrefabNotFound"));
 			return;
 		}
 		// 替换真正组件
@@ -132,9 +128,8 @@ public class RemotePlayerManager : MonoBehaviour {
 			RPcontainer.UpdatePlayerData(playerData);
 			return;
 		} else if (_debugTick.TryTick()) {
-			MPMain.LogError(
-				$"[RPMan] 未找到远程映射对象 ID: {playId.ToString()}",
-				$"[RPMan] Remote player object not found. ID: {playId.ToString()}");
+			MPMain.LogError(Localization.Get(
+				"RemotePlayerManager", "RemotePlayerObjectNotFound", playId.ToString()));
 			return;
 		}
 		return;
@@ -153,9 +148,8 @@ public class RemotePlayerManager : MonoBehaviour {
 			try {
 				SetRealComponents(current.gameObject);
 			} catch (Exception ex) {
-				MPMain.LogError(
-					$"[MPPrefab] 处理节点 {current.name} 时崩溃: {ex.Message}",
-					$"[MPPrefab] Collapse while processing node {current.name} Error Massage: {ex.Message}");
+				MPMain.LogError(Localization.Get(
+					"RemotePlayerManager", "PrefabProcessingError",current.name,ex.Message));
 			}
 			// 遍历直接子级
 			// 这里不需要 Cast,直接循环最快
@@ -190,9 +184,7 @@ public class RemotePlayerManager : MonoBehaviour {
 			component.IceActive = MPConfig.IceActive;
 			component.OtherActive = MPConfig.OtherActive;
 		} else {
-			MPMain.LogError(
-				"[MPPrefab] 预制体RemoteEntity组件添加失败, 我也不知道怎么办, 建议重启?",
-				"[MPPrefab] Failed to add the RemoteEntity component to preform");
+			MPMain.LogError(Localization.Get("RemotePlayerManager", "RemoteEntityAddFailed"));
 		}
 		Object.DestroyImmediate(mk_component);
 	}
@@ -211,9 +203,7 @@ public class RemotePlayerManager : MonoBehaviour {
 				}
 			}
 		} else {
-			MPMain.LogError(
-				"[MPPrefab] 预制体ObjectTagger组件添加失败, 我也不知道怎么办, 建议重启?",
-				"[MPPrefab] Failed to add the ObjectTagger component to preform");
+			MPMain.LogError(Localization.Get("RemotePlayerManager","ObjectTaggerAddFailed"));
 		}
 		Object.DestroyImmediate(mk_component);
 	}
@@ -231,9 +221,7 @@ public class RemotePlayerManager : MonoBehaviour {
 				component.handholdRenderer = prefab.GetComponent<Renderer>();
 			}
 		} else {
-			MPMain.LogError(
-				"[MPPrefab] 预制体CL_Handhold组件添加失败, 我也不知道怎么办, 建议重启?",
-				"[MPPrefab] Failed to add the CL_Handhold component to preform");
+			MPMain.LogError(Localization.Get("RemotePlayerManager", "CL_HandholdAddFailed"));
 		}
 		Object.DestroyImmediate(mk_component);
 	}

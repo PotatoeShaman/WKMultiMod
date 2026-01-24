@@ -4,7 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<AssemblyName>WKMultiPlayerMod</AssemblyName>
 		<Product>WKMultiPlayerMod</Product>
-		<Version>1.1.2.10</Version>
+		<Version>1.1.3.0</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<RestoreAdditionalProjectSources>
@@ -34,6 +34,12 @@
 
 		<Reference Include="..\..\lib\Shared\*.dll">
 		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Newtonsoft.Json">
+	    <HintPath>..\..\lib\Temp\Newtonsoft.Json.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

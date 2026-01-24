@@ -26,6 +26,7 @@ public class RemotePlayerContainer {
 	private RemoteHand _remoteRightHand;
 	private RemoteTag _remoteTag;
 	private RemoteEntity _remoteEntity;
+	private int _initializationCount = 5;
 
 	public PlayerData PlayerData {
 		get {
@@ -43,14 +44,10 @@ public class RemotePlayerContainer {
 		}
 	}
 
-	// 初始化时直接传送玩家
-	private float _initializationTime;
-	private const float FORCED_TELEPORT_DURATION = 5.0f; // 强制传送持续时间
 	// 构造函数 - 只设置基本信息
 	public RemotePlayerContainer(ulong playId) {
 		PlayerId = playId;
 		PlayerName = new Friend(PlayerId).Name;
-		_initializationTime = Time.time;
 	}
 
 	// 新初始化方法
@@ -64,15 +61,13 @@ public class RemotePlayerContainer {
 				PlayerObject.transform.SetParent(persistentParent, false);
 			}
 			// Debug
-			MPMain.LogInfo(
-				$"[RPCont] 远程玩家映射成功 ID: {PlayerId.ToString()}",
-				$"[RPCont] Remote player mapping succeeded ID: {PlayerId.ToString()}");
+			MPMain.LogInfo(Localization.Get(
+				"RemotePlayerContainer", "MappingSucceeded", PlayerId.ToString()));
 			return true;
 		} catch (Exception ex) {
 			// Debug
-			MPMain.LogError(
-				$"[RPCont] 远程玩家映射失败 ID: {PlayerId.ToString()}, Error: {ex.Message}",
-				$"[RPCont] Failed to map remote player ID: {PlayerId.ToString()}, Error: {ex.Message}");
+			MPMain.LogError(Localization.Get(
+				"RemotePlayerContainer", "MappingFailed",PlayerId.ToString(),ex.Message));
 
 			Object.Destroy(PlayerObject);
 
@@ -131,7 +126,11 @@ public class RemotePlayerContainer {
 	public void UpdatePlayerData(PlayerData playerData) {
 
 		// 判断是否处于初始化 5 秒内
-		bool isInInitPhase = (Time.time - _initializationTime) < FORCED_TELEPORT_DURATION;
+		bool isInInitPhase = false;
+		if (_initializationCount > 0) { 
+			isInInitPhase = true;
+			--_initializationCount;
+		}
 
 		if (playerData.IsTeleport || isInInitPhase) {
 			// 使用组件的传送方法
@@ -155,9 +154,7 @@ public class RemotePlayerContainer {
 	public void UpdateNameTag(string text) {
 		if (string.IsNullOrEmpty(text)) { return; }
 		if (_remoteTag == null) {
-			MPMain.LogError(
-				"[RPCont] PlayerNameTag的组件未添加",
-				"[RPCont] PlayerNameTag component not added");
+			MPMain.LogError(Localization.Get("RemotePlayerContainer", "NameTagComponentMissing"));
 			return;
 		}
 		_remoteTag.Message = text;
