@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json;
+using UnityEngine;
 using WKMPMod.Core;
 namespace WKMPMod.Util;
 
@@ -19,7 +20,7 @@ public static class Localization {
 	/// 加载本地化文件
 	/// </summary>
 	public static void Load() {
-		string language = GetSystemLanguage(); // 获取系统语言
+		string language = GetGameLanguage(); // 获取系统语言
 		string fileName = $"{FILE_PREFIX}_{language.ToLower()}.json";
 
 		// 如果找不到对应语言文件，使用默认版
@@ -177,8 +178,28 @@ public static class Localization {
 		}
 	}
 
-	public static string GetSystemLanguage() {
+	public static string GetGameLanguage() {
 		// 根据系统语言返回 "zh", "en" 等
-		return System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
+		switch (Application.systemLanguage) {
+			case SystemLanguage.Chinese:
+			case SystemLanguage.ChineseSimplified:
+				return "zh";
+			case SystemLanguage.ChineseTraditional:
+				return "zh_tw";
+			case SystemLanguage.Japanese:
+				return "ja";
+			case SystemLanguage.Korean:
+				return "ko";
+			case SystemLanguage.Russian:
+				return "ru";
+			case SystemLanguage.German:
+				return "de";
+			case SystemLanguage.French:
+				return "fr";
+			case SystemLanguage.Spanish:
+				return "es";
+			default:
+				return "en";
+		}
 	}
 }

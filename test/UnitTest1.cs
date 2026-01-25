@@ -30,7 +30,7 @@ namespace test {
 
 		[Test]
 		public void TestSystemLanguage() {
-			Assert.That(Localization.GetSystemLanguage, Is.EqualTo("zh"), "本地语言应为zh");
+			Assert.That(Localization.GetGameLanguage, Is.EqualTo("zh"), "本地语言应为zh");
 		}
 	}
 }

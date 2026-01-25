@@ -42,6 +42,6 @@ public class Test : MonoBehaviour{
 	}
 
 	public static void GetSystemLanguage(string[] args) {
-		Debug.Log($"系统语言:{Localization.GetSystemLanguage()}");
+		Debug.Log($"系统语言:{Localization.GetGameLanguage()}");
 	}
 }
