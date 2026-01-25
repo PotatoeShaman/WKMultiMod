@@ -216,10 +216,7 @@ public class RemotePlayerManager : MonoBehaviour {
 		if (component != null) {
 			component.activeEvent = mk_component.activeEvent;
 			component.stopEvent = mk_component.stopEvent;
-
-			if (component.handholdRenderer == null) {
-				component.handholdRenderer = prefab.GetComponent<Renderer>();
-			}
+			component.handholdRenderer = mk_component.handholdRenderer ?? prefab.GetComponent<Renderer>();
 		} else {
 			MPMain.LogError(Localization.Get("RemotePlayerManager", "CL_HandholdAddFailed"));
 		}
