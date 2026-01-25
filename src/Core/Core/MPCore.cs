@@ -17,6 +17,7 @@ using static WKMPMod.Data.MPWriterPool;
 
 namespace WKMPMod.Core;
 
+#region[多人模式状态枚举]
 [Flags]
 public enum MPStatus {
 	NotInitialized = 0b0,    // 未初始化
@@ -52,6 +53,7 @@ public static class MPStatusExtension {
 		return GetField(status, MPStatus.INIT_MASK) == MPStatus.Initialized;
 	}
 }
+#endregion
 
 public class MPCore : MonoBehaviour {
 
@@ -80,7 +82,7 @@ public class MPCore : MonoBehaviour {
 
 
 	// 注意：日志通过 MultiPlayerMain.Logger 访问
-	#region[生命周期/状态设置 函数]
+	#region[Unity组件生命周期函数]
 	void Awake() {
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "Awake"));
@@ -107,6 +109,27 @@ public class MPCore : MonoBehaviour {
 	void Update() {
 		LPManager.ShouldSendData = IsInLobby && IsInitialized && Steamworks.HasConnections;
 	}
+
+	/// <summary>
+	/// 当核心对象被销毁时调用
+	/// </summary>
+	void OnDestroy() {
+		// 订阅场景切换
+		SceneManager.sceneLoaded -= OnSceneLoaded;
+
+		// 取消所有事件订阅
+		UnsubscribeFromEvents();
+
+		// 重置状态
+		ResetStateVariables();
+
+		// Debug
+		MPMain.LogInfo(Localization.Get("MPCore", "Destroy"));
+	}
+
+	#endregion
+
+	#region[RAII函数]
 
 	/// <summary>
 	/// 初始化所有管理器
@@ -179,28 +202,13 @@ public class MPCore : MonoBehaviour {
 
 	}
 
-	/// <summary>
-	/// 当核心对象被销毁时调用
-	/// </summary>
-	private void OnDestroy() {
-		// 订阅场景切换
-		SceneManager.sceneLoaded -= OnSceneLoaded;
+	#endregion
 
-		// 取消所有事件订阅
-		UnsubscribeFromEvents();
-
-		// 重置状态
-		ResetStateVariables();
-
-		// Debug
-		MPMain.LogInfo(Localization.Get("MPCore", "Destroy"));
-	}
+	#region[场景切换回调]
 
 	/// <summary>
 	/// 场景加载完成时调用
 	/// </summary>
-	/// <param name="scene"></param>
-	/// <param name="mode"></param>
 	private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "SceneLoadingCompleted", scene.name));
@@ -236,6 +244,10 @@ public class MPCore : MonoBehaviour {
 				break;
 		}
 	}
+
+	#endregion
+
+	#region[状态设置]
 
 	/// <summary>
 	/// 死亡时延迟退出联机模式
@@ -321,23 +333,23 @@ public class MPCore : MonoBehaviour {
 	#endregion
 
 	#region[命令注册]
+
 	/// <summary>
 	/// 命令注册
 	/// </summary>
 	private void RegisterCommands() {
 		// 将命令注册到 CommandConsole
-		CommandConsole.AddCommand("host", Host, false);
-		CommandConsole.AddCommand("join", Join, false);
-		CommandConsole.AddCommand("leave", Leave, false);
-		CommandConsole.AddCommand("getlobbyid", GetLobbyId, false);
-		CommandConsole.AddCommand("allconnections", GetAllConnections, false);
-		CommandConsole.AddCommand("talk", Talk, false);
-		CommandConsole.AddCommand("tpto", TpToPlayer, false);
-		CommandConsole.AddCommand("initialized", Initialized, false);
+		CommandConsole.AddCommand("host", Host);
+		CommandConsole.AddCommand("join", Join);
+		CommandConsole.AddCommand("leave", Leave);
+		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
+		CommandConsole.AddCommand("allconnections", GetAllConnections);
+		CommandConsole.AddCommand("talk", Talk);
+		CommandConsole.AddCommand("tpto", TpToPlayer);
+		CommandConsole.AddCommand("initialized", Initialized);
 		CommandConsole.AddCommand("test", Test.Test.Main, false);
 	}
 
-	// 命令实现
 	/// <summary>
 	/// 创建大厅
 	/// </summary>
@@ -396,24 +408,28 @@ public class MPCore : MonoBehaviour {
 			return;
 		}
 
-		if (ulong.TryParse(args[0], out ulong lobbyId)) {
-			MPMain.LogInfo(Localization.Get("MPCore", "JoiningLobby", lobbyId.ToString()));
-
-			//设置为正在连接
-			_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.JoiningLobby);
-
-			Steamworks.JoinRoom(lobbyId, (success) => {
-				if (success) {
-					_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
-				} else {
-					_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
-					CommandConsole.LogError(Localization.Get("CommandConsole", "JoinLobbyFailed"));
-				}
-			});
-		} else {
+		if (!ulong.TryParse(args[0], out ulong lobbyId)) {
 			CommandConsole.LogError(Localization.Get("CommandConsole", "JoinFormatError"));
+			return;
 		}
+
+		MPMain.LogInfo(Localization.Get("MPCore", "JoiningLobby", lobbyId.ToString()));
+
+		//设置为正在连接
+		_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.JoiningLobby);
+
+		Steamworks.JoinRoom(lobbyId, (success) => {
+			if (success) {
+				_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
+			} else {
+				_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
+				CommandConsole.LogError(Localization.Get("CommandConsole", "JoinLobbyFailed"));
+			}
+		});
 	}
+
+
+
 
 	/// <summary>
 	/// 离开大厅
@@ -434,24 +450,6 @@ public class MPCore : MonoBehaviour {
 		}
 		CommandConsole.Log(Localization.Get(
 			"CommandConsole", "LobbyIdOutput", Steamworks.LobbyId.ToString()));
-	}
-
-	/// <summary>
-	/// 调试用,获取所有链接
-	/// </summary>
-	public void GetAllConnections(string[] args) {
-		if (!IsInLobby) {
-			CommandConsole.LogError(Localization.Get("CommandConsole", "NeedToBeOnline"));
-			return;
-		}
-		foreach (var (steamid, connection) in Steamworks._outgoingConnections) {
-			MPMain.LogInfo(Localization.Get(
-				"MPCore", "OutgoingConnectionLog", steamid.ToString(), connection.ToString()));
-		}
-		foreach (var (steamid, connection) in Steamworks._allConnections) {
-			MPMain.LogInfo(Localization.Get(
-				"MPCore", "AllConnectionLog", steamid.ToString(), connection.ToString()));
-		}
 	}
 
 	/// <summary>
@@ -505,6 +503,24 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
+	/// 调试用,获取所有链接
+	/// </summary>
+	public void GetAllConnections(string[] args) {
+		if (!IsInLobby) {
+			CommandConsole.LogError(Localization.Get("CommandConsole", "NeedToBeOnline"));
+			return;
+		}
+		foreach (var (steamid, connection) in Steamworks._outgoingConnections) {
+			MPMain.LogInfo(Localization.Get(
+				"MPCore", "OutgoingConnectionLog", steamid.ToString(), connection.ToString()));
+		}
+		foreach (var (steamid, connection) in Steamworks._allConnections) {
+			MPMain.LogInfo(Localization.Get(
+				"MPCore", "AllConnectionLog", steamid.ToString(), connection.ToString()));
+		}
+	}
+
+	/// <summary>
 	/// 获取全部玩家
 	/// </summary>
 	public void GetAllPlayer(string[] args) {
@@ -520,16 +536,6 @@ public class MPCore : MonoBehaviour {
 	#endregion
 
 	#region[大厅/连接事件触发函数]
-	/// <summary>
-	/// 处理大厅成员加入 连接新成员
-	/// </summary> 
-	private void HandleLobbyMemberJoined(SteamId steamId) {
-		if (steamId == Steamworks.UserSteamId) return;
-		// Debug
-		MPMain.LogInfo(Localization.Get("MPCore", "PlayerJoinedLobby", steamId.ToString()));
-
-		//Steamworks.ConnectToPlayer(steamId);
-	}
 
 	/// <summary>
 	/// 处理加入大厅事件
@@ -544,6 +550,15 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
+	/// 处理大厅成员加入 连接新成员
+	/// </summary> 
+	private void HandleLobbyMemberJoined(SteamId steamId) {
+		if (steamId == Steamworks.UserSteamId) return;
+		// Debug
+		MPMain.LogInfo(Localization.Get("MPCore", "PlayerJoinedLobby", steamId.ToString()));
+	}
+
+	/// <summary>
 	/// 处理离开大厅事件
 	/// </summary>
 	/// <param name="steamId"></param>
@@ -553,7 +568,7 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 处理玩家接入事件
+	/// 处理事件总线 玩家连接OnPlayerConnected
 	/// </summary>
 	private void HandlePlayerConnected(SteamId steamId) {
 		// 创建玩家
@@ -561,18 +576,20 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 处理玩家断连
+	/// 处理事件总线 玩家断连OnPlayerDisconnected
 	/// </summary>
 	private void HandlePlayerDisconnected(SteamId steamId) {
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "PlayerDisconnected", steamId.ToString()));
 		RPManager.PlayerRemove(steamId.Value);
 	}
+
 	#endregion
 
 	#region [网络数据处理]
+
 	/// <summary>
-	/// 协程请求种子
+	/// 客户端发送WorldInitRequest: 协程请求初始化数据
 	/// </summary>
 	public IEnumerator InitHandshakeRoutine() {
 		yield return new WaitForSeconds(1.0f);
@@ -586,7 +603,8 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 发送初始化数据给新玩家
+	/// 主机接收WorldInitRequest: 请求初始化数据
+	/// 发送WorldInitData: 初始化数据给新玩家
 	/// </summary>
 	private void ProcessWorldInitRequest(ulong steamId) {
 		// 发送世界种子
@@ -601,7 +619,7 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 加载世界种子
+	/// 客户端接收WorldInitData: 新加入玩家,加载世界种子
 	/// </summary>
 	/// <param name="seed"></param>
 	private void ProcessWorldInit(ArraySegment<byte> payload) {
@@ -617,7 +635,7 @@ public class MPCore : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// 处理玩家数据更新
+	/// 主机/客户端接收PlayerDataUpdate: 处理玩家数据更新
 	/// </summary>
 	private void ProcessPlayerDataUpdate(ArraySegment<byte> payload) {
 		var reader = GetReader(payload);
@@ -641,63 +659,6 @@ public class MPCore : MonoBehaviour {
 		string playerName = new Friend(senderId).Name;
 		CommandConsole.Log($"{playerName}: {msg}");
 		RPManager.Players[senderId].UpdateNameTag(msg);
-	}
-
-	/// <summary>
-	/// 处理玩家传送请求
-	/// </summary>
-	/// <param name="senderId">发送方ID</param>
-	private void ProcessPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
-		// 获取数据
-		var positionData = ENT_Player.GetPlayer().transform.position;
-		var writer = GetWriter(Steamworks.UserSteamId, senderId, PacketType.RespondPlayerTeleport);
-		writer.Put(positionData.x);
-		writer.Put(positionData.y);
-		writer.Put(positionData.z);
-
-		if (DEN_DeathFloor.instance == null) {
-			writer.Put(false);
-		} else {
-			var deathFloorData = DEN_DeathFloor.instance.GetSaveData();
-			writer.Put(true);
-			writer.Put(deathFloorData.relativeHeight);
-			writer.Put(deathFloorData.active);
-			writer.Put(deathFloorData.speed);
-			writer.Put(deathFloorData.speedMult);
-		}
-		Steamworks.SendToPeer(senderId, writer);
-	}
-
-	/// <summary>
-	/// 处理玩家传送响应
-	/// </summary>
-	/// <param name="senderId">发送ID</param>
-	private void ProcessRespondPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
-		var reader = GetReader(payload);
-		var posX = reader.GetFloat();
-		var posY = reader.GetFloat();
-		var posZ = reader.GetFloat();
-		if (reader.GetBool()) {
-			var deathFloorData = new DEN_DeathFloor.SaveData {
-				relativeHeight = reader.GetFloat(),
-				active = reader.GetBool(),
-				speed = reader.GetFloat(),
-				speedMult = reader.GetFloat(),
-			};
-
-			// 关闭可击杀效果
-			DEN_DeathFloor.instance.SetCanKill(new string[] { "false" });
-			// 重设计数器,期间位移视为传送
-			LPManager.TriggerTeleport();
-			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
-			DEN_DeathFloor.instance.LoadDataFromSave(deathFloorData);
-			DEN_DeathFloor.instance.SetCanKill(new string[] { "true" });
-		} else {
-			// 重设计数器,期间位移视为传送
-			LPManager.TriggerTeleport();
-			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
-		}
-
 	}
 
 	/// <summary>
@@ -753,11 +714,72 @@ public class MPCore : MonoBehaviour {
 		ENT_Player.GetPlayer().AddForce(force, source);
 	}
 
+	/// <summary>
+	/// 主机/客户端接收PlayerDeath: 玩家死亡
+	/// </summary>
 	private void ProcessPlayerDeath(ulong senderId, ArraySegment<byte> payload) {
 		var reader = GetReader(payload);
 		string type = reader.GetString();
 		string playerName = new Friend(senderId).Name;
 		CommandConsole.Log(Localization.Get("CommandConsole", "PlayerDeath", playerName, type));
+
+	}
+
+	/// <summary>
+	/// 主机/客户端接收PlayerTeleport
+	/// 发送RespondPlayerTeleport: 有Mess环境则携带Mess数据
+	/// </summary>
+	/// <param name="senderId">发送方ID</param>
+	private void ProcessPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
+		// 获取数据
+		var positionData = ENT_Player.GetPlayer().transform.position;
+		var writer = GetWriter(Steamworks.UserSteamId, senderId, PacketType.RespondPlayerTeleport);
+		writer.Put(positionData.x);
+		writer.Put(positionData.y);
+		writer.Put(positionData.z);
+
+		if (DEN_DeathFloor.instance == null) {
+			writer.Put(false);
+		} else {
+			var deathFloorData = DEN_DeathFloor.instance.GetSaveData();
+			writer.Put(true);
+			writer.Put(deathFloorData.relativeHeight);
+			writer.Put(deathFloorData.active);
+			writer.Put(deathFloorData.speed);
+			writer.Put(deathFloorData.speedMult);
+		}
+		Steamworks.SendToPeer(senderId, writer);
+	}
+
+	/// <summary>
+	/// 主机/客户端接收RespondPlayerTeleport: 传送并同步Mess数据
+	/// </summary>
+	/// <param name="senderId">发送ID</param>
+	private void ProcessRespondPlayerTeleport(ulong senderId, ArraySegment<byte> payload) {
+		var reader = GetReader(payload);
+		var posX = reader.GetFloat();
+		var posY = reader.GetFloat();
+		var posZ = reader.GetFloat();
+		if (reader.GetBool()) {
+			var deathFloorData = new DEN_DeathFloor.SaveData {
+				relativeHeight = reader.GetFloat(),
+				active = reader.GetBool(),
+				speed = reader.GetFloat(),
+				speedMult = reader.GetFloat(),
+			};
+
+			// 关闭可击杀效果
+			DEN_DeathFloor.instance.SetCanKill(new string[] { "false" });
+			// 重设计数器,期间位移视为传送
+			LPManager.TriggerTeleport();
+			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
+			DEN_DeathFloor.instance.LoadDataFromSave(deathFloorData);
+			DEN_DeathFloor.instance.SetCanKill(new string[] { "true" });
+		} else {
+			// 重设计数器,期间位移视为传送
+			LPManager.TriggerTeleport();
+			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
+		}
 
 	}
 

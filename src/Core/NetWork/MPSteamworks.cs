@@ -87,7 +87,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	// 获取全部在线玩家
 	public IEnumerable<Friend> Friends { get; private set; }
 
-	#region[生命周期函数]
+	#region[Unity组件生命周期函数]
 	void Awake() {
 
 		//SteamClient.Init(3195790u);
@@ -104,15 +104,15 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 			// 订阅大厅事件 大部分只做转发
 			// 本机加入大厅
-			SteamMatchmaking.OnLobbyEntered += OnLobbyEntered;
+			SteamMatchmaking.OnLobbyEntered += HandleLobbyEntered;
 			// 该用户已经加入或正在加入大厅
-			SteamMatchmaking.OnLobbyMemberJoined += OnLobbyMemberJoined;
+			SteamMatchmaking.OnLobbyMemberJoined += HandleLobbyMemberJoined;
 			// 该用户已离开或即将离开大厅
-			SteamMatchmaking.OnLobbyMemberLeave += OnLobbyMemberLeft;
+			SteamMatchmaking.OnLobbyMemberLeave += HandleLobbyMemberLeft;
 			// 该用户在未离开大厅的情况下断线
-			SteamMatchmaking.OnLobbyMemberDisconnected += OnLobbyMemberDisconnected;
+			SteamMatchmaking.OnLobbyMemberDisconnected += HandleLobbyMemberDisconnected;
 			// 当大厅成员数据或大厅所有权发生变更
-			SteamMatchmaking.OnLobbyMemberDataChanged += OnLobbyMemberDataChanged;
+			SteamMatchmaking.OnLobbyMemberDataChanged += HandleLobbyMemberDataChanged;
 
 			// 初始化中继网络(必须调用)
 			SteamNetworkingUtils.InitRelayNetworkAccess();
@@ -138,18 +138,22 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	void OnDestroy() {
 		// 订阅大厅事件 大部分只做转发
 		// 本机加入大厅
-		SteamMatchmaking.OnLobbyEntered -= OnLobbyEntered;
+		SteamMatchmaking.OnLobbyEntered -= HandleLobbyEntered;
 		// 该用户已经加入或正在加入大厅
-		SteamMatchmaking.OnLobbyMemberJoined -= OnLobbyMemberJoined;
+		SteamMatchmaking.OnLobbyMemberJoined -= HandleLobbyMemberJoined;
 		// 该用户已离开或即将离开大厅
-		SteamMatchmaking.OnLobbyMemberLeave -= OnLobbyMemberLeft;
+		SteamMatchmaking.OnLobbyMemberLeave -= HandleLobbyMemberLeft;
 		// 该用户在未离开大厅的情况下断线
-		SteamMatchmaking.OnLobbyMemberDisconnected -= OnLobbyMemberDisconnected;
+		SteamMatchmaking.OnLobbyMemberDisconnected -= HandleLobbyMemberDisconnected;
 		// 当大厅成员数据或大厅所有权发生变更
-		SteamMatchmaking.OnLobbyMemberDataChanged -= OnLobbyMemberDataChanged;
+		SteamMatchmaking.OnLobbyMemberDataChanged -= HandleLobbyMemberDataChanged;
 
 		DisconnectAll();
 	}
+
+	#endregion
+
+	#region[RAII函数]
 
 	/// <summary>
 	/// 断开所有连接(清理网络资源)
@@ -185,6 +189,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 		MPMain.LogInfo(Localization.Get("MPSteamworks", "AllConnectionsDisconnected"));
 	}
+
 	#endregion
 
 	#region[发送数据函数]
@@ -558,7 +563,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// <summary>
 	/// 接收数据: 进入到大厅->LobbyEntered总线
 	/// </summary>
-	private void OnLobbyEntered(Lobby lobby) {
+	private void HandleLobbyEntered(Lobby lobby) {
 		_currentLobby = lobby;
 		HostSteamId = lobby.Owner.Id;
 		MPMain.LogInfo(Localization.Get("MPSteamworks", "EnteredLobby", lobby.Id.ToString()));
@@ -578,7 +583,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// <summary>
 	/// 接收数据: 大厅有成员加入->LobbyMemberJoined总线->连接新玩家
 	/// </summary>
-	private void OnLobbyMemberJoined(Lobby lobby, Friend friend) {
+	private void HandleLobbyMemberJoined(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
 			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerJoinedRoom", friend.Name));
@@ -596,7 +601,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// <summary>
 	/// 接收数据: 大厅有成员离开->LobbyMemberLeft总线
 	/// </summary>
-	private void OnLobbyMemberLeft(Lobby lobby, Friend friend) {
+	private void HandleLobbyMemberLeft(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
 			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerLeftRoom", friend.Name));
@@ -612,7 +617,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// <summary>
 	/// 接收数据: 大厅有成员断开连接-> 总线
 	/// </summary>
-	private void OnLobbyMemberDisconnected(Lobby lobby, Friend friend) {
+	private void HandleLobbyMemberDisconnected(Lobby lobby, Friend friend) {
 		if (lobby.Id == _currentLobby.Id) {
 			_currentLobby = lobby;
 			MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerDisconnectedFromLobby", friend.Name));
@@ -627,22 +632,28 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// 接收数据: 大厅数据变更->
 	/// 主机变更->LobbyHostChanged总线
 	/// </summary>
-	/// <param name="lobby"></param>
-	/// <param name="friend"></param>
-	private void OnLobbyMemberDataChanged(Lobby lobby, Friend friend) {
-		// 还是原房间
-		if (lobby.Id == _currentLobby.Id) {
-			// 更新部分房间数据
+	private void HandleLobbyMemberDataChanged(Lobby lobby, Friend friend) {
+		// 大厅变更
+		if (lobby.Id != _currentLobby.Id) {
+			// 更新部分大厅数据
+			MPMain.LogInfo(Localization.Get(
+	"			MPSteamworks", "LobbyIdChanged", _currentLobby.Id.ToString(), lobby.Id.ToString()));
 			_currentLobby = lobby;
-			// 获取当前大厅真正的主机(Owner)
-			SteamId currentOwnerId = lobby.Owner.Id;
-			// 检查所有权是否发生了变更
-			if (HostSteamId != 0 && HostSteamId != currentOwnerId) {
-				MPMain.LogInfo(Localization.Get("MPSteamworks", "HostChanged", HostSteamId.ToString(), currentOwnerId.ToString()));
+			// 以后会在这里触发总线
+			return;
+		}
 
-				// 触发主机变更总线
-				MPEventBusNet.NotifyLobbyHostChanged(lobby, HostSteamId);
-			}
+		// 原大厅 更新部分大厅数据
+		_currentLobby = lobby;
+		// 获取当前大厅真正的主机(Owner)
+		SteamId currentOwnerId = lobby.Owner.Id;
+		// 检查所有权是否发生了变更
+		if (HostSteamId != 0 && HostSteamId != currentOwnerId) {
+			MPMain.LogInfo(Localization.Get("MPSteamworks", "HostChanged", HostSteamId.ToString(), currentOwnerId.ToString()));
+
+			// 触发主机变更总线
+			MPEventBusNet.NotifyLobbyHostChanged(lobby, HostSteamId);
+			
 			HostSteamId = currentOwnerId;
 		}
 	}
@@ -740,8 +751,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 	#endregion
 
-	#region[Steam 监听socket管理器]
-
+	#region[SocketManager接口实现]
 
 	// 有玩家正在接入
 	void ISocketManager.OnConnecting(Connection connection, ConnectionInfo info) {
@@ -754,8 +764,6 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		var steamId = info.Identity.SteamId;
 		MPMain.LogInfo(Localization.Get("MPSteamworks", "PlayerConnected", steamId.ToString(), connection.Id, info.State));
 		_allConnections[steamId] = connection;
-		//HasConnections = true;
-		//OnPlayerConnected(steamId, connection, true);
 	}
 
 	// 接收消息
