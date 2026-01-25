@@ -91,6 +91,10 @@ public class RemotePlayerManager : MonoBehaviour {
 		// 使用专门的根对象
 		container.Initialize(slugcatPrefab, GetRemotePlayersRoot());
 
+		container.UpdatePlayerData(new PlayerData {
+			Position = new UnityEngine.Vector3(0.0f, 0.0f, 0.0f)
+		});
+
 		Players[playId] = container;
 		return container;
 	}
@@ -217,6 +221,7 @@ public class RemotePlayerManager : MonoBehaviour {
 			component.activeEvent = mk_component.activeEvent;
 			component.stopEvent = mk_component.stopEvent;
 			component.handholdRenderer = mk_component.handholdRenderer ?? prefab.GetComponent<Renderer>();
+			
 		} else {
 			MPMain.LogError(Localization.Get("RemotePlayerManager", "CL_HandholdAddFailed"));
 		}

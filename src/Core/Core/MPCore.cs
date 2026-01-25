@@ -334,10 +334,7 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("talk", Talk, false);
 		CommandConsole.AddCommand("tpto", TpToPlayer, false);
 		CommandConsole.AddCommand("initialized", Initialized, false);
-		CommandConsole.AddCommand("test0", Test.Test.GetGraphicsAPI, false);
-		CommandConsole.AddCommand("test1", Test.Test.GetMPStatus, false);
-		CommandConsole.AddCommand("test2", Test.Test.GetMassData, false);
-		CommandConsole.AddCommand("test3", Test.Test.GetSystemLanguage, false);
+		CommandConsole.AddCommand("test", Test.Test.Main, false);
 	}
 
 	// 命令实现

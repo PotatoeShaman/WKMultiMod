@@ -12,9 +12,31 @@ using Vector3 = UnityEngine.Vector3;
 
 namespace WKMPMod.Test;
 
-public class Test : MonoBehaviour{
+public class Test : MonoBehaviour {
+	public static void Main(string[] args) {
 
-	public static void GetGraphicsAPI(string[] args) {
+		switch (args[0]) {
+			case "0":
+				GetGraphicsAPI();
+				break;
+			case "1":
+				GetMPStatus();
+				break;
+			case "2":
+				GetMassData();
+				break;
+			case "3":
+				GetSystemLanguage();
+				break;
+			case "4":
+				CreateRemotePlayer();
+				break;
+			default:
+				break;
+		}
+	}
+
+	public static void GetGraphicsAPI() {
 		// 方法1：直接获取当前API
 		Debug.Log($"当前图形API: {SystemInfo.graphicsDeviceType}");
 
@@ -32,16 +54,20 @@ public class Test : MonoBehaviour{
 		Debug.Log($"支持GPU实例化: {SystemInfo.supportsInstancing}");
 	}
 
-	public static void GetMPStatus(string[] args) {
+	public static void GetMPStatus() {
 		Debug.Log($"{((int)(MPCore.MultiPlayerStatus)).ToString()}");
 	}
 
-	public static void GetMassData(string[] args) {
+	public static void GetMassData() {
 		var data = DEN_DeathFloor.instance.GetSaveData();
 		Debug.Log($"高度:{data.relativeHeight}, 是否活动:{data.active}, 速度:{data.speed}, 速度乘数:{data.speedMult}");
 	}
 
-	public static void GetSystemLanguage(string[] args) {
+	public static void GetSystemLanguage() {
 		Debug.Log($"系统语言:{Localization.GetGameLanguage()}");
+	}
+
+	public static void CreateRemotePlayer() {
+		MPCore.Instance.RPManager.PlayerCreate(1);
 	}
 }
