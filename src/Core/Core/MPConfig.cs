@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace WKMPMod.Core;
+
 public class MPConfig {
 	// 数据发送频率 (每秒发送次数)
 	private static ConfigEntry<int> _dataSendFrequency;
@@ -12,7 +13,7 @@ public class MPConfig {
 	// 头顶名称标签字体最大值
 	private static ConfigEntry<float> _nameTagScale;
 	public static float NameTagScale { get { return _nameTagScale.Value; } }
-	
+
 	// All (所有伤害)
 	private static ConfigEntry<float> _allActive;
 	private static ConfigEntry<float> _allPassive;
@@ -22,8 +23,8 @@ public class MPConfig {
 	// Hammer (锤子)
 	private static ConfigEntry<float> _hammerActive;
 	private static ConfigEntry<float> _hammerPassive;
-	public static float HammerActive {get { return _hammerActive.Value; }}
-	public static float HammerPassive {get { return _hammerPassive.Value; }}
+	public static float HammerActive { get { return _hammerActive.Value; } }
+	public static float HammerPassive { get { return _hammerPassive.Value; } }
 
 	// rebar (钢筋/骨矛)
 	private static ConfigEntry<float> _rebarActive;

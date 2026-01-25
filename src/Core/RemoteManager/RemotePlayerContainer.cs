@@ -68,7 +68,7 @@ public class RemotePlayerContainer {
 		} catch (Exception ex) {
 			// Debug
 			MPMain.LogError(Localization.Get(
-				"RemotePlayerContainer", "MappingFailed",PlayerId.ToString(),ex.Message));
+				"RemotePlayerContainer", "MappingFailed", PlayerId.ToString(), ex.Message));
 
 			Object.Destroy(PlayerObject);
 
@@ -128,7 +128,7 @@ public class RemotePlayerContainer {
 
 		// 判断是否处于初始化 5 秒内
 		bool isInInitPhase = false;
-		if (_initializationCount > 0) { 
+		if (_initializationCount > 0) {
 			isInInitPhase = true;
 			--_initializationCount;
 		}

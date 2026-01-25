@@ -61,7 +61,14 @@
     "DisconnectedDetails": "[MPSW] Disconnected details: {0}",
     "AlreadyActiveConnected": "[MPSW] Already actively connected to the player. SteamId: {0} Connection state: {1}",
     "AsyncTaskFailed": "[MPSW] Async task execution failed: {0}",
-    "SocketCreateException": "[MPSW] Create Socket exception: {0}"
+
+    "SocketCreateException": "[MPSW] Create Socket exception: {0}",
+
+    "ConnectionAttemptFailed": "[MPSW] The {0}th attempt to connect {1} failed.",
+    "ConnectionInitiator": "[MPSW] Initiator connection process started -> {0}",
+    "ConnectionEeceiver": "[MPSW] Receiver waiting process starts <- {0}",
+    "ReverseConnectionAttempt": "[MPSW] 10-second timeout: starting reverse attempt...",
+    "ConnectionProcessFailed": "[MPSW] Connection process completely failed, please check network connection or copy the log and submit it to developer's GitHub."
   },
 
   "CommandConsole": {

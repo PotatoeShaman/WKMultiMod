@@ -11,7 +11,7 @@ namespace WKMPMod.Component;
 
 //仅获取本地玩家信息并触发事件给其他系统使用
 //仅在联机时创建一个实例
-public class LocalPlayer: MonoBehaviour{
+public class LocalPlayer : MonoBehaviour {
 	private const float POSITION_CHANGE_THRESHOLD_SQR = 0.0025f; // 0.05单位的平方
 	private const float ROTATION_CHANGE_THRESHOLD_DEG = 0.5f;    // 最小旋转角度
 

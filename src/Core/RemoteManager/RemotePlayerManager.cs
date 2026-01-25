@@ -149,7 +149,7 @@ public class RemotePlayerManager : MonoBehaviour {
 				SetRealComponents(current.gameObject);
 			} catch (Exception ex) {
 				MPMain.LogError(Localization.Get(
-					"RemotePlayerManager", "PrefabProcessingError",current.name,ex.Message));
+					"RemotePlayerManager", "PrefabProcessingError", current.name, ex.Message));
 			}
 			// 遍历直接子级
 			// 这里不需要 Cast,直接循环最快
@@ -169,7 +169,7 @@ public class RemotePlayerManager : MonoBehaviour {
 
 	private static void MapMarkersToRemoteEntity(GameObject prefab) {
 		MK_RemoteEntity mk_component = prefab.GetComponent<MK_RemoteEntity>();
-		if (mk_component == null) 
+		if (mk_component == null)
 			return;
 		var component = prefab.AddComponent<RemoteEntity>();
 		if (component != null) {
@@ -191,7 +191,7 @@ public class RemotePlayerManager : MonoBehaviour {
 
 	private static void MapMarkersToObjectTagger(GameObject prefab) {
 		MK_ObjectTagger mk_component = prefab.GetComponent<MK_ObjectTagger>();
-		if (mk_component == null) 
+		if (mk_component == null)
 			return;
 		// 先找是否已有, 没有再加
 		var component = prefab.GetComponent<ObjectTagger>() ?? prefab.AddComponent<ObjectTagger>();
@@ -203,14 +203,14 @@ public class RemotePlayerManager : MonoBehaviour {
 				}
 			}
 		} else {
-			MPMain.LogError(Localization.Get("RemotePlayerManager","ObjectTaggerAddFailed"));
+			MPMain.LogError(Localization.Get("RemotePlayerManager", "ObjectTaggerAddFailed"));
 		}
 		Object.DestroyImmediate(mk_component);
 	}
 
 	private static void MapMarkersToCL_Handhold(GameObject prefab) {
 		MK_CL_Handhold mk_component = prefab.GetComponent<MK_CL_Handhold>();
-		if (mk_component == null) 
+		if (mk_component == null)
 			return;
 		var component = prefab.AddComponent<CL_Handhold>();
 		if (component != null) {
