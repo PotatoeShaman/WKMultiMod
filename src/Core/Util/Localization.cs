@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using WKMPMod.Core;
+namespace WKMPMod.Util;
 
 public static class Localization {
 	// 主表：按类别存储字典
@@ -176,7 +177,7 @@ public static class Localization {
 		}
 	}
 
-	private static string GetSystemLanguage() {
+	public static string GetSystemLanguage() {
 		// 根据系统语言返回 "zh", "en" 等
 		return System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
 	}

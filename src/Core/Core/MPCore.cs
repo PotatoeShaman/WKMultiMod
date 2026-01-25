@@ -336,6 +336,8 @@ public class MPCore : MonoBehaviour {
 		CommandConsole.AddCommand("initialized", Initialized, false);
 		CommandConsole.AddCommand("test0", Test.Test.GetGraphicsAPI, false);
 		CommandConsole.AddCommand("test1", Test.Test.GetMPStatus, false);
+		CommandConsole.AddCommand("test2", Test.Test.GetMassData, false);
+		CommandConsole.AddCommand("test3", Test.Test.GetSystemLanguage, false);
 	}
 
 	// 命令实现

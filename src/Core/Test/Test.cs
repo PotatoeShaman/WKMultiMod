@@ -5,6 +5,7 @@ using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.RemoteManager;
 using WKMPMod.Shared.MK_Component;
+using WKMPMod.Util;
 using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
@@ -33,5 +34,14 @@ public class Test : MonoBehaviour{
 
 	public static void GetMPStatus(string[] args) {
 		Debug.Log($"{((int)(MPCore.MultiPlayerStatus)).ToString()}");
+	}
+
+	public static void GetMassData(string[] args) {
+		var data = DEN_DeathFloor.instance.GetSaveData();
+		Debug.Log($"高度:{data.relativeHeight}, 是否活动:{data.active}, 速度:{data.speed}, 速度乘数:{data.speedMult}");
+	}
+
+	public static void GetSystemLanguage(string[] args) {
+		Debug.Log($"系统语言:{Localization.GetSystemLanguage()}");
 	}
 }

@@ -6,6 +6,7 @@ using HarmonyLib.Tools;
 using Steamworks;
 using System;
 using UnityEngine;
+using WKMPMod.Util;
 
 namespace WKMPMod.Core;
 
@@ -14,7 +15,7 @@ public class MPMain : BaseUnityPlugin {
 
 	public const string ModGUID = "shenxl.MultiPlayerMod";
 	public const string ModName = "MultiPlayer Mod";
-	public const string ModVersion = "1.1.3.0";
+	public const string ModVersion = "1.1.3.3";
 
 	public static string path = Paths.PluginPath;
 

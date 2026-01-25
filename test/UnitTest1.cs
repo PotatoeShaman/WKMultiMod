@@ -1,5 +1,6 @@
 using System.Net.NetworkInformation;
 using WKMPMod.Core;
+using WKMPMod.Util;
 
 namespace test {
     public class Tests {
@@ -25,6 +26,11 @@ namespace test {
 			// Assert
 			Assert.That(myStatus.IsInitialized(), Is.True, "应该标记为已初始化");
 			Assert.That(myStatus.GetField(MPStatus.LOBBY_MASK), Is.EqualTo(MPStatus.InLobby), "大厅状态应该是 InLobby");
+		}
+
+		[Test]
+		public void TestSystemLanguage() {
+			Assert.That(Localization.GetSystemLanguage, Is.EqualTo("zh"), "本地语言应为zh");
 		}
 	}
 }

@@ -31,6 +31,7 @@
     <File Path="lib/GameData/Assembly-CSharp.dll" />
     <File Path="lib/GameData/DarkMachineUI.dll" />
     <File Path="lib/GameData/Facepunch.Steamworks.Win64.dll" />
+    <File Path="lib/GameData/Newtonsoft.Json.dll" />
   </Folder>
   <Folder Name="/lib/Shared/" />
   <Folder Name="/lib/Temp/">
@@ -83,7 +84,9 @@
     </Project>
   </Folder>
   <Folder Name="/temp/SteamWorks/">
-    <Project Path="temp/SteamWorks/SteamWorks.csproj" />
+    <Project Path="temp/SteamWorks/SteamWorks.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/temp/WKLib/">
     <Project Path="temp/WKLib/WKLib.csproj">
@@ -102,7 +105,7 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/test.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Solution="Debug|Any CPU" Project="false" />
     </Project>
   </Folder>
   <Folder Name="/解决方案项/">
