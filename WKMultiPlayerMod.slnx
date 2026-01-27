@@ -100,9 +100,7 @@
     </Project>
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test/test.csproj">
-      <Build Project="false" />
-    </Project>
+    <Project Path="src/Test/test.csproj" />
   </Folder>
   <Folder Name="/解决方案项/">
     <File Path=".gitattributes" />

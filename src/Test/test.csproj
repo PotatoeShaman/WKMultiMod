@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Core\WKMultiPlayerMod.csproj" />
+    <ProjectReference Include="..\..\src\Core\WKMultiPlayerMod.csproj" />
   </ItemGroup>
 
   <ItemGroup>
