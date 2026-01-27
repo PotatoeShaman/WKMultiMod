@@ -1,8 +1,4 @@
 <Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-    <Platform Name="TestOnly" />
-  </Configurations>
   <Folder Name="/lib/">
     <File Path="lib/README.md" />
   </Folder>
@@ -70,42 +66,42 @@
   <Folder Name="/temp/" />
   <Folder Name="/temp/DailyKnuckle/">
     <Project Path="temp/DailyKnuckle/DailyKnuckle.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/GameSource/">
     <Project Path="temp/GameSource/GameSource.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/MoreCommand/">
     <Project Path="temp/MoreCommand/MoreCommand.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/SteamWorks/">
     <Project Path="temp/SteamWorks/SteamWorks.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/WKLib/">
     <Project Path="temp/WKLib/WKLib.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/WKLib/WK_IShowSeed/">
     <Project Path="temp/WK_IShowSeed/WK_IShowSeed.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/temp/WKMP/">
     <Project Path="temp/WKMP/WKMP.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/test.csproj">
-      <Build Solution="Debug|Any CPU" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/解决方案项/">
@@ -113,8 +109,6 @@
     <File Path=".gitignore" />
     <File Path="README.md" />
     <File Path="README_CN.md" />
-    <File Path="texts_en.json" />
-    <File Path="texts_zh.json" />
     <File Path="TODO.md" />
   </Folder>
 </Solution>

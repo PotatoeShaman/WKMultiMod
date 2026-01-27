@@ -20,26 +20,30 @@ public static class Localization {
 	/// 加载本地化文件
 	/// </summary>
 	public static void Load() {
-		string language = GetGameLanguage(); // 获取系统语言
+		// 获取插件路径
+		string pluginDirectory = Path.GetDirectoryName(typeof(Localization).Assembly.Location);
+		// 获取系统语言
+		string language = GetGameLanguage(); 
 		string fileName = $"{FILE_PREFIX}_{language.ToLower()}.json";
+		string filePath = Path.Combine(pluginDirectory, fileName);
 
 		// 如果找不到对应语言文件，使用默认版
-		if (!File.Exists(fileName)) {
-			fileName = $"{FILE_PREFIX}.json";
-		}
-		string filePath = Path.Combine(
-			Path.GetDirectoryName(typeof(Localization).Assembly.Location),
-			fileName
-		);
-
 		if (!File.Exists(filePath)) {
-			//  未在: {filePath} 发现文本文件 {fileName}
+			// 未在: {filePath} 发现文本文件 {fileName}
 			MPMain.LogError($"[Localization] {fileName} file not found at path: {filePath}");
-			return;
+			// 使用英文版
+			fileName = $"{FILE_PREFIX}_en.json";
+			filePath = Path.Combine(pluginDirectory, fileName);
+
+			if (!File.Exists(filePath)) {
+				MPMain.LogError($"[Localization] Localization file not found, please confirm that {FILE_PREFIX}_en.json file exists");
+				return;
+			}
 		}
 
 		try {
 			string jsonContent = File.ReadAllText(filePath);
+
 			_table = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(jsonContent);
 
 			// 重置扁平化缓存

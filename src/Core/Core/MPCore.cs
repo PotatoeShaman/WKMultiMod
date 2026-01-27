@@ -1,5 +1,4 @@
-﻿
-using Steamworks;
+﻿using Steamworks;
 using Steamworks.Data;
 using System;
 using System.Buffers.Binary;

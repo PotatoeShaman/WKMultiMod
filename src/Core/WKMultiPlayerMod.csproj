@@ -13,10 +13,37 @@
 			https://nuget.samboy.dev/v3/index.json
 		</RestoreAdditionalProjectSources>
 		<RootNamespace>WKMultiPlayerMod</RootNamespace>
+		<!-- 统一输出到解决方案的 bin 目录 -->
+		<!-- <OutputPath>$(SolutionDir)bin\$(Configuration)\</OutputPath> -->
+		<!-- 项目本身的 bin 目录 -->
+		<OutputPath>bin\$(Configuration)\</OutputPath>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
 		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- AfterTargets="PostBuildEvent"表示在生成完成后执行 -->
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<!-- 创建名为 SharedOutputFiles 的项列表 -->
+		<ItemGroup>
+			<SharedOutputFiles Include="$(TargetDir)$(TargetName).dll" />
+			<!-- 包含 JSON 文件 -->
+			<SharedOutputFiles Include="$(TargetDir)Localization\*.json" />
+		</ItemGroup>
+		<!--生成.dll复制到bin\解决方案配置-->
+		<Copy SourceFiles="@(SharedOutputFiles)"
+			DestinationFolder="$(SolutionDir)bin\$(Configuration)\"
+			SkipUnchangedFiles="true" />
+	</Target>
+
+	<ItemGroup>
+		<None Include="Localization\texts_en.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="Localization\texts_zh.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
