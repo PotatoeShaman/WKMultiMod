@@ -92,23 +92,34 @@
     "PlayerDeath": "{0} 被 {1} 杀死"
   },
   "RemotePlayerManager": {
-    "UnableToLoadResources": "[MP RPMan] 无法加载资源",
+
     "SlugcatPrefabNotFound": "[MP RPMan] 找不到Slugcat预制体",
     "RemotePlayerObjectNotFound": "[MP RPMan] 未找到远程映射对象 ID: {0}",
-    "PrefabProcessingError": "[MP Prefab] 处理对象 {0} 时崩溃: {1}",
-    "RemoteEntityAddFailed": "[MP Prefab] 预制体RemoteEntity组件添加失败, 我也不知道怎么办, 建议重启？",
-    "ObjectTaggerAddFailed": "[MP Prefab] 预制体ObjectTagger组件添加失败, 我也不知道怎么办, 建议重启？",
-    "CL_HandholdAddFailed": "[MP Prefab] 预制体CL_Handhold组件添加失败, 我也不知道怎么办, 建议重启？"
+    "FactoryCreateObjectFailed": "[MP RPMan] 创建远程映射对象失败"
   },
   "RemotePlayerContainer": {
     "MappingSucceeded": "[MP RPCont] 远程玩家映射成功 ID: {0}",
     "MappingFailed": "[MP RPCont] 远程玩家映射失败 ID: {0}, 错误: {1}",
     "NameTagComponentMissing": "[MP RPCont] PlayerNameTag的组件未添加"
   },
+  "RemotePlayerFactory": {
+    "UnableToLoadResources": "[MP Prefab] 无法加载资源",
+    "PrefabProcessingError": "[MP Prefab] 处理对象 {0} 时崩溃: {1}",
+    "RemoteEntityAddFailed": "[MP Prefab] 预制体RemoteEntity组件添加失败, 我也不知道怎么办, 建议重启？",
+    "ObjectTaggerAddFailed": "[MP Prefab] 预制体ObjectTagger组件添加失败, 我也不知道怎么办, 建议重启？",
+    "CL_HandholdAddFailed": "[MP Prefab] 预制体CL_Handhold组件添加失败, 我也不知道怎么办, 建议重启？",
+
+    "MaterialShaderInfo": "[MP Prefab] 材质名: {0} 材质连接的shader名: {1}",
+    "ShaderNotFoundOnRenderer": "[MP Prefab] 未找到 Shader: {0},应用在渲染器 {1} 上",
+    "SpecializingTMPComponent": "[MP Prefab] 正在特化处理 TMP 组件: {0}",
+    "FontAssetNotFound": "[MP Prefab] 未找到名为 {0} 的字体资产！",
+    "ImplementOverlayViaShader": "[MP Prefab] 通过修改 TMP 的 Shader 的方式实现 Overlay",
+    "UnableToLoadMaterial": "[MP Prefab] 无法加载包内材质: {0}"
+  },
   "Patch": {
     "PlayerDeath": "[MP Patch] 玩家死亡,类型: {0}",
-    "PreparingToInjectCore": "[MP Patch] SteamManager.Awake 调用，准备注入MPCore",
-    "CoreAlreadyInjected": "[MP Patch] Core已经注入过，跳过",
+    "PreparingToInjectCore": "[MP Patch] SteamManager.Awake 调用,准备注入MPCore",
+    "CoreAlreadyInjected": "[MP Patch] Core已经注入过,跳过",
     "CoreInstanceExists": "[MP Patch] 已存在核心实例: {0}",
     "CoreInjectionSuccess": "[MP Patch] MPCore 对象已成功注入 SteamManager",
     "CoreInjectionFailed": "[MP Patch] 注入核心失败: {0}"

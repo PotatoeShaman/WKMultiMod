@@ -93,18 +93,28 @@
     "PlayerDeath": "{0} died due to {1}"
   },
   "RemotePlayerManager": {
-    "UnableToLoadResources": "[MP RPMan] Unable to load resources",
     "SlugcatPrefabNotFound": "[MP RPMan] Unable to find Slugcat Prefab",
     "RemotePlayerObjectNotFound": "[MP RPMan] Remote player object not found. ID: {0}",
-    "PrefabProcessingError": "[MP Prefab] Collapse while processing object {0} Error Massage: {1}",
-    "RemoteEntityAddFailed": "[MP Prefab] Failed to add the RemoteEntity component to preform",
-    "ObjectTaggerAddFailed": "[MP Prefab] Failed to add the ObjectTagger component to preform",
-    "CL_HandholdAddFailed": "[MP Prefab] Failed to add the CL_Handhold component to preform"
+    "FactoryCreateObjectFailed": "[MP RPMan] Failed to create the remote player object"
   },
   "RemotePlayerContainer": {
     "MappingSucceeded": "[MP RPCont] Remote player mapping succeeded ID: {0}",
     "MappingFailed": "[MP RPCont] Failed to map remote player ID: {0}, Error: {1}",
     "NameTagComponentMissing": "[MP RPCont] PlayerNameTag component not added"
+  },
+  "RemotePlayerFactory": {
+    "UnableToLoadResources": "[MP Prefab] Unable to load resources",
+    "PrefabProcessingError": "[MP Prefab] Collapse while processing object {0} Error Massage: {1}",
+    "RemoteEntityAddFailed": "[MP Prefab] Failed to add the RemoteEntity component to preform",
+    "ObjectTaggerAddFailed": "[MP Prefab] Failed to add the ObjectTagger component to preform",
+    "CL_HandholdAddFailed": "[MP Prefab] Failed to add the CL_Handhold component to preform",
+
+    "MaterialShaderInfo": "[MP Prefab] Material name: {0} Material shader name: {1}",
+    "ShaderNotFoundOnRenderer": "[MP Prefab] Shader not found: {0}, applied on renderer {1}",
+    "SpecializingTMPComponent": "[MP Prefab] Specializing TMP component: {0}",
+    "FontAssetNotFound": "[MP Prefab] Font asset named {0} not found!",
+    "ImplementOverlayViaShader": "[MP Prefab] Implementing Overlay via TMP Shader modification",
+    "UnableToLoadMaterial": "[MP Prefab] Unable to load material in bundle: {0}"
   },
   "Patch": {
     "PlayerDeath": "[MP Patch] Player death,type: {0}",

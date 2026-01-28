@@ -1,19 +1,18 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace WKMPMod.Component;
 
 public class SimpleArmIK : MonoBehaviour {
 	[Header("目标设置")]
-	public Transform target;          // 这里拖入挂有 RemoteHand 的物体
+	public Transform? target;          // 这里拖入挂有 RemoteHand 的物体
 	public float originalLength = 1f; // 骨骼在 Scale Y = 1 时的原始长度（单位：米）
 
 	[Header("限制")]
-	public float minScale = 0.1f;     // 最小缩放，防止模型塌陷
-	public float maxScale = 10.0f;     // 最大缩放，防止拉伸过长
+	public float minScale = 0.1f;     // 最小缩放,防止模型塌陷
+	public float maxScale = 10.0f;     // 最大缩放,防止拉伸过长
 
 	private void Start() {
-		// 如果你没有手动填长度，这里尝试计算手臂到手部初始位置的距离
+		// 如果你没有手动填长度,这里尝试计算手臂到手部初始位置的距离
 		if (originalLength <= 0 && target != null) {
 			originalLength = Vector3.Distance(transform.position, target.position);
 		}
@@ -41,7 +40,7 @@ public class SimpleArmIK : MonoBehaviour {
 		// 应用限制
 		targetScaleY = Mathf.Clamp(targetScaleY, minScale, maxScale);
 
-		// 保持 X 和 Z 轴比例为 1，只缩放 Y
+		// 保持 X 和 Z 轴比例为 1,只缩放 Y
 		transform.localScale = new Vector3(1, targetScaleY, 1);
 	}
 }

@@ -11,7 +11,7 @@ public static class Localization {
 	private static Dictionary<string, Dictionary<string, string>> _table =
 		new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
-	// 扁平化缓存，用于快速查找
+	// 扁平化缓存,用于快速查找
 	private static Dictionary<string, string> _flatCache = null;
 
 	private const string FILE_PREFIX = "texts";
@@ -27,7 +27,7 @@ public static class Localization {
 		string fileName = $"{FILE_PREFIX}_{language.ToLower()}.json";
 		string filePath = Path.Combine(pluginDirectory, fileName);
 
-		// 如果找不到对应语言文件，使用默认版
+		// 如果找不到对应语言文件,使用默认版
 		if (!File.Exists(filePath)) {
 			// 未在: {filePath} 发现文本文件 {fileName}
 			MPMain.LogError($"[Localization] {fileName} file not found at path: {filePath}");
@@ -92,7 +92,7 @@ public static class Localization {
 	}
 
 	/// <summary>
-	/// 获取本地化文本(分类，键名分开)
+	/// 获取本地化文本(分类,键名分开)
 	/// </summary>
 	public static string Get(string category, string key, params object[] args) {
 		// 验证参数

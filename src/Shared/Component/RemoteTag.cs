@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using TMPro;
+using UnityEngine;
 using WKMPMod.Util;
 
 namespace WKMPMod.Component;
@@ -6,39 +8,54 @@ namespace WKMPMod.Component;
 // 这个组件用来修改玩家名字
 public class RemoteTag : MonoBehaviour {
 	private Transform? _cameraTransform;
-	private TextMesh? _textMesh;
-
+	private TextMeshPro? _textMeshPro;
 	private float _lastUpdateDistance;
 	private TickTimer updateTick = new TickTimer(1);
 
 	[Header("Settings")]
 	public const float MIN_DISTANCE_LABEL = 10.0f; // 超过此距离显示数字
 	public const float DISTANCE_CHANGE_THRESHOLD = 1.0f; // 距离变化超过1米才刷新
+	public const float MESSAGE_TIMEOUT = 15.0f; // 消息显示15秒后消失
 	[Header("Id")]
 	public ulong PlayerId;
 	[Header("名字")]
 	public string PlayerName = "";
 	[Header("Message")]
 	public string _message = "";
-	public const float MIN_DISTANCE = 10.0f;
+	private Coroutine? _messageTimeoutCoroutine;
 
 	public string Message { 
 		get => _message;
 		set {
 			string limitedMsg = value.Length <= 15 ? value : value.Substring(0, 15);
-			if (_message != limitedMsg) {
-				_message = limitedMsg;
-				RefreshName(); // 消息变了必须立刻刷新
+			// 如果消息没变化，直接返回
+			if (_message == limitedMsg) return;
+			_message = limitedMsg;
+
+			// 停止现有的协程
+			if (_messageTimeoutCoroutine != null) {
+				StopCoroutine(_messageTimeoutCoroutine);
 			}
+			// 启动新的协程，15秒后清空消息
+			_messageTimeoutCoroutine = StartCoroutine(MessageTimeoutRoutine());
+
+			// 立即刷新显示
+			RefreshName();
 		}
 	}
 
 	void Awake() {
-		_textMesh = GetComponent<TextMesh>();
+		_textMeshPro = GetComponent<TextMeshPro>();
 		if (Camera.main != null) 
 			_cameraTransform = Camera.main.transform;
 	}
 
+	void OnDestroy() {
+		// 清理协程
+		if (_messageTimeoutCoroutine != null) {
+			StopCoroutine(_messageTimeoutCoroutine);
+		}
+	}
 
 	private void LateUpdate() {
 		if (!updateTick.TryTick())
@@ -75,15 +92,36 @@ public class RemoteTag : MonoBehaviour {
 
 	private void RefreshName(float currentDistance) {
 		_lastUpdateDistance = currentDistance;
-		if (_textMesh == null) return;
+		if (_textMeshPro == null) return;
 
 		// 使用 ToString("F0") 限制小数位数, 避免距离字符串过长且减少内存分配
 		string distStr = currentDistance.ToString("F0");
 
+		// 根据距离决定显示格式
 		if (currentDistance < MIN_DISTANCE_LABEL) {
-			_textMesh.text = $"{PlayerName}\n{_message}";
+			_textMeshPro.text = string.IsNullOrEmpty(_message)
+				? PlayerName
+				: $"{PlayerName}\n{_message}";
 		} else {
-			_textMesh.text = $"{PlayerName} ({distStr}m)\n{_message}";
+			_textMeshPro.text = string.IsNullOrEmpty(_message)
+				? $"{PlayerName} ({distStr}m)"
+				: $"{PlayerName} ({distStr}m)\n{_message}";
 		}
+	}
+
+	/// <summary>
+	/// 消息超时协程 - 15秒后清空消息
+	/// </summary>
+	private IEnumerator MessageTimeoutRoutine() {
+		yield return new WaitForSeconds(MESSAGE_TIMEOUT);
+
+		// 清空消息
+		_message = "";
+
+		// 刷新显示（只显示名字）
+		RefreshName();
+
+		// 清除协程引用
+		_messageTimeoutCoroutine = null;
 	}
 }

@@ -85,7 +85,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	}
 
 	// 获取全部在线玩家
-	public IEnumerable<Friend> Friends { get; private set; }
+	public IEnumerable<Friend> Friends { get => _currentLobby.Members; }
 
 	#region[Unity组件生命周期函数]
 	void Awake() {
@@ -685,7 +685,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 
 				ExecuteConnection(targetId);
 
-				// 等待重试间隔，期间持续检查状态
+				// 等待重试间隔,期间持续检查状态
 				float timer = 0;
 				while (timer < 3.0f) { // 3秒重试间隔
 					if (_allConnections.ContainsKey(targetId)) {

@@ -34,7 +34,7 @@ public enum MPStatus {
 public static class MPStatusExtension {
 	// 设置特定字段
 	public static MPStatus SetField(this ref MPStatus status, MPStatus mask, MPStatus value) {
-		// 清除原有值，设置新值
+		// 清除原有值,设置新值
 		return status = (status & ~mask) | (value & mask);
 	}
 

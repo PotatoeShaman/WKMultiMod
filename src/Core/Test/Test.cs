@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using WKMPMod.Component;
 using WKMPMod.Core;
@@ -31,6 +32,14 @@ public class Test : MonoBehaviour {
 			case "4":
 				CreateRemotePlayer();
 				break;
+			case "5": {
+				string Test = "中文测试: 斯卡利茨恐虐神选";
+				if (args.Length > 1)
+					Test = string.Join(" ", args.Skip(1));
+				UpdateRemoteTag(Test);
+				break;
+			}
+
 			default:
 				break;
 		}
@@ -69,5 +78,9 @@ public class Test : MonoBehaviour {
 
 	public static void CreateRemotePlayer() {
 		MPCore.Instance.RPManager.PlayerCreate(1);
+	}
+
+	public static void UpdateRemoteTag(string arg) {
+		MPCore.Instance.RPManager.Players[1].UpdateNameTag(arg);
 	}
 }

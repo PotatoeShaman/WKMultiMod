@@ -9,7 +9,7 @@ public class LookAt : MonoBehaviour {
 	[Header("锁定大小")]
 	public bool maintainScreenSize = true;
 	[Header("初始缩放比例")]
-	public float baseScale = 0.05f; // 初始缩放比例
+	public float baseScale = 0.1f; // 初始缩放比例
 	[Header("用户设置缩放比例")]
 	public float userScale = 1f;
 

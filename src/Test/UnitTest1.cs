@@ -19,7 +19,7 @@ namespace test {
 			MPStatus myStatus = MPStatus.NotInitialized;
 
 			// Act
-			// 注意：这里必须使用 ref，否则 myStatus 永远是 NotInitialized
+			// 注意：这里必须使用 ref,否则 myStatus 永远是 NotInitialized
 			myStatus.SetField(MPStatus.INIT_MASK, MPStatus.Initialized);
 			myStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
 

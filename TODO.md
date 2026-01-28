@@ -1,3 +1,3 @@
 尝试使用MPSteamworks继承IConnectionManager接口
 多模型加载
-LookAt有万向节死锁问题?导致正上方无法看到名字
+LookAt有距离限制,Unity在1000米外会剔除对象

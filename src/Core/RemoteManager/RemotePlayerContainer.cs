@@ -52,15 +52,23 @@ public class RemotePlayerContainer {
 	}
 
 	// 新初始化方法
-	public bool Initialize(GameObject prefab, Transform persistentParent = null) {
+	public bool Initialize(GameObject playerInstance, Transform persistentParent = null) {
+		if (playerInstance == null) return false;
 		try {
-			// 创建对象
-			PlayerObject = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity);
-			InitializeAllComponent(PlayerObject);
+			// 创建对象引用
+			PlayerObject = playerInstance;
 			// 设置持久化
 			if (persistentParent != null) {
 				PlayerObject.transform.SetParent(persistentParent, false);
 			}
+			// 组件初始化
+			InitializeAllComponent(PlayerObject);
+			InitializeAllComponentData();
+			// 设为原点
+			UpdatePlayerData(new PlayerData {
+				IsTeleport = true,
+				Position = new Vector3(0, 0, 0),
+			});
 			// Debug
 			MPMain.LogInfo(Localization.Get(
 				"RemotePlayerContainer", "MappingSucceeded", PlayerId.ToString()));
@@ -70,7 +78,7 @@ public class RemotePlayerContainer {
 			MPMain.LogError(Localization.Get(
 				"RemotePlayerContainer", "MappingFailed", PlayerId.ToString(), ex.Message));
 
-			Object.Destroy(PlayerObject);
+			if (PlayerObject != null) Object.Destroy(PlayerObject);
 
 			return false;
 		}
@@ -78,6 +86,7 @@ public class RemotePlayerContainer {
 
 	#region[新创建组件函数]
 
+	// 初始化远程实体组件引用
 	public void InitializeAllComponent(GameObject instance) {
 		// 直接在实例中寻找这些组件,无需手动写循环遍历
 		_remotePlayer = instance.GetComponentInChildren<RemotePlayer>();
@@ -90,12 +99,9 @@ public class RemotePlayerContainer {
 			if (hand.hand == HandType.Left) _remoteLeftHand = hand;
 			else if (hand.hand == HandType.Right) _remoteRightHand = hand;
 		}
-
-		// 初始化数据
-		InitializeAllComponentData();
 	}
 
-	// 初始化远程实体组件
+	// 初始化远程实体组件数据
 	private void InitializeAllComponentData() {
 		// 标签组件初始化命名
 		_remoteTag.Initialize(PlayerId, PlayerName);
@@ -127,13 +133,12 @@ public class RemotePlayerContainer {
 	public void UpdatePlayerData(PlayerData playerData) {
 
 		// 判断是否处于初始化 5 秒内
-		bool isInInitPhase = false;
-		if (_initializationCount > 0) {
-			isInInitPhase = true;
+		if (playerData.IsTeleport || _initializationCount > 0) {
+			playerData.IsTeleport = true;
 			--_initializationCount;
 		}
 
-		if (playerData.IsTeleport || isInInitPhase) {
+		if (playerData.IsTeleport) {
 			// 使用组件的传送方法
 			_remotePlayer.Teleport(playerData.Position, playerData.Rotation);
 			Vector3 leftTarget = playerData.LeftHand.Position;
