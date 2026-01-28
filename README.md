@@ -168,7 +168,7 @@ The project file (`WhiteKnuckleMod.csproj`) is configured with key references an
 
 ## Multiplayer Functionality
 
-### Version 0.13/0.14
+### Version 1.0/0.14
 
 After enabling cheat mode (`cheats`) in-game, use the following commands:
 
@@ -181,6 +181,8 @@ After enabling cheat mode (`cheats`) in-game, use the following commands:
   * Example: `talk help me`
 * `tpto <steamId(suffix match)>` - Teleport between players
   * Example: `tpto 22 (target ID: 561198279116422)`
+* `getallplayer` - Get all player message
+
 ### Version 0.12
 
 After enabling cheat mode (`cheats`) in-game, use the following commands:
@@ -195,12 +197,133 @@ After enabling cheat mode (`cheats`) in-game, use the following commands:
 
 shenxl.MultiPlayerMod.cfg 中
 ```
-[Debug]
+[Network]
 
-## 值为0时使用中文输出日志, Use English logs when the value is 1.
+## Sets how many times per second data is sent to other players.
 # Setting type: Int32
-# Default value: 1
-LogLanguage = 0
+DataSendFrequency = 20
+
+[RemotePlayer]
+
+## This value sets the scale size for player name tags above their heads.
+# Setting type: Single
+NameTagScale = 1
+
+[RemotePlayerPvP]
+
+## 
+## DAMAGE TYPE REFERENCE:
+## ---------------------
+## Note: ×N means deals N instances of this damage type.
+## 
+## * Hammer - Type: Hammer, Damage: 1 (Hammer)
+## * Auto Piton - Type: piton, Damage: 3 (Auto Piton)
+## * Brick - Type: , Damage: 3 (Brick)
+## * Flare Gun - Type: flare, Damage: 6 (Flare Gun)
+## * Rebar/Bone Spears - Type: rebar, Damage: 10 (Rebar/Bone spears)
+## * Rope Rebar - Type: , Damage: 10 (Rope Rebar)
+## * Artifact Spear (throw/return) - Type: returnrebar, Damage: 10 (Artifact Spear)
+## * Explosive Rebar - Type: explosion, Damage: 10 - Type: rebarexplosion, Damage: 10 (Explosive Rebar)
+## * Cryo-Gun (uncharged/charged) - Type: ice, Damage: 10 - Type: , Damage: 0 × 2 (Cryo-Gun)
+## 
+## The Active configuration item controls the damage multiplier dealt by players.
+## The Passive configuration item controls the damage multiplier received by players.
+## 
+## Formula:
+## Final Damage = Base Damage × AllActive Multiplier × AllPassive Multiplier × Corresponding Type Active Multiplier × Corresponding Type Passive Multiplier
+
+## Multiplier for all damage dealt by the player.
+# Setting type: Single
+AllActive = 0.2
+
+## Multiplier for all damage received by the player.
+# Setting type: Single
+AllPassive = 1
+
+## Multiplier for hammer damage dealt by the player.
+# Setting type: Single
+HammerActive = 5
+
+## Multiplier for hammer damage received by the player.
+# Setting type: Single
+HammerPassive = 1
+
+## Multiplier for rebar damage dealt by the player.
+# Setting type: Single
+RebarActive = 1
+
+## Multiplier for rebar damage received by the player.
+# Setting type: Single
+RebarPassive = 1
+
+## Multiplier for auto-piton damage dealt by the player.
+# Setting type: Single
+
+PitonActive = 1
+
+## Multiplier for auto-piton damage received by the player.
+# Setting type: Single
+
+PitonPassive = 1
+
+## Multiplier for flare gun damage dealt by the player.
+# Setting type: Single
+
+FlareActive = 1
+
+## Multiplier for flare gun damage received by the player.
+# Setting type: Single
+
+FlarePassive = 1
+
+## Multiplier for artifact spear (returnrebar) damage dealt by the player.
+# Setting type: Single
+
+ReturnRebarActive = 1
+
+## Multiplier for artifact spear (returnrebar) damage received by the player.
+# Setting type: Single
+
+ReturnRebarPassive = 1
+
+## Multiplier for explosion shrapnel (rebarexplosion) damage dealt by the player.
+# Setting type: Single
+
+RebarExplosionActive = 1
+
+## Multiplier for explosion shrapnel (rebarexplosion) damage received by the player.
+# Setting type: Single
+
+RebarExplosionPassive = 1
+
+## Multiplier for explosion shrapnel (explosion) damage dealt by the player.
+# Setting type: Single
+
+ExplosionActive = 1
+
+## Multiplier for explosion shrapnel (explosion) damage received by the player.
+# Setting type: Single
+
+ExplosionPassive = 1
+
+## Multiplier for cryo-gun ice spike damage dealt by the player.
+# Setting type: Single
+
+IceActive = 1
+
+## Multiplier for cryo-gun ice spike damage received by the player.
+# Setting type: Single
+
+IcePassive = 1
+
+## Multiplier for other damage dealt by the player.
+# Setting type: Single
+
+OtherActive = 1
+
+## Multiplier for other damage received by the player.
+# Setting type: Single
+OtherPassive = 1
 ```
 ## Contributing
 

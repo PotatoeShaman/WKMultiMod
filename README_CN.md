@@ -167,7 +167,7 @@ WhiteKnuckleMod/
 
 ## 联机功能
 
-## 1.0/0.13/0.14
+## 1.0/0.14
 
 在游戏中开启作弊模式 (`cheats`) 后, 可使用以下命令:
 
@@ -180,6 +180,7 @@ WhiteKnuckleMod/
   * 示例: `talk help me`
 * `tpto <steamId(后缀匹配)>` - 进行玩家间tp
   * 示例 `tpto 22(目标id 561198279116422)` 
+* `getallplayer` - 获取全部玩家
 
 ## 0.12
 
@@ -195,12 +196,116 @@ WhiteKnuckleMod/
 
 shenxl.MultiPlayerMod.cfg 中
 ```
-[Debug]
+[Network]
 
-## 值为0时使用中文输出日志, Use English logs when the value is 1.
+## 设置每秒向其他玩家发送数据的次数.
 # Setting type: Int32
-# 默认值: 1
-LogLanguage = 0
+DataSendFrequency = 20
+
+[RemotePlayer]
+
+## This value sets the scale size for player name tags above their heads.
+## 这个值设置玩家头部名称的缩放倍率
+# Setting type: Single
+NameTagScale = 1
+
+[RemotePlayerPvP]
+
+## * 锤子 - 类型Hammer 伤害1
+## * 自动钻头 - 类型piton 伤害3
+## * 砖头 - 类型 伤害3
+## * 信号枪 - 类型flare 伤害6
+## * 钢筋/骨矛 - 类型rebar 伤害10
+## * 带绳钢筋 - 类型 伤害10
+## * 神器长矛(投出/返回) - 类型returnrebar 伤害10
+## * 爆炸钢筋 - 类型explosion 伤害10 - 类型rebarexplosion 伤害10 × 2
+## * 造冰枪(不蓄力/蓄力) - 类型ice 伤害10 - 类型 伤害 0 × 2
+## 
+## Active配置项控制玩家造成的伤害倍率
+## Passive配置项控制玩家受到的伤害倍率
+## 公式 : 最终伤害 = 基础伤害 × AllActive倍率 × AllPassive倍率 × 对应类型Active倍率 × 对应类型Passive倍率
+
+## 玩家造成所有伤害类型的伤害倍率
+# Setting type: Single.2
+AllActive = 0.2
+
+## 玩家受到所有伤害类型的伤害倍率
+# Setting type: Single
+AllPassive = 0
+
+## 玩家可以使用锤子造成伤害的伤害倍率
+# Setting type: Single
+HammerActive = 5
+
+## 玩家受到锤子伤害的伤害倍率
+# Setting type: Single
+HammerPassive = 1
+
+## 玩家可以使用长矛类造成伤害的伤害倍率
+# Setting type: Single
+RebarActive = 1
+
+## 玩家受到长矛类伤害的伤害倍率
+# Setting type: Single
+RebarPassive = 1
+
+## 玩家使用自动钻头造成伤害的伤害倍率
+# Setting type: Single
+PitonActive = 1
+
+## 玩家受到自动钻头伤害的伤害倍率
+# Setting type: Single
+PitonPassive = 1
+
+## 玩家使用信号枪造成伤害的伤害倍率
+# Setting type: Single
+FlareActive = 1
+
+## 玩家受到信号枪伤害的伤害倍率
+# Setting type: Single
+FlarePassive = 1
+
+## 玩家使用神器长矛造成伤害的伤害倍率
+# Setting type: Single
+ReturnRebarActive = 1
+
+## 玩家受到神器长矛伤害的伤害倍率
+# Setting type: Single
+ReturnRebarPassive = 1
+
+## 玩家造成爆炸钢筋伤害的伤害倍率
+# Setting type: Single
+RebarExplosionActive = 1
+
+## 玩家受到爆炸钢筋伤害的伤害倍率
+# Setting type: Single
+RebarExplosionPassive = 1
+
+## 玩家造成爆炸溅射伤害的伤害倍率
+# Setting type: Single
+ExplosionActive = 1
+
+## 玩家受到爆炸溅射伤害的伤害倍率
+# Setting type: Single
+ExplosionPassive = 1
+
+## 玩家使用造冰枪冰锥造成伤害的伤害倍率
+# Setting type: Single
+IceActive = 1
+
+## 玩家受到造冰枪冰锥伤害的伤害倍率
+# Setting type: Single
+IcePassive = 1
+
+## 玩家造成其他伤害类型的伤害倍率
+# Setting type: Single
+OtherActive = 1
+
+## 玩家受到其他伤害类型的伤害倍率
+# Setting type: Single
+OtherPassive = 1
+
+
 ```
 
 ## 贡献指南
