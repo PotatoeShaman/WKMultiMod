@@ -115,7 +115,20 @@ public class RemotePlayerContainer {
 
 	// 销毁方法 - 清理所有资源
 	public void Destroy() {
-		GameObject.Destroy(PlayerObject);
+		if (PlayerObject != null) {
+			// 找到名字标签组件
+			var tmpText = PlayerObject.GetComponentInChildren<TMPro.TMP_Text>();
+
+			if (tmpText != null) {
+				// 销毁当前的实例材质
+				Material instanceMat = tmpText.fontMaterial;
+				if (instanceMat != null) {
+					GameObject.Destroy(instanceMat);
+				}
+			}
+			GameObject.Destroy(PlayerObject);
+		}
+
 
 		// 清理引用
 		PlayerObject = null;

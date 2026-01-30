@@ -43,7 +43,7 @@ public static class RemotePlayerFactory {
 
 		var rawPrefab = bundle.LoadAsset<GameObject>(SLUGCAT_PREFAB_NAME);
 
-		// Shader 修复和组件替换
+		// Shader修复 和 组件替换
 		_slugcatPrefab = PreparePrefab(rawPrefab, bundle);
 
 		bundle.Unload(false); // 卸载镜像,保留资源
@@ -117,10 +117,11 @@ public static class RemotePlayerFactory {
 
 			// 透视字体材质
 			Material bundleMat = bundle.LoadAsset<Material>(TMP_DISTANCE_FIELD_OVERLAY_MAT);
-
-			if (bundleMat != null) {
-
-				tmpText.fontSharedMaterial.shader = bundleMat.shader;
+			// 实例材质副本
+			Material instanceMat = tmpText.fontMaterial;
+			if (instanceMat != null && bundleMat != null) {
+				// Overlay Shader 赋给实例副本
+				instanceMat.shader = bundleMat.shader;
 
 				MPMain.LogInfo(Localization.Get("RemotePlayerFactory", "ImplementOverlayViaShader"));
 			} else {

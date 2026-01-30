@@ -1,4 +1,4 @@
-﻿# White Knuckle Multi Player Mod - 白色节点联机MOD
+# White Knuckle Multi Player Mod - 白色节点联机MOD
 
 **中文** | [English](README.md)
 

@@ -1,4 +1,4 @@
-﻿# White Knuckle Multi Player Mod - White Knuckle Online MOD
+# White Knuckle Multi Player Mod - White Knuckle Online MOD
 
 **[中文](README_CN.md)** | **English**
 

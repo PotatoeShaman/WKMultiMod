@@ -5,6 +5,8 @@ using HarmonyLib;
 using HarmonyLib.Tools;
 using Steamworks;
 using System;
+using System.IO;
+using System.Reflection;
 using UnityEngine;
 using WKMPMod.Util;
 
@@ -15,9 +17,10 @@ public class MPMain : BaseUnityPlugin {
 
 	public const string ModGUID = "shenxl.MultiPlayerMod";
 	public const string ModName = "MultiPlayer Mod";
-	public const string ModVersion = "1.1.4.0";
-
-	public static string path = Paths.PluginPath;
+	public const string ModVersion = "1.1.5.0";
+	//Assembly.GetExecutingAssembly().Location -> BepInEx\plugins\MultiPlayer\WKMultiPlayerMod.dll
+	//Path.GetDirectoryName -> BepInEx\plugins\MultiPlayer
+	public static string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
 
 	// 单例实例
 	public static MPMain Instance { get; set; }

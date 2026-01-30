@@ -89,13 +89,13 @@
       <Build Project="false" />
     </Project>
   </Folder>
-  <Folder Name="/temp/WKLib/WK_IShowSeed/">
-    <Project Path="temp/WK_IShowSeed/WK_IShowSeed.csproj">
+  <Folder Name="/temp/WKMP/">
+    <Project Path="temp/WKMP/WKMP.csproj">
       <Build Project="false" />
     </Project>
   </Folder>
-  <Folder Name="/temp/WKMP/">
-    <Project Path="temp/WKMP/WKMP.csproj">
+  <Folder Name="/temp/WK_IShowSeed/">
+    <Project Path="temp/WK_IShowSeed/WK_IShowSeed.csproj">
       <Build Project="false" />
     </Project>
   </Folder>

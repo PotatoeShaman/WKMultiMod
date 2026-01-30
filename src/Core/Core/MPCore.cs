@@ -53,7 +53,6 @@ public static class MPStatusExtension {
 	}
 }
 #endregion
-
 public class MPCore : MonoBehaviour {
 
 	// Debug日志输出间隔
@@ -77,8 +76,6 @@ public class MPCore : MonoBehaviour {
 	// 是否处于大厅中
 	public static bool IsInLobby => MultiPlayerStatus.IsInLobby();
 	public static bool IsInitialized => MultiPlayerStatus.IsInitialized();
-
-
 
 	// 注意：日志通过 MultiPlayerMain.Logger 访问
 	#region[Unity组件生命周期函数]
@@ -259,9 +256,10 @@ public class MPCore : MonoBehaviour {
 
 	/// <summary>
 	/// 退出联机模式时重置设置
-	/// </summary>F
+	/// </summary>
 	private void ResetStateVariables() {
-		MultiPlayerStatus = MPStatus.NotInitialized | MPStatus.NotInLobby;
+		_multiPlayerStatus.SetField(MPStatus.INIT_MASK, MPStatus.NotInitialized);
+		_multiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.NotInLobby);
 		Steamworks.DisconnectAll();
 		RPManager.ResetAll();
 	}

@@ -1,12 +1,18 @@
-﻿using System;
+﻿using BepInEx;
+using Steamworks;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.RemoteManager;
 using WKMPMod.Shared.MK_Component;
 using WKMPMod.Util;
+using static CommandConsole;
 using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
@@ -39,7 +45,9 @@ public class Test : MonoBehaviour {
 				UpdateRemoteTag(Test);
 				break;
 			}
-
+			case "6":
+				GetPath();
+				break;
 			default:
 				break;
 		}
@@ -82,5 +90,20 @@ public class Test : MonoBehaviour {
 
 	public static void UpdateRemoteTag(string arg) {
 		MPCore.Instance.RPManager.Players[1].UpdateNameTag(arg);
+	}
+
+	public static void GetPath() {
+		//D:\GAME\Steam\steamapps\common\White Knuckle\BepInEx\plugins
+		MPMain.LogInfo(Paths.PluginPath);
+		//D:\GAME\Steam\steamapps\common\White Knuckle\BepInEx\plugins\MultiPlayer\WKMultiPlayerMod.dll
+		MPMain.LogInfo(Assembly.GetExecutingAssembly().Location);
+		//D:\GAME\Steam\steamapps\common\White Knuckle
+		MPMain.LogInfo(AppDomain.CurrentDomain.BaseDirectory);
+		//D:/GAME/Steam/steamapps/common/White Knuckle/White Knuckle_Data
+		MPMain.LogInfo(Application.dataPath);
+		//D:\GAME\Steam\steamapps\common\White Knuckle\BepInEx\plugins\MultiPlayer
+		MPMain.LogInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty);
+
+		MPMain.LogInfo(MPMain.path);
 	}
 }
