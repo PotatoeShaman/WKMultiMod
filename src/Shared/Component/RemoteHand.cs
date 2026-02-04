@@ -47,7 +47,7 @@ public class RemoteHand : MonoBehaviour {
 	// 从HandData更新手状态(Container调用这个方法)
 	public void UpdateFromHandData(HandData handData) {
 
-		// 抓住对象：使用网络传来的世界位置
+		// 抓住对象:使用网络传来的世界位置
 		_targetWorldPosition = handData.Position;
 
 		// 重置传送标志

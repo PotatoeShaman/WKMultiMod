@@ -298,7 +298,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// 接收数据: 任意玩家->消息队列
 	/// </summary>
 	private void HandleIncomingRawData(SteamId senderId, IntPtr data, int size) {
-		// 从池里借出一块内存. 注意：buffer.Length 可能 >= size
+		// 从池里借出一块内存. 注意:buffer.Length 可能 >= size
 		byte[] buffer = _messagePool.Rent(size);
 
 		// 将非托管指针数据拷贝到借来的数组中
@@ -477,7 +477,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 				return false;
 			}
 
-			// 核心：直接 await 任务
+			// 核心:直接 await 任务
 			Lobby? lobbyResult = await SteamMatchmaking.CreateLobbyAsync(maxPlayers);
 
 			// 只检查结果并返回,移除所有同步大厅设置和 Socket 创建！
@@ -524,7 +524,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		DisconnectAll();
 
 		try {
-			// 核心改变：直接 await 任务
+			// 核心改变:直接 await 任务
 			RoomEnter result = await lobby.Join();
 
 			// 检查 RoomEnter 结果
@@ -662,7 +662,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	#region[重连机制]
 
 	/// <summary>
-	/// 通用的连接控制器：支持初始连接和断线重连
+	/// 通用的连接控制器:支持初始连接和断线重连
 	/// </summary>
 	private IEnumerator ConnectionController(SteamId targetId, bool isReconnect) {
 		// 如果是重连 等待1.5秒进行连接清理
@@ -670,7 +670,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		// 目标不在大厅或自己不在大厅 时退出连接流程
 		if (!IsInLobby || !IsMemberInLobby(targetId)) yield break;
 
-		// 核心重用逻辑：尝试并验证连接
+		// 核心重用逻辑:尝试并验证连接
 		IEnumerator AttemptAndVerify(int maxAttempts) {
 			for (int i = 0; i < maxAttempts; i++) {
 				// 检查现有连接(可能在循环开始前已连上)

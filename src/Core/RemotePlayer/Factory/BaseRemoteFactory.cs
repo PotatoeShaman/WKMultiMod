@@ -20,7 +20,7 @@ public abstract class BaseRemoteFactory {
 		if (_cachedPrefab == null) {
 			_cachedPrefab = LoadAndPrepare(bundlePath);
 			if (_cachedPrefab == null) {
-				MPMain.LogError(Localization.Get("RemotePlayerFactory", "PrefabNotLoaded", PrefabName));
+				MPMain.LogError(Localization.Get("RPBaseFactory", "PrefabNotLoaded", PrefabName));
 				return null;
 			}
 		}
@@ -29,25 +29,43 @@ public abstract class BaseRemoteFactory {
 
 	// 加载并处理预制体
 	public GameObject LoadAndPrepare(string path) {
-		var bundle = AssetBundle.LoadFromFile(path);
+		// 1. 在 try 外部声明引用，以便 finally 块能访问到它
+		AssetBundle bundle = null;
+		GameObject raw = null;
 
-		if (bundle == null) {
-			MPMain.LogError(Localization.Get("RemotePlayerFactory", "UnableToLoadResources"));
-			return null;
+		try {
+			// 2. 在 try 内部申请资源
+			bundle = AssetBundle.LoadFromFile(path);
+
+			if (bundle == null) {
+				MPMain.LogError(Localization.Get("RPBaseFactory", "UnableToLoadResources"));
+				return null;
+			}
+
+			raw = bundle.LoadAsset<GameObject>(PrefabName);
+			if (raw == null) {
+				MPMain.LogError(Localization.Get("RPBaseFactory", "PrefabNotLoaded", PrefabName));
+				return null;
+			}
+
+			// 3. 执行各种修复和处理
+			ProcessPrefabMarkers(raw);
+			FixShaders(raw);
+			AddFactoryId(raw);
+			OnPrepare(raw, bundle);
+
+		} catch (System.Exception ex) {
+			// 捕获异常并记录，防止崩溃
+			MPMain.LogError(Localization.Get("RPBaseFactory", "PreFabProcessingError",ex.GetType().Name,ex.Message,ex.StackTrace));
+
+			// 如果出错，建议将 raw 置空，防止后面使用不完整的预制体
+			raw = null;
+		} finally {
+			// 执行卸载
+			if (bundle != null) {
+				bundle.Unload(false);
+			}
 		}
-
-		// Debug 函数输出所有资源
-		ListAllAssetsInBundle(bundle);
-
-		var raw = bundle.LoadAsset<GameObject>(PrefabName);
-
-		// Shader修复 和 组件替换
-		ProcessPrefabMarkers(raw);	// 替换标记组件
-		FixShaders(raw);			// 通用 Shader 修复
-		AddFactoryId(raw);			// 挂载身份证
-		OnPrepare(raw, bundle);		// 子类特化处理
-
-		bundle.Unload(false); // 卸载资源,保留预制体
 
 		return raw;
 	}
@@ -78,13 +96,13 @@ public abstract class BaseRemoteFactory {
 
 			foreach (var mat in renderer.sharedMaterials) {
 				if (mat == null) continue;
-				MPMain.LogInfo(Localization.Get("RemotePlayerFactory", "MaterialShaderInfo", mat.name, mat.shader.name));
+				MPMain.LogInfo(Localization.Get("RPBaseFactory", "MaterialShaderInfo", mat.name, mat.shader.name));
 				// 强制链接到游戏的 Shader
 				var internalShader = Shader.Find(mat.shader.name);
 				if (internalShader != null)
 					mat.shader = internalShader;
 				else {
-					MPMain.LogError(Localization.Get("RemotePlayerFactory", "ShaderNotFoundOnRenderer", mat.shader.name, renderer.name));
+					MPMain.LogError(Localization.Get("RPBaseFactory", "ShaderNotFoundOnRenderer", mat.shader.name, renderer.name));
 				}
 			}
 		}
@@ -137,7 +155,7 @@ public abstract class BaseRemoteFactory {
 			component.IceActive = MPConfig.IceActive;
 			component.OtherActive = MPConfig.OtherActive;
 		} else {
-			MPMain.LogError(Localization.Get("RemotePlayerFactory", "RemoteEntityAddFailed"));
+			MPMain.LogError(Localization.Get("RPBaseFactory", "RemoteEntityAddFailed"));
 		}
 		Object.DestroyImmediate(mk);
 	}
@@ -152,7 +170,7 @@ public abstract class BaseRemoteFactory {
 				}
 			}
 		} else {
-			MPMain.LogError(Localization.Get("RemotePlayerFactory", "ObjectTaggerAddFailed"));
+			MPMain.LogError(Localization.Get("RPBaseFactory", "ObjectTaggerAddFailed"));
 		}
 		Object.DestroyImmediate(mk);
 	}
@@ -165,7 +183,7 @@ public abstract class BaseRemoteFactory {
 			component.handholdRenderer = mk.handholdRenderer ?? go.GetComponent<Renderer>();
 
 		} else {
-			MPMain.LogError(Localization.Get("RemotePlayerFactory", "CL_HandholdAddFailed"));
+			MPMain.LogError(Localization.Get("RPBaseFactory", "CL_HandholdAddFailed"));
 		}
 		Object.DestroyImmediate(mk);
 	}
@@ -197,7 +215,7 @@ public abstract class BaseRemoteFactory {
 		string[] assetNames = bundle.GetAllAssetNames();
 
 		if (assetNames.Length == 0) {
-			MPMain.LogWarning("警告：该 AssetBundle 是空的！");
+			MPMain.LogWarning("警告:该 AssetBundle 是空的！");
 			return;
 		}
 

@@ -124,15 +124,15 @@ public class RPFactoryManager {
 	/// </summary>
 	private void RegisterDefaultFactories() {
 		RegisterFactory(
-			"slugcat",
-			new SlugcatFactory(),
-			"SlugcatPlayerPrefab",
-			Path.Combine(MPMain.path, "player_prefab")
-		);
-		RegisterFactory(
 			"default",
 			new SlugcatFactory(),
 			"CapsulePlayerPrefab",
+			Path.Combine(MPMain.path, "player_prefab")
+		);
+		RegisterFactory(
+			"slugcat",
+			new SlugcatFactory(),
+			"SlugcatPlayerPrefab",
 			Path.Combine(MPMain.path, "player_prefab")
 		);
 	}

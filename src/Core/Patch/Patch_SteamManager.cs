@@ -23,7 +23,7 @@ public class Patch_SteamManager {
 			return;
 		}
 
-		// 简化的检查：只看是否已经存在任何MultiPlayerCore实例
+		// 简化的检查:只看是否已经存在任何MultiPlayerCore实例
 		var existingCore = Object.FindObjectOfType<MPCore>();
 		if (existingCore != null) {
 			MPMain.LogWarning(Localization.Get("Patch", "CoreInstanceExists",existingCore.name));

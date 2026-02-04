@@ -7,7 +7,7 @@ using WKMPMod.Core;
 namespace WKMPMod.Util;
 
 public static class Localization {
-	// 主表：按类别存储字典
+	// 主表:按类别存储字典
 	private static Dictionary<string, Dictionary<string, string>> _table =
 		new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 

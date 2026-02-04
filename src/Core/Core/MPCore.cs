@@ -77,7 +77,7 @@ public class MPCore : MonoBehaviour {
 	public static bool IsInLobby => MultiPlayerStatus.IsInLobby();
 	public static bool IsInitialized => MultiPlayerStatus.IsInitialized();
 
-	// 注意：日志通过 MultiPlayerMain.Logger 访问
+	// 注意:日志通过 MultiPlayerMain.Logger 访问
 	#region[Unity组件生命周期函数]
 	void Awake() {
 		// Debug
@@ -786,7 +786,7 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void ProcessReceiveData(ulong connectionId, ArraySegment<byte> data) {
 		if (data.Array == null || data.Count < 20) return;
-		// 基本验证：确保数据足够读取一个整数(数据包类型)
+		// 基本验证:确保数据足够读取一个整数(数据包类型)
 
 		// 直接解析头部
 		ReadOnlySpan<byte> span = data;
@@ -795,10 +795,10 @@ public class MPCore : MonoBehaviour {
 		// 接收方ID
 		ulong targetId = ReadUInt64LittleEndian(span.Slice(8));
 
-		// 验证：如果发件人 ID 和物理连接 ID 对不上,可能是伪造包
+		// 验证:如果发件人 ID 和物理连接 ID 对不上,可能是伪造包
 		if (senderId != connectionId) return;
 
-		// 转发：目标不是我,也不是广播,也不是特殊判断ID
+		// 转发:目标不是我,也不是广播,也不是特殊判断ID
 		if (targetId != Steamworks.UserSteamId
 			&& targetId != Steamworks.BroadcastId
 			&& targetId != Steamworks.SpecialId) {
@@ -806,7 +806,7 @@ public class MPCore : MonoBehaviour {
 			return; // 结束
 		}
 
-		// 广播：如果是广播,且不是我发出的
+		// 广播:如果是广播,且不是我发出的
 		if (targetId == Steamworks.BroadcastId
 			&& senderId != Steamworks.UserSteamId) {
 			ProcessBroadcastExcept(senderId, data);

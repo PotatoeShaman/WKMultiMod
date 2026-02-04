@@ -48,7 +48,7 @@
 //		RemovePlayer = 5,       // 移除玩家
 //	}
 
-//	// 注意：日志通过 MPMain.Logger 访问
+//	// 注意:日志通过 MPMain.Logger 访问
 
 //	void Awake() {
 //		MPMain.Logger.LogInfo("[loading] MultiplayerCore Awake");
@@ -224,7 +224,7 @@
 //		IsMultiplayerActive = false;
 //	}
 
-//	// 服务器端：处理连接请求
+//	// 服务器端:处理连接请求
 //	private void HandleConnectionRequest(ConnectionRequest request) {
 //		if (_server.ConnectedPeersCount < _maxPlayerCount) {
 //			request.Accept();
@@ -233,7 +233,7 @@
 //		}
 //	}
 
-//	// 服务器端：处理新客户端连接
+//	// 服务器端:处理新客户端连接
 //	private void HandlePeerConnected(NetPeer peer) {
 //		peer.Tag = _nextPlayerId;
 //		_nextPlayerId++;
@@ -252,7 +252,7 @@
 //		NotifyAllClientsToCreatePlayer(peer);
 //	}
 
-//	// 服务器端：发送连接成功消息给新客户端
+//	// 服务器端:发送连接成功消息给新客户端
 //	private void SendConnectionSuccessMessage(NetPeer peer) {
 //		NetDataWriter writer = new NetDataWriter();
 //		writer.Put((int)PacketType.ConnectedToServer);
@@ -266,7 +266,7 @@
 //		peer.Send(writer, DeliveryMethod.ReliableOrdered);
 //	}
 
-//	// 服务器端：发送世界种子给指定客户端
+//	// 服务器端:发送世界种子给指定客户端
 //	private void SendWorldSeedToPeer(NetPeer peer) {
 //		NetDataWriter writer = new NetDataWriter();
 //		writer.Put((int)PacketType.SeedUpdate);
@@ -274,7 +274,7 @@
 //		peer.Send(writer, DeliveryMethod.ReliableOrdered);
 //	}
 
-//	// 服务器端：通知所有客户端创建新玩家
+//	// 服务器端:通知所有客户端创建新玩家
 //	private void NotifyAllClientsToCreatePlayer(NetPeer peer) {
 //		NetDataWriter writer = new NetDataWriter();
 //		writer.Put((int)PacketType.CreatePlayer);
@@ -282,9 +282,9 @@
 //		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered, peer);
 //	}
 
-//	// 服务器端：处理网络数据接收
+//	// 服务器端:处理网络数据接收
 //	private void HandleNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-//		// 基本验证：确保数据足够读取一个整数(数据包类型)
+//		// 基本验证:确保数据足够读取一个整数(数据包类型)
 //		if (reader.AvailableBytes < 4) {
 //			reader.Recycle();
 //			return;
@@ -305,7 +305,7 @@
 //		reader.Recycle();
 //	}
 
-//	// 服务器端：转发位置更新给所有其他客户端
+//	// 服务器端:转发位置更新给所有其他客户端
 //	private void ForwardPlayerTransformUpdate(NetPeer peer, NetPacketReader reader) {
 //		NetDataWriter writer = new NetDataWriter();
 //		writer.Put((int)PacketType.PlayerTransformUpdate);
@@ -323,11 +323,11 @@
 //		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered, peer);
 //	}
 
-//	// 服务器端：处理客户端断开连接
+//	// 服务器端:处理客户端断开连接
 //	private void HandlePeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) {
 //		int disconnectedPlayerId = (int)peer.Tag;
 
-//		// 主机端：销毁本地的远程玩家代理对象
+//		// 主机端:销毁本地的远程玩家代理对象
 //		if (_remotePlayers.ContainsKey(disconnectedPlayerId)) {
 //			Destroy(_remotePlayers[disconnectedPlayerId]);
 //			_remotePlayers.Remove(disconnectedPlayerId);
@@ -338,7 +338,7 @@
 //		NotifyAllClientsToRemovePlayer(disconnectedPlayerId);
 //	}
 
-//	// 服务器端：通知所有客户端移除玩家
+//	// 服务器端:通知所有客户端移除玩家
 //	private void NotifyAllClientsToRemovePlayer(int playerId) {
 //		NetDataWriter writer = new NetDataWriter();
 //		writer.Put((int)PacketType.RemovePlayer);
@@ -346,9 +346,9 @@
 //		_server.SendToAll(writer, DeliveryMethod.ReliableOrdered);
 //	}
 
-//	// 客户端：处理接收到的网络数据
+//	// 客户端:处理接收到的网络数据
 //	private void HandleClientNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod) {
-//		// 基本验证：确保数据足够读取一个整数(数据包类型)
+//		// 基本验证:确保数据足够读取一个整数(数据包类型)
 //		if (reader.AvailableBytes < 4) {
 //			reader.Recycle();
 //			return;
@@ -385,7 +385,7 @@
 //		reader.Recycle();
 //	}
 
-//	// 客户端：处理其他玩家的位置更新
+//	// 客户端:处理其他玩家的位置更新
 //	private void HandlePlayerTransformUpdate(NetPacketReader reader) {
 //		int playerId = reader.GetInt();
 //		Vector3 newPosition = new Vector3(
@@ -408,7 +408,7 @@
 //		player.UpdateRotation(newRotation);
 //	}
 
-//	// 客户端：处理其他玩家手部位置更新
+//	// 客户端:处理其他玩家手部位置更新
 //	private void HandleHandTransformUpdate(NetPacketReader reader) {
 //		int playerId = reader.GetInt();
 //		bool isLeftFree = reader.GetBool();
@@ -444,7 +444,7 @@
 //		rightHand.SetDefaultLocalPosition(rightLocalPosition);
 //	}
 
-//	// 客户端：处理连接成功消息
+//	// 客户端:处理连接成功消息
 //	private void HandleConnectionSuccess(NetPacketReader reader) {
 //		int peerCount = reader.GetInt();
 //		MPMain.Logger.LogInfo("[client] 已连接, 正在加载 " + peerCount.ToString() + " 玩家");
@@ -458,20 +458,20 @@
 //		}
 //	}
 
-//	// 客户端：处理加载世界种子
+//	// 客户端:处理加载世界种子
 //	private void HandleSeedUpdate(NetPacketReader reader) {
 //		WorldSeed = reader.GetInt();
 //		MPMain.Logger.LogInfo("[client] 加载世界, 种子号: " + WorldSeed.ToString());
 //		WorldLoader.ReloadWithSeed(new string[] { WorldSeed.ToString() });
 //	}
 
-//	// 客户端：处理创建玩家消息
+//	// 客户端:处理创建玩家消息
 //	private void HandleCreatePlayer(NetPacketReader reader) {
 //		int playerId = reader.GetInt();
 //		CreateRemotePlayer(playerId);
 //	}
 
-//	// 客户端：处理移除玩家消息
+//	// 客户端:处理移除玩家消息
 //	private void HandleRemovePlayer(NetPacketReader reader) {
 //		int playerIdToRemove = reader.GetInt();
 
@@ -495,7 +495,7 @@
 //			return;
 //		}
 
-//		// 修复：检查参数长度, 防止 IndexOutOfRangeException
+//		// 修复:检查参数长度, 防止 IndexOutOfRangeException
 //		if (args.Length < 1) {
 //			CommandConsole.LogError(
 //				"Usage: host <port> [max_players]\nExample: host 22222");
@@ -721,7 +721,7 @@
 //		// 创建文本子对象 (用来承载 TextMeshPro)
 //		GameObject textObject = new GameObject("PlayerID_Text_" + tag);
 
-//		// 设置文本框位置：略高于胶囊体
+//		// 设置文本框位置:略高于胶囊体
 //		textObject.transform.localPosition = new Vector3(0f, 1.5f, 0f);
 //		textObject.transform.localRotation = Quaternion.identity;
 
@@ -738,7 +738,7 @@
 //			// 设置颜色 - TextMesh自带的材质有透明通道
 //			textMesh.color = new Color(1f, 1f, 1f, 0.85f);  // 白色,85%透明度
 
-//			// 但你可以设置一个深色背景来提高可读性：
+//			// 但你可以设置一个深色背景来提高可读性:
 //			textMesh.fontStyle = FontStyle.Bold;            // 加粗
 
 //			// 设置字体

@@ -92,12 +92,11 @@
     "AllPlayer": "Name: {0} Id: {1}",
     "PlayerDeath": "{0} died due to {1}"
   },
-  "RemotePlayerManager": {
-    "SlugcatPrefabNotFound": "[MP RPMan] Unable to find Slugcat Prefab",
+  "RPManager": {
     "RemotePlayerObjectNotFound": "[MP RPMan] Remote player object not found. ID: {0}",
     "FactoryCreateObjectFailed": "[MP RPMan] Failed to create the remote player object"
   },
-  "RemotePlayerContainer": {
+  "RPContainer": {
     "MappingSucceeded": "[MP RPCont] Remote player mapping succeeded ID: {0}",
     "MappingFailed": "[MP RPCont] Failed to map remote player ID: {0}, Error: {1}",
     "NameTagComponentMissing": "[MP RPCont] PlayerNameTag component not added"
@@ -112,6 +111,26 @@
     "CannotDetermineFactory": "[MP RPFactoryMan] Cannot determine factory for cleanup, destroying directly",
     "FactoryNotFoundCleanup": "[MP RPFactoryMan] The destruction factory {0} was not found, and the object was directly destroyed",
     "DebugFactoryInfo": "[MP RPFactoryMan] factoryId: {0} PrefabName: {1} \n BundlePath: {2}"
+  },
+  "RPBaseFactory": {
+    "PrefabNotLoaded": "[MP RPBaseFactory] Prefab '{0}' not loaded",
+    "UnableToLoadResources": "[MP RPBaseFactory] Unable to load resources",
+    "PreFabProcessingError": "[MP RPBaseFactory] Exception Type: {0}\nMessage: {1}\nCall Stack : {2}",
+    "MaterialShaderInfo": "[MP RPBaseFactory] Material name: {0} Material shader name: {1}",
+    "ShaderNotFoundOnRenderer": "[MP RPBaseFactory] Shader not found: {0}, applied on renderer {1}",
+    "RemoteEntityAddFailed": "[MP RPBaseFactory] Failed to add the RemoteEntity component to prefab",
+    "ObjectTaggerAddFailed": "[MP RPBaseFactory] Failed to add the ObjectTagger component to prefab",
+    "CL_HandholdAddFailed": "[MP RPBaseFactory] Failed to add the CL_Handhold component to prefab",
+    "AssetBundleContent": "[MP RPBaseFactory] --- AssetBundle content list: [{0}] ---",
+    "AssetBundleEmpty": "[MP RPBaseFactory] Warning: This AssetBundle is empty!",
+    "AssetBundleItem": "[MP RPBaseFactory] [Asset List] Path: {0} | Type: {1}",
+    "AssetBundleSummary": "[MP RPBaseFactory] --- List output complete, total {0} resources ---"
+  },
+  "RPSlugcatFactory": {
+    "SpecializingTMPComponent": "[MP RPSlugcatFactory] Specializing TMP component: {0}",
+    "FontAssetNotFound": "[MP RPSlugcatFactory] Font asset named {0} not found!",
+    "ImplementOverlayViaShader": "[MP RPSlugcatFactory] Implementing Overlay via TMP Shader modification",
+    "UnableToLoadMaterial": "[MP RPSlugcatFactory] Unable to load material in bundle: {0}"
   },
   "Patch": {
     "PlayerDeath": "[MP Patch] Player death,type: {0}",

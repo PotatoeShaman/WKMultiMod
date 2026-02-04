@@ -5,7 +5,7 @@ namespace WKMPMod.Component;
 public class SimpleArmIK : MonoBehaviour {
 	[Header("目标设置")]
 	public Transform? target;          // 这里拖入挂有 RemoteHand 的物体
-	public float originalLength = 1f; // 骨骼在 Scale Y = 1 时的原始长度(单位：米)
+	public float originalLength = 1f; // 骨骼在 Scale Y = 1 时的原始长度(单位:米)
 
 	[Header("限制")]
 	public float minScale = 0.1f;     // 最小缩放,防止模型塌陷
@@ -28,13 +28,13 @@ public class SimpleArmIK : MonoBehaviour {
 
 		if (currentDistance < 0.0001f) return;
 
-		// 2. 旋转：让骨骼的 Y 轴指向目标
-		// 注意：Unity 默认 LookRotation 是让 Z 轴指向目标
+		// 2. 旋转:让骨骼的 Y 轴指向目标
+		// 注意:Unity 默认 LookRotation 是让 Z 轴指向目标
 		// 我们通过从 Vector3.up (Y) 旋转到 direction 来实现 Y 轴指向
 		transform.rotation = Quaternion.FromToRotation(Vector3.up, direction);
 
-		// 3. 缩放：计算需要的 Y 轴缩放值
-		// 公式：当前距离 / 原始长度 = 应有的缩放比例
+		// 3. 缩放:计算需要的 Y 轴缩放值
+		// 公式:当前距离 / 原始长度 = 应有的缩放比例
 		float targetScaleY = currentDistance / originalLength;
 
 		// 应用限制

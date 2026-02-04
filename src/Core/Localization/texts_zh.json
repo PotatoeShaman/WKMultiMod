@@ -111,6 +111,26 @@
     "FactoryNotFoundCleanup": "[MP RPFactoryMan] 销毁工厂 {0} 未找到,直接销毁对象",
     "DebugFactoryInfo": "[MP RPFactoryMan] 工厂Id: {0} 预制体名称: {1} \n 包路径: {2}"
   },
+  "RPBaseFactory": {
+    "PrefabNotLoaded": "[MP RPBaseFactory] 预制体 '{0}' 未加载",
+    "UnableToLoadResources": "[MP RPBaseFactory] 无法加载资源",
+    "PreFabProcessingError": "[MP RPBaseFactory] 异常类型: {0}\n消息: {1}\n调用堆栈: {2}",
+    "MaterialShaderInfo": "[MP RPBaseFactory] 材质名: {0} 材质连接的shader名: {1}",
+    "ShaderNotFoundOnRenderer": "[MP RPBaseFactory] 未找到 Shader: {0},应用在渲染器 {1} 上",
+    "RemoteEntityAddFailed": "[MP RPBaseFactory] 预制体RemoteEntity组件添加失败",
+    "ObjectTaggerAddFailed": "[MP RPBaseFactory] 预制体ObjectTagger组件添加失败",
+    "CL_HandholdAddFailed": "[MP RPBaseFactory] 预制体CL_Handhold组件添加失败",
+    "AssetBundleContent": "[MP RPBaseFactory] --- 开始输出 AssetBundle 内容清单: [{0}] ---",
+    "AssetBundleEmpty": "[MP RPBaseFactory] 警告:该 AssetBundle 是空的！",
+    "AssetBundleItem": "[MP RPBaseFactory] [资源清单] 路径: {0} | 类型: {1}",
+    "AssetBundleSummary": "[MP RPBaseFactory] --- 清单输出完毕，共计 {0} 个资源 ---"
+  },
+  "RPSlugcatFactory": {
+    "SpecializingTMPComponent": "[MP RPSlugcatFactory] 正在特化处理 TMP 组件: {0}",
+    "FontAssetNotFound": "[MP RPSlugcatFactory] 未找到名为 {0} 的字体资产！",
+    "ImplementOverlayViaShader": "[MP RPSlugcatFactory] 通过修改 TMP 的 Shader 的方式实现 Overlay",
+    "UnableToLoadMaterial": "[MP RPSlugcatFactory] 无法加载包内材质: {0}"
+  },
   "Patch": {
     "PlayerDeath": "[MP Patch] 玩家死亡,类型: {0}",
     "PreparingToInjectCore": "[MP Patch] SteamManager.Awake 调用,准备注入MPCore",

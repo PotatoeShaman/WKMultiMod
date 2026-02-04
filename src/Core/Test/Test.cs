@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Windows;
 using WKMPMod.Core;
+using WKMPMod.Data;
 using WKMPMod.RemotePlayer;
 using WKMPMod.Util;
 using static CommandConsole;
@@ -17,10 +18,13 @@ using Vector3 = UnityEngine.Vector3;
 namespace WKMPMod.Test;
 
 public class Test : MonoBehaviour {
+	public static float x = 0;
+	public static float y = 0;
+	public static float z = 0;
 	public static void Main(string[] args) {
 
 		if (args.Length == 0) {
-			Debug.Log("测试命令需要参数,可用参数：0-8");
+			Debug.Log("测试命令需要参数,可用参数:0-8");
 			return;
 		}
 
@@ -31,32 +35,33 @@ public class Test : MonoBehaviour {
 			"2" => RunCommand(GetMassData),
 			"3" => RunCommand(GetSystemLanguage),
 			"4" => RunCommand(() => CreateRemotePlayer(args[1..])),
-			"5" => RunCommand(() => UpdateRemoteTag(args[1..])),
-			"6" => RunCommand(GetAllFactoryList),
-			"7" => RunCommand(GetPath),
-			"8" => RunCommand(CreateTestPrefab),
+			"5" => RunCommand(() => RemoveRemotePlayer(args[1..])),
+			"6" => RunCommand(() => UpdateRemoteTag(args[1..])),
+			"7" => RunCommand(GetAllFactoryList),
+			"8" => RunCommand(GetPath),
+			"9" => RunCommand(CreateTestPrefab),
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
 
-	// 辅助方法：安全执行命令
+	// 辅助方法:安全执行命令
 	private static bool RunCommand(Action action) {
 		action();
 		return true;
 	}
 
 	public static void GetGraphicsAPI() {
-		// 方法1：直接获取当前API
+		// 方法1:直接获取当前API
 		Debug.Log($"当前图形API: {SystemInfo.graphicsDeviceType}");
 
-		// 方法2：获取详细版本信息
+		// 方法2:获取详细版本信息
 		Debug.Log($"图形API版本: {SystemInfo.graphicsDeviceVersion}");
 
-		// 方法3：获取Shader Model级别
+		// 方法3:获取Shader Model级别
 		int smLevel = SystemInfo.graphicsShaderLevel;
 		Debug.Log($"Shader Model: {smLevel / 10}.{smLevel % 10}");
 
-		// 方法4：检查具体功能支持
+		// 方法4:检查具体功能支持
 		Debug.Log($"支持计算着色器: {SystemInfo.supportsComputeShaders}");
 		Debug.Log($"支持几何着色器: {SystemInfo.supportsGeometryShaders}");
 		Debug.Log($"支持曲面细分: {SystemInfo.supportsTessellationShaders}");
@@ -77,10 +82,10 @@ public class Test : MonoBehaviour {
 	}
 	// 创建远程玩家
 	public static void CreateRemotePlayer(string[] args) {
-		int id = 1;
-		string prefab = "slugcat";
+		ulong id = 1;
+		string prefab = "default";
 
-		if (args.Length >= 1 && int.TryParse(args[0], out int parsedId)) {
+		if (args.Length >= 1 && ulong.TryParse(args[0], out ulong parsedId)) {
 			id = parsedId;
 		}
 
@@ -88,7 +93,19 @@ public class Test : MonoBehaviour {
 			prefab = string.Join(" ", args[1..]);
 		}
 
-		MPCore.Instance.RPManager.PlayerCreate((ulong)id, prefab);
+		MPCore.Instance.RPManager.PlayerCreate(id, prefab);
+		MPCore.Instance.RPManager.Players[id]
+			.UpdatePlayerData(new PlayerData { Position = new Vector3(x, y, z) });
+		y += 4.0f;
+
+	}
+	// 移除远程玩家
+	public static void RemoveRemotePlayer(string[] args) {
+		int id = 1;
+		if (args.Length >= 1 && int.TryParse(args[0], out int parsedId)) {
+			id = parsedId;
+		}
+		MPCore.Instance.RPManager.PlayerRemove((ulong)id);
 	}
 	// 更新远程玩家名字标签
 	public static void UpdateRemoteTag(string[] args) {

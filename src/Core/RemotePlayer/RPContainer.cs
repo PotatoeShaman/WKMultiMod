@@ -90,7 +90,7 @@ public class RPContainer {
 		_remoteTag = instance.GetComponentInChildren<RemoteTag>();
 		_remoteEntity = instance.GetComponentInChildren<RemoteEntity>();
 
-		// 处理左右手：获取所有 RemoteHand,然后通过内部字段区分
+		// 处理左右手:获取所有 RemoteHand,然后通过内部字段区分
 		RemoteHand[] hands = instance.GetComponentsInChildren<RemoteHand>();
 		foreach (var hand in hands) {
 			if (hand.hand == HandType.Left) _remoteLeftHand = hand;
