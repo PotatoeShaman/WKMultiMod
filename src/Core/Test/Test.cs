@@ -1,16 +1,13 @@
 ﻿using BepInEx;
 using Steamworks;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using WKMPMod.Component;
+using UnityEngine.Windows;
 using WKMPMod.Core;
-using WKMPMod.RemoteManager;
-using WKMPMod.Shared.MK_Component;
+using WKMPMod.RemotePlayer;
 using WKMPMod.Util;
 using static CommandConsole;
 using Object = UnityEngine.Object;
@@ -22,35 +19,30 @@ namespace WKMPMod.Test;
 public class Test : MonoBehaviour {
 	public static void Main(string[] args) {
 
-		switch (args[0]) {
-			case "0":
-				GetGraphicsAPI();
-				break;
-			case "1":
-				GetMPStatus();
-				break;
-			case "2":
-				GetMassData();
-				break;
-			case "3":
-				GetSystemLanguage();
-				break;
-			case "4":
-				CreateRemotePlayer();
-				break;
-			case "5": {
-				string Test = "中文测试: 斯卡利茨恐虐神选";
-				if (args.Length > 1)
-					Test = string.Join(" ", args.Skip(1));
-				UpdateRemoteTag(Test);
-				break;
-			}
-			case "6":
-				GetPath();
-				break;
-			default:
-				break;
+		if (args.Length == 0) {
+			Debug.Log("测试命令需要参数,可用参数：0-8");
+			return;
 		}
+
+		// 使用 switch 表达式使代码更简洁
+		_ = args[0] switch {
+			"0" => RunCommand(GetGraphicsAPI),
+			"1" => RunCommand(GetMPStatus),
+			"2" => RunCommand(GetMassData),
+			"3" => RunCommand(GetSystemLanguage),
+			"4" => RunCommand(() => CreateRemotePlayer(args[1..])),
+			"5" => RunCommand(() => UpdateRemoteTag(args[1..])),
+			"6" => RunCommand(GetAllFactoryList),
+			"7" => RunCommand(GetPath),
+			"8" => RunCommand(CreateTestPrefab),
+			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
+		};
+	}
+
+	// 辅助方法：安全执行命令
+	private static bool RunCommand(Action action) {
+		action();
+		return true;
 	}
 
 	public static void GetGraphicsAPI() {
@@ -70,28 +62,47 @@ public class Test : MonoBehaviour {
 		Debug.Log($"支持曲面细分: {SystemInfo.supportsTessellationShaders}");
 		Debug.Log($"支持GPU实例化: {SystemInfo.supportsInstancing}");
 	}
-
+	// 输出联机模式状态
 	public static void GetMPStatus() {
 		Debug.Log($"{((int)(MPCore.MultiPlayerStatus)).ToString()}");
 	}
-
+	// 输出Mass数据
 	public static void GetMassData() {
 		var data = DEN_DeathFloor.instance.GetSaveData();
 		Debug.Log($"高度:{data.relativeHeight}, 是否活动:{data.active}, 速度:{data.speed}, 速度乘数:{data.speedMult}");
 	}
-
+	// 输出系统语言
 	public static void GetSystemLanguage() {
 		Debug.Log($"系统语言:{Localization.GetGameLanguage()}");
 	}
+	// 创建远程玩家
+	public static void CreateRemotePlayer(string[] args) {
+		int id = 1;
+		string prefab = "slugcat";
 
-	public static void CreateRemotePlayer() {
-		MPCore.Instance.RPManager.PlayerCreate(1);
+		if (args.Length >= 1 && int.TryParse(args[0], out int parsedId)) {
+			id = parsedId;
+		}
+
+		if (args.Length >= 2) {
+			prefab = string.Join(" ", args[1..]);
+		}
+
+		MPCore.Instance.RPManager.PlayerCreate((ulong)id, prefab);
 	}
+	// 更新远程玩家名字标签
+	public static void UpdateRemoteTag(string[] args) {
+		string tagText = args.Length > 0
+			? string.Join(" ", args)
+			: "中文测试: 斯卡利茨恐虐神选";
 
-	public static void UpdateRemoteTag(string arg) {
-		MPCore.Instance.RPManager.Players[1].UpdateNameTag(arg);
+		if (MPCore.Instance.RPManager.Players.TryGetValue(1, out var player)) {
+			player.UpdateNameTag(tagText);
+		} else {
+			Debug.LogWarning("玩家ID 1 不存在");
+		}
 	}
-
+	// 获取程序路径信息
 	public static void GetPath() {
 		//D:\GAME\Steam\steamapps\common\White Knuckle\BepInEx\plugins
 		MPMain.LogInfo(Paths.PluginPath);
@@ -105,5 +116,16 @@ public class Test : MonoBehaviour {
 		MPMain.LogInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty);
 
 		MPMain.LogInfo(MPMain.path);
+	}
+	// 创建测试预制体
+	public static void CreateTestPrefab() {
+		var bundle = AssetBundle.LoadFromFile(Path.Combine(MPMain.path, "playerprefab"));
+		BaseRemoteFactory.ListAllAssetsInBundle(bundle);
+		var rawPrefab = bundle.LoadAsset<GameObject>("cl_player");
+		Object.Instantiate(rawPrefab);
+	}
+
+	public static void GetAllFactoryList() {
+		RPFactoryManager.Instance.ListAllFactory();
 	}
 }

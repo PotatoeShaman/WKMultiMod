@@ -17,10 +17,10 @@ public class MPMain : BaseUnityPlugin {
 
 	public const string ModGUID = "shenxl.MultiPlayerMod";
 	public const string ModName = "MultiPlayer Mod";
-	public const string ModVersion = "1.1.5.0";
+	public const string ModVersion = "1.1.6.0";
 	//Assembly.GetExecutingAssembly().Location -> BepInEx\plugins\MultiPlayer\WKMultiPlayerMod.dll
 	//Path.GetDirectoryName -> BepInEx\plugins\MultiPlayer
-	public static string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+	public static string path = Path.GetDirectoryName(typeof(MPMain).Assembly.Location) ?? string.Empty;
 
 	// 单例实例
 	public static MPMain Instance { get; set; }

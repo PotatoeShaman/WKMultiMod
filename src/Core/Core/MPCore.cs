@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 using WKMPMod.Component;
 using WKMPMod.Data;
 using WKMPMod.NetWork;
-using WKMPMod.RemoteManager;
+using WKMPMod.RemotePlayer;
 using WKMPMod.Util;
 using static System.Buffers.Binary.BinaryPrimitives;
 using static WKMPMod.Data.MPReaderPool;
@@ -65,7 +65,7 @@ public class MPCore : MonoBehaviour {
 
 	// Steam网络管理器 远程玩家管理器 本地数据获取类
 	internal MPSteamworks Steamworks { get; private set; }
-	internal RemotePlayerManager RPManager { get; private set; }
+	internal RPManager RPManager { get; private set; }
 	internal LocalPlayer LPManager { get; private set; }
 
 	// 世界种子 - 用于同步游戏世界生成
@@ -136,7 +136,7 @@ public class MPCore : MonoBehaviour {
 			Steamworks = gameObject.AddComponent<MPSteamworks>();
 
 			// 创建远程玩家管理器
-			RPManager = gameObject.AddComponent<RemotePlayerManager>();
+			RPManager = gameObject.AddComponent<RPManager>();
 
 			// 创建本地信息获取发送管理器
 			LPManager = gameObject.AddComponent<LocalPlayer>();
@@ -570,7 +570,7 @@ public class MPCore : MonoBehaviour {
 	/// </summary>
 	private void HandlePlayerConnected(SteamId steamId) {
 		// 创建玩家
-		RPManager.PlayerCreate(steamId);
+		RPManager.PlayerCreate(steamId, "slugcat");
 	}
 
 	/// <summary>

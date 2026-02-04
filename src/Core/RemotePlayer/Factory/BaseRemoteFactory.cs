@@ -1,84 +1,77 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using WKMPMod.Component;
 using WKMPMod.Core;
-using WKMPMod.Shared.MK_Component;
+using WKMPMod.MK_Component;
 using WKMPMod.Util;
 using Object = UnityEngine.Object;
 
-namespace WKMPMod.RemoteManager;
+namespace WKMPMod.RemotePlayer;
 
-public static class RemotePlayerFactory {
-	private static GameObject _slugcatPrefab;
-	// 蛞蝓猫文件地址
-	private const string SLUGCAT_FILE_NAME = "slugcat_prefab";
-	// 蛞蝓猫预制体名称
-	private const string SLUGCAT_PREFAB_NAME = "SlugcatPrefab";
-	// 透视字体材质
-	private const string TMP_DISTANCE_FIELD_OVERLAY_MAT = 
-		"assets/projects/slugcat/materials/textmeshpro_distance field overlay.mat";
-	// 游戏字体贴图
-	private const string GAME_TMP_FONT_ASSET = "Ticketing SDF";
-	// 获取完整路径
-	private static string BundlePath => Path.Combine(MPMain.path, SLUGCAT_FILE_NAME);
+public abstract class BaseRemoteFactory {
+	// 由 FactoryManager 注入
+	public string PrefabName { get; set; }
+	public string FactoryId { get; set; }
+
+	// 缓存预制体
+	private GameObject _cachedPrefab;
+
+	public GameObject Create(string bundlePath) { 
+		if (_cachedPrefab == null) {
+			_cachedPrefab = LoadAndPrepare(bundlePath);
+			if (_cachedPrefab == null) {
+				MPMain.LogError(Localization.Get("RemotePlayerFactory", "PrefabNotLoaded", PrefabName));
+				return null;
+			}
+		}
+		return GameObject.Instantiate(_cachedPrefab);
+	}
 
 	// 加载并处理预制体
-	public static void LoadAndPrepare(string path) {
-		if (_slugcatPrefab != null) return;
-
+	public GameObject LoadAndPrepare(string path) {
 		var bundle = AssetBundle.LoadFromFile(path);
 
 		if (bundle == null) {
 			MPMain.LogError(Localization.Get("RemotePlayerFactory", "UnableToLoadResources"));
-			return;
+			return null;
 		}
 
 		// Debug 函数输出所有资源
-		//ListAllAssetsInBundle(bundle);
+		ListAllAssetsInBundle(bundle);
 
-		var rawPrefab = bundle.LoadAsset<GameObject>(SLUGCAT_PREFAB_NAME);
+		var raw = bundle.LoadAsset<GameObject>(PrefabName);
 
 		// Shader修复 和 组件替换
-		_slugcatPrefab = PreparePrefab(rawPrefab, bundle);
+		ProcessPrefabMarkers(raw);	// 替换标记组件
+		FixShaders(raw);			// 通用 Shader 修复
+		AddFactoryId(raw);			// 挂载身份证
+		OnPrepare(raw, bundle);		// 子类特化处理
 
-		bundle.Unload(false); // 卸载镜像,保留资源
+		bundle.Unload(false); // 卸载资源,保留预制体
+
+		return raw;
 	}
+
+	#region[接口]
 
 	/// <summary>
-	/// 工厂接口
+	/// 子类特化处理
 	/// </summary>
-	public static GameObject CreateInstance() {
-		if (_slugcatPrefab == null) {
-			LoadAndPrepare(BundlePath);
-			if (_slugcatPrefab == null) {
-				return null;
-			}
-		}
-		return Object.Instantiate(_slugcatPrefab);
-	}
-
+	protected abstract void OnPrepare(GameObject prefab, AssetBundle bundle);
 	/// <summary>
-	/// 处理预制体
+	/// 资源清理
 	/// </summary>
-	private static GameObject PreparePrefab(GameObject prefab, AssetBundle bundle) {
-		FixShaders(prefab); // 修复材质
-		FixTMPComponent(prefab, bundle); // 修复字体
-		ProcessPrefabMarkers(prefab); // 替换组件
+	public abstract void Cleanup(GameObject instance);
 
-		return prefab;
-	}
+	#endregion
 
 	#region[shader/材质丢失修复]
+
 	/// <summary>
 	/// 修复 Shader 丢失
 	/// </summary>
 
-	private static void FixShaders(GameObject prefab) {
+	private void FixShaders(GameObject prefab) {
 		foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(true)) {
 			// 如果是 TMP 的 3D 渲染器,使用TMP特化逻辑处理
 			if (renderer.GetComponent<TMP_Text>() != null) continue;
@@ -97,39 +90,6 @@ public static class RemotePlayerFactory {
 		}
 	}
 
-	/// <summary>
-	/// 修复TMP字体和材质
-	/// </summary>
-	private static void FixTMPComponent(GameObject prefab,AssetBundle bundle) {
-		// 特化处理 TextMeshPro
-		foreach (var tmpText in prefab.GetComponentsInChildren<TMP_Text>(true)) {
-			MPMain.LogInfo(Localization.Get("RemotePlayerFactory", "SpecializingTMPComponent", tmpText.name));
-
-			// 游戏内原生字体
-			TMP_FontAsset gameFont = Resources.FindObjectsOfTypeAll<TMP_FontAsset>()
-							 .FirstOrDefault(f => f.name == GAME_TMP_FONT_ASSET);
-			if (gameFont == null) {
-				MPMain.LogError(Localization.Get("RemotePlayerFactory", "FontAssetNotFound", GAME_TMP_FONT_ASSET));
-				continue;
-			}
-			// 赋值组件字体
-			tmpText.font = gameFont;
-
-			// 透视字体材质
-			Material bundleMat = bundle.LoadAsset<Material>(TMP_DISTANCE_FIELD_OVERLAY_MAT);
-			// 实例材质副本
-			Material instanceMat = tmpText.fontMaterial;
-			if (instanceMat != null && bundleMat != null) {
-				// Overlay Shader 赋给实例副本
-				instanceMat.shader = bundleMat.shader;
-
-				MPMain.LogInfo(Localization.Get("RemotePlayerFactory", "ImplementOverlayViaShader"));
-			} else {
-				MPMain.LogError(Localization.Get("RemotePlayerFactory", "UnableToLoadMaterial",TMP_DISTANCE_FIELD_OVERLAY_MAT));
-			}
-		}
-	}
-
 	#endregion
 
 	#region[将标记组件替换为真实组件]
@@ -137,7 +97,7 @@ public static class RemotePlayerFactory {
 	/// <summary>
 	/// 遍历对象及其子对象进行检测
 	/// </summary>
-	public static void ProcessPrefabMarkers(GameObject prefab) {
+	public void ProcessPrefabMarkers(GameObject prefab) {
 		// 批量处理 MK_RemoteEntity
 		var remoteEntities = prefab.GetComponentsInChildren<MK_RemoteEntity>(true);
 		foreach (var mk in remoteEntities) {
@@ -163,7 +123,7 @@ public static class RemotePlayerFactory {
 		}
 	}
 
-	private static void MapMarkersToRemoteEntity(GameObject go, MK_RemoteEntity mk) {
+	private void MapMarkersToRemoteEntity(GameObject go, MK_RemoteEntity mk) {
 		var component = go.AddComponent<RemoteEntity>();
 		if (component != null) {
 			component.AllActive = MPConfig.AllActive;
@@ -182,7 +142,7 @@ public static class RemotePlayerFactory {
 		Object.DestroyImmediate(mk);
 	}
 
-	private static void MapMarkersToObjectTagger(GameObject go, MK_ObjectTagger mk) {
+	private void MapMarkersToObjectTagger(GameObject go, MK_ObjectTagger mk) {
 		var component = go.GetComponent<ObjectTagger>() ?? go.AddComponent<ObjectTagger>();
 		if (component != null) {
 			// 使用for循环添加标签
@@ -197,7 +157,7 @@ public static class RemotePlayerFactory {
 		Object.DestroyImmediate(mk);
 	}
 
-	private static void MapMarkersToCL_Handhold(GameObject go, MK_CL_Handhold mk) {
+	private void MapMarkersToCL_Handhold(GameObject go, MK_CL_Handhold mk) {
 		var component = go.AddComponent<CL_Handhold>();
 		if (component != null) {
 			component.activeEvent = mk.activeEvent;
@@ -210,8 +170,17 @@ public static class RemotePlayerFactory {
 		Object.DestroyImmediate(mk);
 	}
 
-	private static void SetLookAt(GameObject go, LookAt mk) {
+	private void SetLookAt(GameObject go, LookAt mk) {
 		mk.userScale = MPConfig.NameTagScale;
+	}
+
+	#endregion
+
+	#region[添加工厂标签(用于销毁定位工厂)]
+
+	private void AddFactoryId(GameObject prefab) {
+		var factoryId = prefab.AddComponent<ObjectIdentity>();
+		factoryId.name = FactoryId;
 	}
 
 	#endregion
@@ -221,7 +190,7 @@ public static class RemotePlayerFactory {
 	/// <summary>
 	/// 遍历并输出 Bundle 内所有资源的完整路径和类型
 	/// </summary>
-	private static void ListAllAssetsInBundle(AssetBundle bundle) {
+	public static void ListAllAssetsInBundle(AssetBundle bundle) {
 		MPMain.LogInfo($"--- 开始输出 AssetBundle 内容清单: [{bundle.name}] ---");
 
 		// 获取包内所有资源的路径名称
@@ -233,7 +202,7 @@ public static class RemotePlayerFactory {
 		}
 
 		foreach (string name in assetNames) {
-			// 尝试加载资源以获取其实际类型（仅用于 Debug）
+			// 尝试加载资源以获取其实际类型(仅用于 Debug)
 			Object asset = bundle.LoadAsset(name);
 			string typeName = asset != null ? asset.GetType().Name : "Unknown Type";
 

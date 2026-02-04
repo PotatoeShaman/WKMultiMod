@@ -28,7 +28,7 @@ public class RemoteTag : MonoBehaviour {
 		get => _message;
 		set {
 			string limitedMsg = value.Length <= 15 ? value : value.Substring(0, 15);
-			// 如果消息没变化，直接返回
+			// 如果消息没变化,直接返回
 			if (_message == limitedMsg) return;
 			_message = limitedMsg;
 
@@ -36,7 +36,7 @@ public class RemoteTag : MonoBehaviour {
 			if (_messageTimeoutCoroutine != null) {
 				StopCoroutine(_messageTimeoutCoroutine);
 			}
-			// 启动新的协程，15秒后清空消息
+			// 启动新的协程,15秒后清空消息
 			_messageTimeoutCoroutine = StartCoroutine(MessageTimeoutRoutine());
 
 			// 立即刷新显示
@@ -118,7 +118,7 @@ public class RemoteTag : MonoBehaviour {
 		// 清空消息
 		_message = "";
 
-		// 刷新显示（只显示名字）
+		// 刷新显示(只显示名字)
 		RefreshName();
 
 		// 清除协程引用

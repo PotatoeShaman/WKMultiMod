@@ -1,34 +1,29 @@
-﻿using Steamworks;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
-using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
-using WKMPMod.Shared.MK_Component;
 using WKMPMod.Util;
 using Object = UnityEngine.Object;
 
-namespace WKMPMod.RemoteManager;
+namespace WKMPMod.RemotePlayer;
 
 // 生命周期为全局
-public class RemotePlayerManager : MonoBehaviour {
+public class RPManager : MonoBehaviour {
 
 	// Debug日志输出间隔
 	private TickTimer _debugTick = new TickTimer(5f);
 	// 存储所有远程对象
-	internal Dictionary<ulong, RemotePlayerContainer> Players = new Dictionary<ulong, RemotePlayerContainer>();
+	internal Dictionary<ulong, RPContainer> Players = new Dictionary<ulong, RPContainer>();
 
 	void Awake() {
 		// 确保根对象存在
 		EnsureRootObject();
+		RPFactoryManager.Instance.Initialize();
 	}
 
 	void OnDestroy() {
 		ResetAll();
+		RPFactoryManager.Instance.Reset();
 	}
 
 	/// <summary>
@@ -75,17 +70,17 @@ public class RemotePlayerManager : MonoBehaviour {
 	/// <summary>
 	/// 根据Id创建玩家
 	/// </summary>
-	public RemotePlayerContainer PlayerCreate(ulong playId) {
+	public RPContainer PlayerCreate(ulong playId,string prefab) {
 		if (Players.TryGetValue(playId, out var existing)) 
 			return existing;
 
-		var container = new RemotePlayerContainer(playId);
+		var container = new RPContainer(playId);
 
 		// 从工厂直接获取实例
-		GameObject instance = RemotePlayerFactory.CreateInstance();
+		GameObject instance = RPFactoryManager.Instance.Create(prefab);
 
 		if (instance == null) {
-			MPMain.LogError(Localization.Get("RemotePlayerManager", "FactoryCreateObjectFailed"));
+			MPMain.LogError(Localization.Get("RPManager", "FactoryCreateObjectFailed"));
 			return null;
 		}
 
@@ -99,7 +94,13 @@ public class RemotePlayerManager : MonoBehaviour {
 	/// </summary>
 	public void PlayerRemove(ulong playId) {
 		if (Players.TryGetValue(playId, out var container)) {
+
+			// 工厂清理
+			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
+
+			// 容器清理引用
 			container.Destroy();
+
 			Players.Remove(playId);
 		}
 	}
@@ -115,14 +116,9 @@ public class RemotePlayerManager : MonoBehaviour {
 			return;
 		} else if (_debugTick.TryTick()) {
 			MPMain.LogError(Localization.Get(
-				"RemotePlayerManger", "RemotePlayerObjectNotFound", playId.ToString()));
+				"RPManger", "RemotePlayerObjectNotFound", playId.ToString()));
 			return;
 		}
 		return;
 	}
 }
-
-
-
-
-

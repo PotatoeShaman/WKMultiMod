@@ -1,20 +1,17 @@
 ﻿using Steamworks;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using UnityEngine.Events;
 using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
-using WKMPMod.Shared.MK_Component;
 using WKMPMod.Util;
 using Object = UnityEngine.Object;
 
-namespace WKMPMod.RemoteManager;
+namespace WKMPMod.RemotePlayer;
 
 // 单个玩家的容器类
-public class RemotePlayerContainer {
+public class RPContainer {
 	public ulong PlayerId { get; set; }
 	public string PlayerName { get; set; }
 	public GameObject PlayerObject { get; private set; }
@@ -22,7 +19,7 @@ public class RemotePlayerContainer {
 	//public GameObject RightHandObject { get; private set; }
 	//public GameObject NameTagObject { get; private set; }
 
-	private RemotePlayer _remotePlayer;
+	private Component.RemotePlayer _remotePlayer;
 	private RemoteHand _remoteLeftHand;
 	private RemoteHand _remoteRightHand;
 	private RemoteTag _remoteTag;
@@ -46,7 +43,7 @@ public class RemotePlayerContainer {
 	}
 
 	// 构造函数 - 只设置基本信息
-	public RemotePlayerContainer(ulong playId) {
+	public RPContainer(ulong playId) {
 		PlayerId = playId;
 		PlayerName = new Friend(PlayerId).Name;
 	}
@@ -71,12 +68,12 @@ public class RemotePlayerContainer {
 			});
 			// Debug
 			MPMain.LogInfo(Localization.Get(
-				"RemotePlayerContainer", "MappingSucceeded", PlayerId.ToString()));
+				"RPContainer", "MappingSucceeded", PlayerId.ToString()));
 			return true;
 		} catch (Exception ex) {
 			// Debug
 			MPMain.LogError(Localization.Get(
-				"RemotePlayerContainer", "MappingFailed", PlayerId.ToString(), ex.Message));
+				"RPContainer", "MappingFailed", PlayerId.ToString(), ex.Message));
 
 			if (PlayerObject != null) Object.Destroy(PlayerObject);
 
@@ -89,7 +86,7 @@ public class RemotePlayerContainer {
 	// 初始化远程实体组件引用
 	public void InitializeAllComponent(GameObject instance) {
 		// 直接在实例中寻找这些组件,无需手动写循环遍历
-		_remotePlayer = instance.GetComponentInChildren<RemotePlayer>();
+		_remotePlayer = instance.GetComponentInChildren<Component.RemotePlayer>();
 		_remoteTag = instance.GetComponentInChildren<RemoteTag>();
 		_remoteEntity = instance.GetComponentInChildren<RemoteEntity>();
 
@@ -115,27 +112,13 @@ public class RemotePlayerContainer {
 
 	// 销毁方法 - 清理所有资源
 	public void Destroy() {
-		if (PlayerObject != null) {
-			// 找到名字标签组件
-			var tmpText = PlayerObject.GetComponentInChildren<TMPro.TMP_Text>();
-
-			if (tmpText != null) {
-				// 销毁当前的实例材质
-				Material instanceMat = tmpText.fontMaterial;
-				if (instanceMat != null) {
-					GameObject.Destroy(instanceMat);
-				}
-			}
-			GameObject.Destroy(PlayerObject);
-		}
-
-
 		// 清理引用
 		PlayerObject = null;
 		_remotePlayer = null;
 		_remoteLeftHand = null;
 		_remoteRightHand = null;
 		_remoteTag = null;
+		_remoteEntity = null;
 	}
 
 	#endregion
@@ -173,7 +156,7 @@ public class RemotePlayerContainer {
 	public void UpdateNameTag(string text) {
 		if (string.IsNullOrEmpty(text)) { return; }
 		if (_remoteTag == null) {
-			MPMain.LogError(Localization.Get("RemotePlayerContainer", "NameTagComponentMissing"));
+			MPMain.LogError(Localization.Get("RPContainer", "NameTagComponentMissing"));
 			return;
 		}
 		_remoteTag.Message = text;

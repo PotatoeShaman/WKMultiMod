@@ -5,7 +5,7 @@ namespace WKMPMod.Component;
 public class SimpleArmIK : MonoBehaviour {
 	[Header("目标设置")]
 	public Transform? target;          // 这里拖入挂有 RemoteHand 的物体
-	public float originalLength = 1f; // 骨骼在 Scale Y = 1 时的原始长度（单位：米）
+	public float originalLength = 1f; // 骨骼在 Scale Y = 1 时的原始长度(单位：米)
 
 	[Header("限制")]
 	public float minScale = 0.1f;     // 最小缩放,防止模型塌陷

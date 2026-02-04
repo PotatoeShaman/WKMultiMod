@@ -21,7 +21,7 @@ public static class Localization {
 	/// </summary>
 	public static void Load() {
 		// 获取插件路径
-		string pluginDirectory = Path.GetDirectoryName(typeof(Localization).Assembly.Location);
+		string pluginDirectory = MPMain.path;
 		// 获取系统语言
 		string language = GetGameLanguage(); 
 		string fileName = $"{FILE_PREFIX}_{language.ToLower()}.json";
