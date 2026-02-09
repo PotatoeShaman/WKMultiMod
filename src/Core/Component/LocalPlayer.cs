@@ -11,7 +11,7 @@ namespace WKMPMod.Component;
 
 //仅获取本地玩家信息并触发事件给其他系统使用
 //仅在联机时创建一个实例
-public class LocalPlayer : MonoBehaviour {
+public class LocalPlayer : MonoSingleton<LocalPlayer> {
 	private const float POSITION_CHANGE_THRESHOLD_SQR = 0.0025f; // 0.05单位的平方
 	private const float ROTATION_CHANGE_THRESHOLD_DEG = 0.5f;    // 最小旋转角度
 
@@ -115,7 +115,7 @@ public class LocalPlayer : MonoBehaviour {
 	}
 	#endregion
 
-	#region 辅助方法
+	#region[辅助函数]
 
 	// 验证或获取玩家引用
 	private bool ValidatePlayerReferences() {
@@ -190,7 +190,7 @@ public class LocalPlayer : MonoBehaviour {
 	}
 	#endregion
 
-	#region 工具方法
+	#region[工具函数]
 	/// 优化版的旋转相似性检查(避免Quaternion.Angle的开方运算)
 	private bool IsRotationSimilar(Quaternion a, Quaternion b, float thresholdDegrees) {
 		// 使用点积判断,比Quaternion.Angle更快

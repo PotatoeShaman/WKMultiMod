@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using WKMPMod.Core;
+using WKMPMod.Test;
 using WKMPMod.Util;
 using Object = UnityEngine.Object;
 
@@ -33,9 +34,7 @@ public class Patch_SteamManager {
 
 		// 创建核心对象
 		try {
-			GameObject coreGameObject = new GameObject("MultiplayerCore");
-			coreGameObject.transform.SetParent(__instance.transform, false);
-			coreGameObject.AddComponent<MPCore>();
+			_ = MPCore.Instance;
 
 			MPMain.LogInfo(Localization.Get("Patch", "CoreInjectionSuccess"));
 			_hasCoreInjected = true;

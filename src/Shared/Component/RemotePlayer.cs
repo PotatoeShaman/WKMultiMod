@@ -1,21 +1,37 @@
 ﻿using System.Collections;
 using UnityEngine;
+using WKMPMod.Data;
 
 namespace WKMPMod.Component;
 // MultiPlayerComponent: 管理玩家的网络同步位置和旋转
 public class RemotePlayer : MonoBehaviour {
-	private bool _isTeleporting = false;
-	private Vector3 _targetPosition;    // 目标位置
-	private Vector3 _velocity = Vector3.zero;   // 当前速度,用于平滑插值
+	[Header("距离设置")]
+	[Tooltip("当当前位置与目标位置超过此距离时直接瞬移")]
+	public float teleportThreshold = 50f;	// Unity可编辑的瞬移阈值
 
-	void Update() {
+	[Tooltip("平滑移动的最大距离限制")]
+	public float maxSmoothDistance = 10f;	// 超过此距离使用更快的平滑
+
+	private bool _isTeleporting = false;    // 是否进行了传送
+	private Vector3 _targetPosition;	// 目标位置
+	private Vector3 _velocity = Vector3.zero;	// 当前速度,用于平滑插值
+
+	// 每帧更新位置
+	void LateUpdate() {
 		// 如果是传送状态,不进行平滑移动
 		if (_isTeleporting) return;
 
+		// 检查当前位置与目标位置的距离
+		float distance = Vector3.Distance(transform.position, _targetPosition);
+
+		// 如果距离超过阈值，直接瞬移
+		if (distance > teleportThreshold) {
+			Teleport(_targetPosition);
+			return;
+		}
+
 		if (transform.position != _targetPosition) {
-			// 动态计算平滑时间,确保最低速度
-			float distance = Vector3.Distance(transform.position, _targetPosition); // 计算距离
-			float smoothTime = Mathf.Max(0.1f, distance / 20f); // 确保有最小速度
+			float smoothTime = CalculateSmoothTime(distance);
 
 			transform.position = Vector3.SmoothDamp(
 				transform.position, // 当前位置
@@ -26,24 +42,36 @@ public class RemotePlayer : MonoBehaviour {
 				Time.deltaTime      // 时间增量
 			);
 
-			// 强制最低速度 2格/秒
-			if (_velocity.magnitude < 2.0f && distance > 0.1f) {
-				// 计算方向并设置最低速度
+			// 速度<0.5 且 距离 > 0.05时 强制最低速度 0.5格/秒
+			if (_velocity.magnitude < 0.5f && distance > 0.05f) {
 				Vector3 direction = (_targetPosition - transform.position).normalized;
-				_velocity = direction * 2.0f;
+				_velocity = direction * 0.5f;
 			}
 		}
 	}
 
-	// 更新位置(平滑移动)
-	public void UpdatePosition(Vector3 newPosition) {
-		_isTeleporting = false;  // 确保不是传送状态
-		_targetPosition = newPosition;
+	// 根据距离计算平滑时间
+	private float CalculateSmoothTime(float distance) {
+		// 如果距离很远，使用更快的平滑
+		if (distance > maxSmoothDistance) {
+			// 使用对数曲线，距离越远平滑时间越短
+			return Mathf.Clamp(Mathf.Log(distance) * 0.1f, 0.05f, 0.3f);
+		}
+
+		// 正常距离使用原来的计算方法
+		return Mathf.Clamp(distance / 10f, 0.05f, 0.1f);
 	}
 
-	// 立即更新旋转
-	public void UpdateRotation(Quaternion newRotation) {
-		transform.rotation = newRotation;
+	// 从PlayerData更新手位置(Container调用这个方法)
+	public void UpdateFromPlayerData(Vector3 position, Quaternion rotation) {
+		_isTeleporting = false; // 重置传送标志
+		_targetPosition = position;
+		transform.rotation = rotation;
+	}
+	public void UpdateFromPlayerData(PlayerData playerData) {
+		_isTeleporting = false;	// 重置传送标志
+		_targetPosition = playerData.Position;
+		transform.rotation = playerData.Rotation;
 	}
 
 	// 立即传送
@@ -60,7 +88,7 @@ public class RemotePlayer : MonoBehaviour {
 			transform.rotation = rotation.Value;
 		}
 
-		// 传送完成后重置状态(可以延迟一帧确保不会立即开始平滑)
+		// 传送完成后重置状态(延迟一帧确保不会立即开始平滑)
 		StartCoroutine(ResetTeleportFlag());
 	}
 

@@ -137,16 +137,15 @@ public class RPContainer {
 		if (playerData.IsTeleport) {
 			// 使用组件的传送方法
 			_remotePlayer.Teleport(playerData.Position, playerData.Rotation);
+
 			Vector3 leftTarget = playerData.LeftHand.Position;
 			_remoteLeftHand.Teleport(leftTarget);
 
-			// 3. 处理右手传送
 			Vector3 rightTarget = playerData.RightHand.Position;
 			_remoteRightHand.Teleport(rightTarget);
 		} else {
 			// 使用插值更新
-			_remotePlayer.UpdatePosition(playerData.Position);
-			_remotePlayer.UpdateRotation(playerData.Rotation);
+			_remotePlayer.UpdateFromPlayerData(playerData.Position, playerData.Rotation);
 			_remoteLeftHand.UpdateFromHandData(playerData.LeftHand);
 			_remoteRightHand.UpdateFromHandData(playerData.RightHand);
 		}

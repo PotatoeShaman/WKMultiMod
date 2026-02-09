@@ -42,6 +42,7 @@ public class Test : MonoBehaviour {
 			"9" => RunCommand(CreateTestPrefab),
 			"10" => RunCommand(GetHandCosmetic),
 			"11" => RunCommand(CreateDontDestroyGameObject),
+			"12" => RunCommand(TestSingleton),
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -165,5 +166,9 @@ public class Test : MonoBehaviour {
 		GameObject singleton1 = new GameObject("Test Game Object1");
 		DontDestroyOnLoad(singleton1);
 		GameObject singleton2 = new GameObject("Test Game Object2");
+	}
+	// 输出单例测试
+	public static void TestSingleton() { 
+		MPMain.LogWarning(TestMonoSingleton.Instance.TestString);
 	}
 }

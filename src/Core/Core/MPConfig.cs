@@ -14,6 +14,11 @@ public class MPConfig {
 	private static ConfigEntry<float> _nameTagScale;
 	public static float NameTagScale { get { return _nameTagScale.Value; } }
 
+	// 远程玩家模型 (默认值为 "default", 可以设置为 "slugcat" 来使用蛞蝓猫模型)
+	private static ConfigEntry<string> _remotePlayerModel;
+	public static string RemotePlayerModel { get { return _remotePlayerModel.Value; } }
+
+	#region[PVP相关]
 	// All (所有伤害)
 	private static ConfigEntry<float> _allActive;
 	private static ConfigEntry<float> _allPassive;
@@ -73,13 +78,30 @@ public class MPConfig {
 	public static ConfigEntry<float> _otherPassive;
 	public static float OtherActive { get { return _otherActive.Value; } }
 	public static float OtherPassive { get { return _otherPassive.Value; } }
-
+	#endregion
 	public static void Initialize(ConfigFile config) {
+
+		_dataSendFrequency = config.Bind<int>(
+			"Network", "DataSendFrequency", 20,
+			"Sets how many times per second data is sent to other players.\n" +
+			"设置每秒向其他玩家发送数据的次数.");
+
+		_nameTagScale = config.Bind<float>(
+			"RemotePlayer", "NameTagScale", 1f,
+			"This value sets the scale size for player name tags above their heads.\n" +
+			"这个值设置玩家头部名称的缩放倍率");
+
+		_remotePlayerModel = config.Bind<string>(
+			"RemotePlayer", "Model", "default",
+			"Sets the model used for remote players. Default is 'default', you can set it to 'slugcat' to use the slugcat model.\n" +
+			"设置远程玩家使用的模型,默认值为'default',你可以设置为'slugcat'来使用蛞蝓猫模型.");
+		#region[PVP相关]
+
 		config.Bind(
-	"RemotePlayerPvP",
-	"Damage Types Guide",
-	"",
-	@"
+			"RemotePlayerPvP",
+			"Damage Types Guide",
+			"",
+@"
 DAMAGE TYPE REFERENCE:
 ---------------------
 Note: ×N means deals N instances of this damage type.
@@ -114,17 +136,7 @@ Active配置项控制玩家造成的伤害倍率
 Passive配置项控制玩家受到的伤害倍率
 公式 : 最终伤害 = 基础伤害 × AllActive倍率 × AllPassive倍率 × 对应类型Active倍率 × 对应类型Passive倍率
 "
-		);
-
-		_dataSendFrequency = config.Bind<int>(
-			"Network", "DataSendFrequency", 20,
-			"Sets how many times per second data is sent to other players.\n" +
-			"设置每秒向其他玩家发送数据的次数.");
-
-		_nameTagScale = config.Bind<float>(
-			"RemotePlayer", "NameTagScale", 1f,
-			"This value sets the scale size for player name tags above their heads.\n" +
-			"这个值设置玩家头部名称的缩放倍率");
+			);
 
 		// All (所有伤害)
 		_allActive = config.Bind<float>(
@@ -225,6 +237,7 @@ Passive配置项控制玩家受到的伤害倍率
 			"RemotePlayerPvP", "OtherPassive", 1.0f,
 			"Multiplier for other damage received by the player.\n" +
 			"玩家受到其他伤害类型的伤害倍率");
+		#endregion
 	}
 }
 

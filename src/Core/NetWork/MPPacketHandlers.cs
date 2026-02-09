@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
 using WKMPMod.RemotePlayer;
@@ -147,7 +148,7 @@ public class MPPacketHandlers {
 	[MPPacketHandler(PacketType.PlayerCreateRequest)]
 	private void HandlePlayerCreateRequest(ulong senderId, DataReader reader) {
 		var writer = GetWriter(MPSteamworks.Instance.UserSteamId, senderId, PacketType.PlayerCreateResponse);
-		writer.Put(MPCore.Instance.LPManager.FactoryId);
+		writer.Put(LocalPlayer.Instance.FactoryId);
 		MPSteamworks.Instance.SendToPeer(senderId, writer);
 	}
 
@@ -208,13 +209,13 @@ public class MPPacketHandlers {
 			// 关闭可击杀效果
 			DEN_DeathFloor.instance.SetCanKill(new string[] { "false" });
 			// 重设计数器,期间位移视为传送
-			MPCore.Instance.LPManager.TriggerTeleport();
+			LocalPlayer.Instance.TriggerTeleport();
 			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
 			DEN_DeathFloor.instance.LoadDataFromSave(deathFloorData);
 			DEN_DeathFloor.instance.SetCanKill(new string[] { "true" });
 		} else {
 			// 重设计数器,期间位移视为传送
-			MPCore.Instance.LPManager.TriggerTeleport();
+			LocalPlayer.Instance.TriggerTeleport();
 			ENT_Player.GetPlayer().Teleport(new Vector3(posX, posY, posZ));
 		}
 

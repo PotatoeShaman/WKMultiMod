@@ -15,7 +15,7 @@ using WKMPMod.Util;
 namespace WKMPMod.NetWork;
 
 // 只做连接,不做业务逻辑
-public class MPSteamworks : MonoBehaviour, ISocketManager {
+public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 	/// <summary>
 	/// 网络消息结构
 	/// </summary>
@@ -25,9 +25,6 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		public int Length;
 		public DateTime ReceiveTime;
 	}
-
-	// 单例实例
-	public static MPSteamworks Instance { get; private set; }
 
 	// Debug日志输出间隔
 	private TickTimer _debugTick = new TickTimer(5f);
@@ -92,19 +89,9 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	public IEnumerable<Friend> Members { get => _currentLobby.Members; }
 
 	#region[Unity组件生命周期函数]
-	void Awake() {
-
+	protected override void Awake() {
+		base.Awake();
 		//SteamClient.Init(3195790u);
-
-		// 简单的重复检查
-		if (Instance != null && Instance != this) {
-			// Debug
-			MPMain.LogWarning(Localization.Get("MPSteamworks", "DuplicateInstanceDetected"));
-			Destroy(gameObject);
-			return;
-		}
-
-		Instance = this;
 	}
 
 	void Start() {
@@ -150,7 +137,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		ProcessMessageQueue();
 	}
 
-	void OnDestroy() {
+	protected override void OnDestroy() {
 		// 订阅大厅事件 大部分只做转发
 		// 本机加入大厅
 		SteamMatchmaking.OnLobbyEntered -= HandleLobbyEntered;
@@ -164,6 +151,8 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		SteamMatchmaking.OnLobbyMemberDataChanged -= HandleLobbyMemberDataChanged;
 
 		DisconnectAll();
+
+		base.OnDestroy();
 	}
 
 	#endregion
