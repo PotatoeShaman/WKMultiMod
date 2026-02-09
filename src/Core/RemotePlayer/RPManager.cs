@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Steamworks;
+using System.Collections.Generic;
 using UnityEngine;
 using WKMPMod.Core;
 using WKMPMod.Data;
@@ -37,6 +38,7 @@ public class RPManager : Singleton<RPManager> {
 		Players.Clear();
 	}
 
+	#region[创建/销毁玩家]
 	/// <summary>
 	/// 根据Id创建玩家
 	/// </summary>
@@ -74,21 +76,42 @@ public class RPManager : Singleton<RPManager> {
 			Players.Remove(playId);
 		}
 	}
+	#endregion
+
+	#region[处理消息]
 
 	/// <summary>
 	/// 处理玩家数据
 	/// </summary>
-	public void ProcessPlayerData(ulong playId, PlayerData playerData) {
+	public void ProcessPlayerData(ulong playerId, PlayerData playerData) {
 
 		// 以后加上时间戳处理
-		if (Players.TryGetValue(playId, out var RPcontainer)) {
+		if (Players.TryGetValue(playerId, out var RPcontainer)) {
 			RPcontainer.UpdatePlayerData(playerData);
 			return;
 		} else if (_debugTick.TryTick()) {
 			MPMain.LogError(Localization.Get(
-				"RPManger", "RemotePlayerObjectNotFound", playId.ToString()));
+				"RPManger", "RemotePlayerObjectNotFound", playerId.ToString()));
 			return;
 		}
 		return;
 	}
+
+	/// <summary>
+	/// 处理玩家数据
+	/// </summary>
+	public void ProcessPlayerTag(ulong playerId, string massage) {
+
+		// 以后加上时间戳处理
+		if (Players.TryGetValue(playerId, out var RPcontainer)) {
+			RPcontainer.UpdateNameTag(massage);
+			return;
+		} else {
+			MPMain.LogError(Localization.Get(
+				"RPManger", "RemotePlayerObjectNotFound", playerId.ToString()));
+			return;
+		}
+	}
+
+	#endregion
 }

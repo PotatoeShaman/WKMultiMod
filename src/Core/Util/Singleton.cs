@@ -8,7 +8,7 @@ using System.Reflection;
 /// - 线程安全
 /// - 懒加载
 /// </summary>
-public abstract class Singleton<T> where T : class {
+public abstract class Singleton<T> where T : Singleton<T> {
 	// new Lazy<T>(Func<T> valueFactoey, bool isThreadSafe);
 	private static readonly Lazy<T> _instance = new Lazy<T>(CreateInstance, true);
 

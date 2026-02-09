@@ -41,6 +41,7 @@ public class Test : MonoBehaviour {
 			"8" => RunCommand(GetPath),
 			"9" => RunCommand(CreateTestPrefab),
 			"10" => RunCommand(GetHandCosmetic),
+			"11" => RunCommand(CreateDontDestroyGameObject),
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -85,20 +86,22 @@ public class Test : MonoBehaviour {
 	public static void CreateRemotePlayer(string[] args) {
 		ulong id = 1;
 		string prefab = "default";
-
+		MPMain.LogInfo("A");
 		if (args.Length >= 1 && ulong.TryParse(args[0], out ulong parsedId)) {
 			id = parsedId;
 		}
-
+		MPMain.LogInfo("B");
 		if (args.Length >= 2) {
 			prefab = string.Join(" ", args[1..]);
 		}
-
-		MPCore.Instance.RPManager.PlayerCreate(id, prefab);
-		MPCore.Instance.RPManager.Players[id]
+		MPMain.LogInfo("C");
+		RPManager.Instance.PlayerCreate(id, prefab);
+		MPMain.LogInfo("D");
+		RPManager.Instance.Players[id]
 			.UpdatePlayerData(new PlayerData { Position = new Vector3(x, y, z) });
+		MPMain.LogInfo("E");
 		y += 4.0f;
-
+		MPMain.LogInfo("F");
 	}
 	// 移除远程玩家
 	public static void RemoveRemotePlayer(string[] args) {
@@ -106,7 +109,7 @@ public class Test : MonoBehaviour {
 		if (args.Length >= 1 && int.TryParse(args[0], out int parsedId)) {
 			id = parsedId;
 		}
-		MPCore.Instance.RPManager.PlayerRemove((ulong)id);
+		RPManager.Instance.PlayerRemove((ulong)id);
 	}
 	// 更新远程玩家名字标签
 	public static void UpdateRemoteTag(string[] args) {
@@ -114,7 +117,7 @@ public class Test : MonoBehaviour {
 			? string.Join(" ", args)
 			: "中文测试: 斯卡利茨恐虐神选";
 
-		if (MPCore.Instance.RPManager.Players.TryGetValue(1, out var player)) {
+		if (RPManager.Instance.Players.TryGetValue(1, out var player)) {
 			player.UpdateNameTag(tagText);
 		} else {
 			Debug.LogWarning("玩家ID 1 不存在");
@@ -156,5 +159,11 @@ public class Test : MonoBehaviour {
 	public static void GetHandCosmetic() {
 		MPMain.LogWarning($"左手皮肤id {CL_CosmeticManager.GetCosmeticInHand(0).cosmeticData.id}");
 		MPMain.LogWarning($"右手皮肤id {CL_CosmeticManager.GetCosmeticInHand(1).cosmeticData.id}");
+	}
+	// 创建根对象测试DontDestroyOnLoad
+	public static void CreateDontDestroyGameObject() {
+		GameObject singleton1 = new GameObject("Test Game Object1");
+		DontDestroyOnLoad(singleton1);
+		GameObject singleton2 = new GameObject("Test Game Object2");
 	}
 }
