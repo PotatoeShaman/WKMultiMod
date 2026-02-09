@@ -64,6 +64,7 @@
     <Project Path="src/Shared/WKMultiPlayerMod.Shared.csproj" />
   </Folder>
   <Folder Name="/temp/">
+    <File Path="temp/README.md" />
     <Project Path="temp/DailyKnuckle/DailyKnuckle.csproj">
       <Build Project="false" />
     </Project>

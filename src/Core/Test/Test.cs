@@ -40,6 +40,7 @@ public class Test : MonoBehaviour {
 			"7" => RunCommand(GetAllFactoryList),
 			"8" => RunCommand(GetPath),
 			"9" => RunCommand(CreateTestPrefab),
+			"10" => RunCommand(GetHandCosmetic),
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -142,7 +143,18 @@ public class Test : MonoBehaviour {
 		Object.Instantiate(rawPrefab);
 	}
 
+	// 列出所有预制体工厂信息
 	public static void GetAllFactoryList() {
 		RPFactoryManager.Instance.ListAllFactory();
+	}
+
+	public static void GetAllPlayerList() {
+
+
+	}
+	// 获取手部皮肤信息
+	public static void GetHandCosmetic() {
+		MPMain.LogWarning($"左手皮肤id {CL_CosmeticManager.GetCosmeticInHand(0).cosmeticData.id}");
+		MPMain.LogWarning($"右手皮肤id {CL_CosmeticManager.GetCosmeticInHand(1).cosmeticData.id}");
 	}
 }

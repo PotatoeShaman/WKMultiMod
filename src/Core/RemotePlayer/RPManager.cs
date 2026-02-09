@@ -8,22 +8,21 @@ using Object = UnityEngine.Object;
 namespace WKMPMod.RemotePlayer;
 
 // 生命周期为全局
-public class RPManager : MonoBehaviour {
+public class RPManager : Singleton<RPManager> {
 
 	// Debug日志输出间隔
 	private TickTimer _debugTick = new TickTimer(5f);
 	// 存储所有远程对象
 	internal Dictionary<ulong, RPContainer> Players = new Dictionary<ulong, RPContainer>();
+	// 根对象引用
+	private Transform _remotePlayersRoot;
 
-	void Awake() {
-		// 确保根对象存在
-		EnsureRootObject();
-		RPFactoryManager.Instance.Initialize();
+	private RPManager() {
+		_ = RPFactoryManager.Instance;
 	}
 
-	void OnDestroy() {
-		ResetAll();
-		RPFactoryManager.Instance.Reset();
+	public void Initialize(Transform RootTransform) {
+		_remotePlayersRoot = RootTransform;
 	}
 
 	/// <summary>
@@ -31,40 +30,11 @@ public class RPManager : MonoBehaviour {
 	/// </summary>
 	public void ResetAll() {
 		foreach (var container in Players.Values) {
+			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
+
 			container.Destroy();
 		}
 		Players.Clear();
-	}
-
-	/// <summary>
-	/// 确保根对象存在
-	/// </summary>
-	private void EnsureRootObject() {
-		// 直接在MultiplayerCore下查找或创建
-		var coreTransform = transform.parent; // MultiplayerCore
-		var rootName = "RemotePlayers";
-
-		if (coreTransform.Find(rootName) == null) {
-			var rootObj = new GameObject(rootName);
-			rootObj.transform.SetParent(coreTransform, false);
-		}
-	}
-
-	/// <summary>
-	/// 获取远程玩家根Transform
-	/// </summary>
-	private Transform GetRemotePlayersRoot() {
-		var coreTransform = transform.parent;
-		var rootName = "RemotePlayers";
-
-		var root = coreTransform.Find(rootName);
-		if (root == null) {
-			// 如果找不到,创建一个(应该不会发生,因为EnsureRootObject已调用)
-			root = new GameObject(rootName).transform;
-			root.SetParent(coreTransform, false);
-		}
-
-		return root;
 	}
 
 	/// <summary>
@@ -84,7 +54,7 @@ public class RPManager : MonoBehaviour {
 			return null;
 		}
 
-		container.Initialize(instance, GetRemotePlayersRoot());
+		container.Initialize(instance, _remotePlayersRoot);
 		Players[playId] = container;
 		return container;
 	}

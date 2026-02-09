@@ -26,8 +26,12 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		public DateTime ReceiveTime;
 	}
 
+	// 单例实例
+	public static MPSteamworks Instance { get; private set; }
+
 	// Debug日志输出间隔
 	private TickTimer _debugTick = new TickTimer(5f);
+
 	// 大厅Id
 	private Lobby _currentLobby;
 	// 获取当前大厅ID
@@ -85,13 +89,25 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	}
 
 	// 获取全部在线玩家
-	public IEnumerable<Friend> Friends { get => _currentLobby.Members; }
+	public IEnumerable<Friend> Members { get => _currentLobby.Members; }
 
 	#region[Unity组件生命周期函数]
 	void Awake() {
 
 		//SteamClient.Init(3195790u);
 
+		// 简单的重复检查
+		if (Instance != null && Instance != this) {
+			// Debug
+			MPMain.LogWarning(Localization.Get("MPSteamworks", "DuplicateInstanceDetected"));
+			Destroy(gameObject);
+			return;
+		}
+
+		Instance = this;
+	}
+
+	void Start() {
 		try {
 			if (!SteamClient.IsValid) {
 
@@ -120,7 +136,6 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 		} catch (Exception ex) {
 			MPMain.LogError(Localization.Get("MPSteamworks", "SteamworksInitException", ex.Message));
 		}
-
 	}
 
 	void Update() {
@@ -664,7 +679,7 @@ public class MPSteamworks : MonoBehaviour, ISocketManager {
 	/// <summary>
 	/// 通用的连接控制器:支持初始连接和断线重连
 	/// </summary>
-	private IEnumerator ConnectionController(SteamId targetId, bool isReconnect) {
+	public IEnumerator ConnectionController(SteamId targetId, bool isReconnect) {
 		// 如果是重连 等待1.5秒进行连接清理
 		yield return new WaitForSeconds(isReconnect ? 1.5f : 0.2f);
 		// 目标不在大厅或自己不在大厅 时退出连接流程

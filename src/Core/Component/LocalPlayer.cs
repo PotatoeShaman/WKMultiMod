@@ -20,6 +20,8 @@ public class LocalPlayer : MonoBehaviour {
 
 	// 玩家标识
 	public ulong UserId { get; private set; }          // 本地玩家SteamID
+	public string FactoryId { get; set; }   // 预制体工厂ID
+	public string DefaulFactoryId { get; set; } = "default"; // 默认工厂ID,如果没有指定工厂ID则使用这个
 
 	// 状态缓存
 	private Vector3 _lastPosition;
@@ -64,8 +66,9 @@ public class LocalPlayer : MonoBehaviour {
 	}
 
 	// 重置状态缓存
-	public void Initialize(ulong userId) {
+	public void Initialize(ulong userId,string factoryId) {
 		UserId = userId;
+		FactoryId = factoryId;
 		ResetStateCache();
 	}
 

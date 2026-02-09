@@ -36,15 +36,6 @@
 	</Target>
 
 	<ItemGroup>
-		<None Include="Localization\texts_en.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="Localization\texts_zh.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Reference Include="..\..\lib\BepInEx\*.dll">
 			<Private>False</Private>
 		</Reference>

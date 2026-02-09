@@ -59,6 +59,22 @@ public class DataWriter : IDisposable {
 		return this;
 	}
 
+	// 写入 short (16 位有符号整数)
+	public DataWriter Put(short value) {
+		EnsureCapacity(2);
+		BinaryPrimitives.WriteInt16LittleEndian(_buffer.AsSpan(_position), value);
+		_position += 2;
+		return this;
+	}
+
+	// 写入 ushort (16 位无符号整数)
+	public DataWriter Put(ushort value) {
+		EnsureCapacity(2);
+		BinaryPrimitives.WriteUInt16LittleEndian(_buffer.AsSpan(_position), value);
+		_position += 2;
+		return this;
+	}
+
 	// 写入 int (32 位有符号整数)
 	public DataWriter Put(int value) {
 		EnsureCapacity(4);

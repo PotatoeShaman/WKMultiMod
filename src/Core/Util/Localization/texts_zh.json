@@ -21,7 +21,7 @@
     "PlayerLeftLobby": "[MPCore] 玩家离开大厅 Id: {0}",
     "PlayerDisconnected": "[MPCore] 玩家断连 Id: {0}",
     "RequestedInitData": "[MPCore] 已向主机请求初始化数据",
-    "SentInitData": "[MPCore] 已向新玩家发送初始化数据",
+
     "LoadingWorld": "[MPCore] 加载世界, 种子号: {0}",
 
     "CreateExistingPlayer": "[MPCore] 创建已存在的玩家 Id: {0}"
@@ -30,6 +30,7 @@
     "Destroy": "[MPMain] MPMain (启动器) 已被销毁."
   },
   "MPSteamworks": {
+    "DuplicateInstanceDetected": "[MPSW] 检测到重复实例, 正在销毁当前实例.",
     "SteamworksInitFailed": "[MPSW] Steamworks初始化失败, 请检查Steam在线情况",
     "SteamworksInitSuccess": "[MPSW] Steamworks初始化成功 玩家: {0} ID: {1}",
     "SteamworksInitException": "[MPSW] Steamworks初始化异常: {0}",
@@ -138,5 +139,12 @@
     "CoreInstanceExists": "[MP Patch] 已存在核心实例: {0}",
     "CoreInjectionSuccess": "[MP Patch] MPCore 对象已成功注入 SteamManager",
     "CoreInjectionFailed": "[MP Patch] 注入核心失败: {0}"
+  },
+  "MPPacketRouter": {
+    "FailedToBind": "[MP PacketRouter] 不支持的参数: {0} Message: {1}",
+    "NoServiceFound": "[MP PacketRouter] 未找到以下包类型: {0} 对应的处理函数"
+  },
+  "MPMessageHandlers": {
+    "SentInitData": "[MP PacketHandlers] 已向新玩家发送初始化数据"
   }
 }

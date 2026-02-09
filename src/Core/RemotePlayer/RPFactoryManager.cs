@@ -10,32 +10,16 @@ using Object = UnityEngine.Object;
 
 namespace WKMPMod.RemotePlayer;
 
-public class RPFactoryManager {
-	private static readonly Lazy<RPFactoryManager> _instance =
-		new Lazy<RPFactoryManager>(() => new RPFactoryManager());
-
-	public static RPFactoryManager Instance => _instance.Value;
+public class RPFactoryManager: Singleton<RPFactoryManager> {
 	private readonly object _lock = new object();
-	private bool _initialized = false;
 
 	// 静态字典 在FactoryManager实例化之前就可以注册
-	private static Dictionary<string, FactoryRegistration> _factories = new Dictionary<string, FactoryRegistration>();
+	private Dictionary<string, FactoryRegistration> _factories = new Dictionary<string, FactoryRegistration>();
 
 	#region[生命周期函数]
 
-	private RPFactoryManager() { }
-	public void Initialize() {
-		lock (_lock) {
-			if (_initialized) {
-				MPMain.LogWarning(Localization.Get("RPFactoryManager", "AlreadyInitialized"));
-				return;
-			}
-
-			RegisterDefaultFactories();
-			_initialized = true;
-
-			MPMain.LogInfo(Localization.Get("RPFactoryManager", "Initialized"));
-		}
+	private RPFactoryManager() {
+		RegisterDefaultFactories();
 	}
 
 	#endregion
@@ -49,7 +33,7 @@ public class RPFactoryManager {
 	/// <param name="factory">工厂类实例</param>
 	/// <param name="prefabName">预制体名称</param>
 	/// <param name="bundlePath">AssetBundle完整路径</param>
-	public static void RegisterFactory(string factoryId, BaseRemoteFactory factory, string prefabName, string bundlePath) {
+	public void RegisterFactory(string factoryId, BaseRemoteFactory factory, string prefabName, string bundlePath) {
 		if (_factories.ContainsKey(factoryId)) {
 			MPMain.LogWarning(Localization.Get("RPFactoryManager", "FactoryAlreadyRegistered", factoryId));
 			return;
@@ -104,18 +88,6 @@ public class RPFactoryManager {
 		} else {
 			MPMain.LogError(Localization.Get("RPFactoryManager", "FactoryNotFoundCleanup", identity.name));
 			Object.Destroy(instance);
-		}
-	}
-
-	/// <summary>
-	/// 清理工厂字典数据
-	/// </summary>
-	public void Reset() {
-		lock (_lock) {
-			_factories.Clear();
-			_initialized = false;
-
-			MPMain.LogInfo(Localization.Get("RPFactoryManager", "Reset"));
 		}
 	}
 

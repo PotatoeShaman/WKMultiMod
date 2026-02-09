@@ -30,6 +30,7 @@
     "Destroy": "[MPMain] MPMain (Launcher) has been destroyed."
   },
   "MPSteamworks": {
+    "DuplicateInstanceDetected": "[MPSW] Duplicate instance detected, destroying the current one.",
     "SteamworksInitFailed": "[MPSW] Failed to initialize Steamworks. Please check your Steam login status.",
     "SteamworksInitSuccess": "[MPSW] Steamworks initialization succeeded. Player: {0} ID: {1}",
     "SteamworksInitException": "[MPSW] Steamworks initialization exception: {0}",
@@ -139,5 +140,12 @@
     "CoreInstanceExists": "[MP Patch] MPCore instance already exists. GameObjectName: {0}",
     "CoreInjectionSuccess": "[MP Patch] MPCore object successfully injected into SteamManager.",
     "CoreInjectionFailed": "[MP Patch] Failed to inject MPCore: {0}"
+  },
+  "MPPacketRouter": {
+    "FailedToBind": "[MP PacketRouter] Failed to bind: {0} Message: {1}",
+    "NoServiceFound": "[MP PacketRouter] No service function found for the corresponding PacketType: {0}"
+  },
+  "MPMessageHandlers": {
+
   }
 }

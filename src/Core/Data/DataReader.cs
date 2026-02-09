@@ -44,6 +44,20 @@ public class DataReader {
 		return val;
 	}
 
+	// 读取 short (16 位有符号整数)
+	public short GetShort() {
+		short val = BinaryPrimitives.ReadInt16LittleEndian(_data.Span.Slice(_position));
+		_position += 2;
+		return val;
+	}
+
+	// 读取 ushort (16 位无符号整数)
+	public ushort GetUShort() {
+		ushort val = BinaryPrimitives.ReadUInt16LittleEndian(_data.Span.Slice(_position));
+		_position += 2;
+		return val;
+	}
+
 	// 读取 int (32 位有符号整数)
 	public int GetInt() {
 		int val = BinaryPrimitives.ReadInt32LittleEndian(_data.Span.Slice(_position));

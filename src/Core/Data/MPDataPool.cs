@@ -46,7 +46,7 @@ public static class MPWriterPool {
 		_threadWriter.Reset(); // 清空之前的数据,准备重新写入
 		_threadWriter.Put(senderId);
 		_threadWriter.Put(targetId);
-		_threadWriter.Put((int)type);
+		_threadWriter.Put((ushort)type);
 		return _threadWriter;
 	}
 }
