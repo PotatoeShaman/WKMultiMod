@@ -1,11 +1,20 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using WKMPMod.Core;
 using WKMPMod.Data;
 
 namespace WKMPMod.Component;
 
 public class RemoteEntity : GameEntity {
-	public ulong PlayerId;
+	private ulong _playerId;
+
+	public ulong PlayerId {
+		get => _playerId;
+		set {
+			MPMain.LogInfo($"[MP Debug] PlayerId changed: {_playerId} → {value}\n{Environment.StackTrace}");
+			_playerId = value;
+		}
+	}
 	public float AllActive = 1;
 	public float HammerActive = 1;
 	public float RebarActive = 1;
@@ -18,6 +27,9 @@ public class RemoteEntity : GameEntity {
 	public float OtherActive = 1;
 	// 受到伤害时调用
 	public override bool Damage(float amount, string type) {
+		// Debug
+		//MPMain.LogInfo($"[MP Debug] A PlayerId: {PlayerId} amount: {amount} type: {type}");
+
 		var baseDamage = amount * AllActive;
 		switch (type) {
 			case "Hammer":

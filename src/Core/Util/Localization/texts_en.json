@@ -144,8 +144,8 @@
   "MPPacketRouter": {
     "FailedToBind": "[MP PacketRouter] Failed to bind: {0} Message: {1}",
     "NoServiceFound": "[MP PacketRouter] No service function found for the corresponding PacketType: {0}",
-    "PacketTypeOutOfRange": "PacketType {0} exceeds FastHandlers array range (0-{1})",
-    "PacketHandlerOverridden": "PacketType {0} already has handler {1}, will be overridden by {2}."
+    "PacketTypeOutOfRange": "[MP PacketRouter] PacketType {0} exceeds FastHandlers array range (0-{1})",
+    "PacketHandlerOverridden": "[MP PacketRouter] PacketType {0} already has handler {1}, will be overridden by {2}."
   },
   "MPMessageHandlers": {
 

@@ -43,6 +43,7 @@ public class Test : MonoBehaviour {
 			"10" => RunCommand(GetHandCosmetic),    // 获取手部皮肤信息
 			"11" => RunCommand(CreateDontDestroyGameObject),    // 创建测试对象并设置DontDestroyOnLoad
 			"12" => RunCommand(TestSingleton),  // 测试单例模式
+			"13" => RunCommand(SimulationPlayerUpdata),  // 模拟玩家数据更新事件
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -87,22 +88,17 @@ public class Test : MonoBehaviour {
 	public static void CreateRemotePlayer(string[] args) {
 		ulong id = 1;
 		string prefab = "default";
-		MPMain.LogInfo("A");
 		if (args.Length >= 1 && ulong.TryParse(args[0], out ulong parsedId)) {
 			id = parsedId;
 		}
-		MPMain.LogInfo("B");
 		if (args.Length >= 2) {
 			prefab = string.Join(" ", args[1..]);
 		}
-		MPMain.LogInfo("C");
 		RPManager.Instance.PlayerCreate(id, prefab);
-		MPMain.LogInfo("D");
 		RPManager.Instance.Players[id]
 			.UpdatePlayerData(new PlayerData { Position = new Vector3(x, y, z) });
-		MPMain.LogInfo("E");
+		id += 1;
 		y += 4.0f;
-		MPMain.LogInfo("F");
 	}
 	// 移除远程玩家
 	public static void RemoveRemotePlayer(string[] args) {
@@ -170,5 +166,14 @@ public class Test : MonoBehaviour {
 	// 输出单例测试
 	public static void TestSingleton() { 
 		MPMain.LogWarning(TestMonoSingleton.Instance.TestString);
+	}
+	// 模拟玩家数据更新事件
+	public static void SimulationPlayerUpdata() {
+		byte[] data = { 0x01 };
+		ArraySegment<byte> segment = new ArraySegment<byte>(data);
+		MPEventBusNet.NotifyReceive(1, segment);
+	}
+	public static void TestLocalPlayerUpdata() { 
+	
 	}
 }

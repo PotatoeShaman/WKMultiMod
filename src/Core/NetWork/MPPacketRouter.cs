@@ -106,11 +106,6 @@ public class MPPacketRouter {
 
 	#region[数据转换+路由]
 	public static void Route(ulong connectionId, ArraySegment<byte> data) {
-
-		//MPMain.LogInfo($"接收数据 来源Id {connectionId}");
-		//string hexString = BitConverter.ToString(data.Array, data.Offset, data.Count);
-		//MPMain.LogInfo($"16进制数据: {hexString}");
-
 		// 确保数据足够读取一个整数(数据包类型)
 		if (data.Array == null || data.Count < 18) return;
 
@@ -119,7 +114,12 @@ public class MPPacketRouter {
 		// 发送方ID
 		var (senderId, targetId, packetType) = PeekHeader(data);
 
-		//MPMain.LogInfo($"接收包 发送者Id: {senderId} 接收者Id: {targetId} 包类型: {packetType}");
+		// Debug
+		//string hexString1 = BitConverter.ToString(data.Array, data.Offset, 18);
+		//MPMain.LogInfo($"[MP Debug] 16进制数据: {hexString1}");
+		//MPMain.LogInfo($"[MP Debug] 接收包 来源Id {connectionId} 发送者Id: {senderId} 接收者Id: {targetId} 包类型: {packetType}");
+		//string hexString2 = BitConverter.ToString(data.Array, data.Offset + 18, data.Count - 18);
+		//MPMain.LogInfo($"[MP Debug] 16进制数据: {hexString2}");
 
 		// 转发:目标不是我,也不是广播,也不是特殊判断ID
 		if (targetId != MPSteamworks.Instance.UserSteamId

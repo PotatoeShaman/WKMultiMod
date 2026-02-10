@@ -46,6 +46,7 @@ public class RPManager : Singleton<RPManager> {
 		if (Players.TryGetValue(playId, out var existing)) 
 			return existing;
 
+
 		var container = new RPContainer(playId);
 
 		// 从工厂直接获取实例

@@ -6,6 +6,7 @@ using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
 using WKMPMod.Util;
+using static Steamworks.InventoryItem;
 using Object = UnityEngine.Object;
 
 namespace WKMPMod.RemotePlayer;
@@ -23,7 +24,7 @@ public class RPContainer {
 	private RemoteHand _remoteLeftHand;
 	private RemoteHand _remoteRightHand;
 	private RemoteTag _remoteTag;
-	private RemoteEntity _remoteEntity;
+	private RemoteEntity[] _remoteEntities;
 	private int _initializationCount = 5;
 
 	public PlayerData PlayerData {
@@ -88,7 +89,7 @@ public class RPContainer {
 		// 直接在实例中寻找这些组件,无需手动写循环遍历
 		_remotePlayer = instance.GetComponentInChildren<Component.RemotePlayer>();
 		_remoteTag = instance.GetComponentInChildren<RemoteTag>();
-		_remoteEntity = instance.GetComponentInChildren<RemoteEntity>();
+		_remoteEntities = instance.GetComponentsInChildren<RemoteEntity>();
 
 		// 处理左右手:获取所有 RemoteHand,然后通过内部字段区分
 		RemoteHand[] hands = instance.GetComponentsInChildren<RemoteHand>();
@@ -103,7 +104,11 @@ public class RPContainer {
 		// 标签组件初始化命名
 		_remoteTag.Initialize(PlayerId, PlayerName);
 		// 实体标签赋予玩家Id
-		_remoteEntity.PlayerId = PlayerId;
+		if (_remoteEntities != null) {
+			foreach (var entity in _remoteEntities) {
+				entity.PlayerId = PlayerId;
+			}
+		}
 	}
 
 	#endregion
@@ -118,7 +123,7 @@ public class RPContainer {
 		_remoteLeftHand = null;
 		_remoteRightHand = null;
 		_remoteTag = null;
-		_remoteEntity = null;
+		_remoteEntities = null;
 	}
 
 	#endregion

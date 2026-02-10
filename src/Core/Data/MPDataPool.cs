@@ -48,6 +48,7 @@ public static class MPReaderPool {
 		_threadReader.SetSource(payload.Array, payload.Offset, payload.Count);
 		return _threadReader;
 	}
+
 	public static DataReader GetReader(byte[] data) {
 		if (data == null) return null;
 

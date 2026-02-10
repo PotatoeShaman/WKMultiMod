@@ -88,9 +88,6 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 	protected override void Awake() {
 		base.Awake();
 		//SteamClient.Init(3195790u);
-	}
-
-	void Start() {
 		try {
 			if (!SteamClient.IsValid) {
 
@@ -100,25 +97,28 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 
 			UserSteamId = SteamClient.SteamId;
 			MPMain.LogInfo(Localization.Get("MPSteamworks", "SteamworksInitSuccess", SteamClient.Name, SteamClient.SteamId.ToString()));
-
-			// 订阅大厅事件 大部分只做转发
-			// 本机加入大厅
-			SteamMatchmaking.OnLobbyEntered += HandleLobbyEntered;
-			// 该用户已经加入或正在加入大厅
-			SteamMatchmaking.OnLobbyMemberJoined += HandleLobbyMemberJoined;
-			// 该用户已离开或即将离开大厅
-			SteamMatchmaking.OnLobbyMemberLeave += HandleLobbyMemberLeft;
-			// 该用户在未离开大厅的情况下断线
-			SteamMatchmaking.OnLobbyMemberDisconnected += HandleLobbyMemberDisconnected;
-			// 当大厅成员数据或大厅所有权发生变更
-			SteamMatchmaking.OnLobbyMemberDataChanged += HandleLobbyMemberDataChanged;
-
-			// 初始化中继网络(必须调用)
-			SteamNetworkingUtils.InitRelayNetworkAccess();
-
 		} catch (Exception ex) {
 			MPMain.LogError(Localization.Get("MPSteamworks", "SteamworksInitException", ex.Message));
 		}
+	}
+
+	void Start() {
+
+		// 订阅大厅事件 大部分只做转发
+		// 本机加入大厅
+		SteamMatchmaking.OnLobbyEntered += HandleLobbyEntered;
+		// 该用户已经加入或正在加入大厅
+		SteamMatchmaking.OnLobbyMemberJoined += HandleLobbyMemberJoined;
+		// 该用户已离开或即将离开大厅
+		SteamMatchmaking.OnLobbyMemberLeave += HandleLobbyMemberLeft;
+		// 该用户在未离开大厅的情况下断线
+		SteamMatchmaking.OnLobbyMemberDisconnected += HandleLobbyMemberDisconnected;
+		// 当大厅成员数据或大厅所有权发生变更
+		SteamMatchmaking.OnLobbyMemberDataChanged += HandleLobbyMemberDataChanged;
+
+		// 初始化中继网络(必须调用)
+		SteamNetworkingUtils.InitRelayNetworkAccess();
+
 	}
 
 	void Update() {
@@ -653,7 +653,7 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 
 			// 触发主机变更总线
 			MPEventBusNet.NotifyLobbyHostChanged(lobby, HostSteamId);
-			
+
 			HostSteamId = currentOwnerId;
 		}
 	}

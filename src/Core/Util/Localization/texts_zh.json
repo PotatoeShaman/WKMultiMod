@@ -143,7 +143,7 @@
   },
   "MPPacketRouter": {
     "RouteTableInitialized": "[MP PacketRouter] 路由表初始化完成, 注册路由数: {0}",
-    "ShowAllRouteTable": "包类型: {0} 函数名: {1}",
+    "ShowAllRouteTable": "[MP PacketRouter] 包类型: {0} 函数名: {1}",
     "FailedToBind": "[MP PacketRouter] 不支持的参数: {0} Message: {1}",
     "NoServiceFound": "[MP PacketRouter] 未找到以下包类型: {0} 对应的处理函数",
     "PacketTypeOutOfRange": "PacketType {0} 超出了 FastHandlers 数组范围 (0-{1})",
