@@ -36,7 +36,7 @@ public class MPPacketHandlers {
 	/// </summary>
 	/// <param name="seed"></param>
 	[MPPacketHandler(PacketType.WorldInitData)]
-	private void HandleWorldInit(ulong senderId, DataReader reader) {
+	private static void HandleWorldInit(ulong senderId, DataReader reader) {
 		// 获取种子
 		int seed = reader.GetInt();
 		// Debug
@@ -51,7 +51,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收PlayerDataUpdate: 处理玩家数据更新
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerDataUpdate)]
-	private void HandlePlayerDataUpdate(ulong senderId, DataReader reader) {
+	private static void HandlePlayerDataUpdate(ulong senderId, DataReader reader) {
 		// 如果是从转发给自己的,忽略
 		var playerData = MPDataSerializer.ReadFromNetData(reader);
 		var playerId = playerData.playId;
@@ -65,7 +65,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收BroadcastMessage: 处理玩家标签更新
 	/// </summary>
 	[MPPacketHandler(PacketType.BroadcastMessage)]
-	private void HandlePlayerTagUpdate(ulong senderId, DataReader reader) {
+	private static void HandlePlayerTagUpdate(ulong senderId, DataReader reader) {
 		string msg = reader.GetString();    // 读取消息
 		string playerName = new Friend(senderId).Name;
 		CommandConsole.Log($"{playerName}: {msg}");
@@ -74,7 +74,7 @@ public class MPPacketHandlers {
 
 
 	[MPPacketHandler(PacketType.WorldStateSync)]
-	private void HandleWorldStateSync(ulong senderId, DataReader reader) {
+	private static void HandleWorldStateSync(ulong senderId, DataReader reader) {
 
 	}
 
@@ -82,7 +82,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收PlayerDamage: 受到伤害
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerDamage)]
-	private void HandlePlayerDamage(ulong senderId, DataReader reader) {
+	private static void HandlePlayerDamage(ulong senderId, DataReader reader) {
 		float amount = reader.GetFloat();
 		string type = reader.GetString();
 		var baseDamage = amount * MPConfig.AllPassive;
@@ -121,7 +121,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收PlayerAddForce: 受到冲击力
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerAddForce)]
-	private void HandlePlayerAddForce(ulong senderId, DataReader reader) {
+	private static void HandlePlayerAddForce(ulong senderId, DataReader reader) {
 		Vector3 force = new Vector3 {
 			x = reader.GetFloat(),
 			y = reader.GetFloat(),
@@ -135,7 +135,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收PlayerDeath: 玩家死亡
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerDeath)]
-	private void HandlePlayerDeath(ulong senderId, DataReader reader) {
+	private static void HandlePlayerDeath(ulong senderId, DataReader reader) {
 		string type = reader.GetString();
 		string playerName = new Friend(senderId).Name;
 		CommandConsole.Log(Localization.Get("CommandConsole", "PlayerDeath", playerName, type));
@@ -146,7 +146,7 @@ public class MPPacketHandlers {
 	/// 发送PlayerCreateResponse: 携带远程玩家工厂ID,让请求方创建远程玩家对象
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerCreateRequest)]
-	private void HandlePlayerCreateRequest(ulong senderId, DataReader reader) {
+	private static void HandlePlayerCreateRequest(ulong senderId, DataReader reader) {
 		var writer = GetWriter(MPSteamworks.Instance.UserSteamId, senderId, PacketType.PlayerCreateResponse);
 		writer.Put(LocalPlayer.Instance.FactoryId);
 		MPSteamworks.Instance.SendToPeer(senderId, writer);
@@ -156,7 +156,7 @@ public class MPPacketHandlers {
 	/// 主机/客户端接收PlayerCreateResponse: 创建玩家对象
 	/// </summary>
 	[MPPacketHandler(PacketType.PlayerCreateResponse)]
-	private void HandlePlayerCreateResponse(ulong senderId, DataReader reader) {
+	private static void HandlePlayerCreateResponse(ulong senderId, DataReader reader) {
 		string factoryId = reader.GetString();
 		RPManager.Instance.PlayerCreate(senderId, factoryId);
 	}
@@ -167,7 +167,7 @@ public class MPPacketHandlers {
 	/// </summary>
 	/// <param name="senderId">发送方ID</param>
 	[MPPacketHandler(PacketType.PlayerTeleportRequest)]
-	private void HandlePlayerTeleport(ulong senderId, DataReader reader) {
+	private static void HandlePlayerTeleport(ulong senderId, DataReader reader) {
 		// 获取数据
 		var positionData = ENT_Player.GetPlayer().transform.position;
 		var writer = GetWriter(MPSteamworks.Instance.UserSteamId, senderId, PacketType.PlayerTeleportRespond);
@@ -194,7 +194,7 @@ public class MPPacketHandlers {
 	/// </summary>
 	/// <param name="senderId">发送ID</param>
 	[MPPacketHandler(PacketType.PlayerTeleportRespond)]
-	private void HandleRespondPlayerTeleport(ulong senderId, DataReader reader) {
+	private static void HandleRespondPlayerTeleport(ulong senderId, DataReader reader) {
 		var posX = reader.GetFloat();
 		var posY = reader.GetFloat();
 		var posZ = reader.GetFloat();

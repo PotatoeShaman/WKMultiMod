@@ -91,7 +91,7 @@ public class RPManager : Singleton<RPManager> {
 			return;
 		} else if (_debugTick.TryTick()) {
 			MPMain.LogError(Localization.Get(
-				"RPManger", "RemotePlayerObjectNotFound", playerId.ToString()));
+				"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
 			return;
 		}
 		return;
@@ -108,7 +108,7 @@ public class RPManager : Singleton<RPManager> {
 			return;
 		} else {
 			MPMain.LogError(Localization.Get(
-				"RPManger", "RemotePlayerObjectNotFound", playerId.ToString()));
+				"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
 			return;
 		}
 	}

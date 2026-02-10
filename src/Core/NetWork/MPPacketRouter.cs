@@ -15,7 +15,7 @@ namespace WKMPMod.NetWork;
 
 public class MPPacketRouter {
 	// 路由表
-	private static readonly Dictionary<PacketType, Delegate> Handlers;
+	private static readonly Action<ulong, DataReader>[] FastHandlers = new Action<ulong, DataReader>[64];
 
 	#region[初始化路由表]
 	/// <summary>
@@ -23,47 +23,73 @@ public class MPPacketRouter {
 	/// </summary>
 	static MPPacketRouter() {
 		// 反射MPPacketService类
-		Handlers = typeof(MPPacketHandlers)
+		var handlerEntries = typeof(MPPacketHandlers)
 			// 获取所有静态方法, 包括非公共的
 			.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
 			// 获取带有 MPPacketHandlerAttribute 特性的 方法. false表示不搜索继承链, 只看当前方法
 			.Where(method => method.GetCustomAttributes(typeof(MPPacketHandlerAttribute), false).Length > 0)
 			// 对每个方法进行处理, 其生成多个IEnumerable<(PacketType, Delegate)>并扁平化
-			.SelectMany(method => ProcessMethod(method))
-			// 转换为字典, key为PacketType, value为对应的Delegate. 如果有重复的PacketType, 后者会覆盖前者
-			.ToDictionary(t => t.Item1, t => t.Item2);
+			.SelectMany(method => ProcessMethod(method));
+
+		int count = 0;
+
+		foreach (var (packetType, action) in handlerEntries) { 
+			ushort handlerId = (ushort)packetType;
+
+			if (handlerId >= 0 && handlerId < FastHandlers.Length) {
+				if (FastHandlers[handlerId] != null) {
+					Localization.Get("MPPacketRouter", "PacketHandlerOverridden", 
+						packetType, FastHandlers[handlerId].Method.Name, action.Method.Name);
+				}
+
+				// 将 Action 存入数组
+				FastHandlers[handlerId] = (Action<ulong, DataReader>)action;
+				count++;
+
+				MPMain.LogInfo(Localization.Get("MPPacketRouter", "ShowAllRouteTable", packetType, action.Method.Name));
+			} else {
+				Localization.Get("MPPacketRouter", "PacketTypeOutOfRange", (ushort)packetType, FastHandlers.Length - 1);
+			}
+
+		}
 	}
 
 	/// <summary>
-	/// 处理反射获取的方法,转为IEnumerable<(PacketType, Delegate)> 迭代器<包类型,委托>
+	/// 处理反射获取的方法,转为IEnumerable<(PacketType, Action<ulong, DataReader>)> 迭代器<包类型,无返回值委托>
 	/// </summary>
-	private static IEnumerable<(PacketType, Delegate)> ProcessMethod(MethodInfo method) {
+	private static IEnumerable<(PacketType, Action<ulong, DataReader>)> ProcessMethod(MethodInfo method) {
 		// 获取方法上的所有 MPPacketHandlerAttribute 特性
 		var attrs = method.GetCustomAttributes<MPPacketHandlerAttribute>();
 		// 获取方法的参数信息
 		var parameters = method.GetParameters();
 
-		Delegate del = CreateDelegate(method, parameters);
-		if (del == null) yield break;
+		var action = CreateAction(method, parameters);
+		if (action == null) yield break;
 
 		foreach (var attr in attrs) {
-			yield return (attr.packetType, del);
+			yield return (attr.packetType, action);
 		}
 	}
 
 	/// <summary>
 	/// 将方法转为委托
 	/// </summary>
-	private static Delegate CreateDelegate(MethodInfo method, ParameterInfo[] parameters) {
+	private static Action<ulong, DataReader> CreateAction(MethodInfo method, ParameterInfo[] parameters) {
 		try {
-			return parameters.Length switch {
-				// 仅支持参数签名: (ulong, DataReader)
-				2 when parameters[0].ParameterType == typeof(ulong) &&
-					   parameters[1].ParameterType == typeof(DataReader)
-					=> Delegate.CreateDelegate(typeof(Action<ulong, DataReader>), method),
-				// 其余抛出异常
-				_ => throw new InvalidOperationException($"Unsupported parameter signature for {method.Name}")
-			};
+			// 验证参数签名
+			if (parameters.Length == 2 &&
+				parameters[0].ParameterType == typeof(ulong) &&
+				parameters[1].ParameterType == typeof(DataReader)) {
+
+				// 创建委托并强转为 Action
+				// Delegate.CreateDelegate 的第一个参数是委托的类型
+				return (Action<ulong, DataReader>)Delegate.CreateDelegate(
+					typeof(Action<ulong, DataReader>),
+					null, // 如果是静态方法,这里传 null
+					method
+				);
+			}
+			throw new InvalidOperationException($"Unsupported parameter signature for {method.Name}. Expected (ulong, DataReader).");
 		} catch (Exception e) {
 			MPMain.LogError(Localization.Get(
 				"MPPacketRouter", "FailedToBind", method.Name, e.Message));
@@ -80,43 +106,50 @@ public class MPPacketRouter {
 
 	#region[数据转换+路由]
 	public static void Route(ulong connectionId, ArraySegment<byte> data) {
+
+		//MPMain.LogInfo($"接收数据 来源Id {connectionId}");
+		//string hexString = BitConverter.ToString(data.Array, data.Offset, data.Count);
+		//MPMain.LogInfo($"16进制数据: {hexString}");
+
 		// 确保数据足够读取一个整数(数据包类型)
 		if (data.Array == null || data.Count < 18) return;
 
 		// 直接解析头部
 		ReadOnlySpan<byte> span = data;
 		// 发送方ID
-		ulong senderId = ReadUInt64LittleEndian(span);
-		// 接收方ID
-		ulong targetId = ReadUInt64LittleEndian(span.Slice(8));
+		var (senderId, targetId, packetType) = PeekHeader(data);
+
+		//MPMain.LogInfo($"接收包 发送者Id: {senderId} 接收者Id: {targetId} 包类型: {packetType}");
 
 		// 转发:目标不是我,也不是广播,也不是特殊判断ID
 		if (targetId != MPSteamworks.Instance.UserSteamId
-			&& targetId != MPSteamworks.Instance.BroadcastId
-			&& targetId != MPSteamworks.Instance.SpecialId) {
+			&& targetId != MPProtocol.BroadcastId
+			&& targetId != MPProtocol.SpecialId) {
 
 			ProcessForwardToPeer(targetId, data);
 			return; // 结束
-
 		}
 
 		// 广播:如果是广播,且不是我发出的
-		if (targetId == MPSteamworks.Instance.BroadcastId
+		if (targetId == MPProtocol.BroadcastId
 			&& senderId != MPSteamworks.Instance.UserSteamId) {
 
 			ProcessBroadcastExcept(senderId, data);
 			// 继续执行,因为主机也要处理广播包
 		}
 
-		// 包类型
-		PacketType packetType = (PacketType)ReadUInt16LittleEndian(span.Slice(16));
-
-		if (!Handlers.TryGetValue(packetType, out var handler)) {
-			MPMain.LogError(Localization.Get("MPPacketRouter","NoServiceFound", packetType));
+		if (packetType < 0 || packetType >= FastHandlers.Length || FastHandlers[packetType] == null) {
+			MPMain.LogError(Localization.Get("MPPacketRouter", "NoServiceFound", packetType));
 			return;
 		}
-		var reader = GetReader(data.Slice(18));
 
+		var reader = GetReader(data.Slice(MPProtocol.HeaderSize));
+
+		try {
+			FastHandlers[packetType](senderId, reader);
+		} catch (Exception e) {
+			MPMain.LogError(Localization.Get("MPPacketRouter", "HandlerException", packetType, e.Message));
+		}
 	}
 	#endregion
 
@@ -179,7 +212,7 @@ public class MPPacketRouter {
 // AttributeTargets ValidOn: 作用类型 AttributeTargets.Method: 作用于方法
 // AllowMultiple: 是否允许同一方法上使用多个该属性,这里设置为 true 以支持一个方法处理多个消息类型
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public class MPPacketHandlerAttribute : Attribute { 
+public class MPPacketHandlerAttribute : Attribute {
 	public PacketType packetType { get; }
 	public MPPacketHandlerAttribute(PacketType packetType) {
 		this.packetType = packetType;

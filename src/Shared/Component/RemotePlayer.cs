@@ -24,7 +24,7 @@ public class RemotePlayer : MonoBehaviour {
 		// 检查当前位置与目标位置的距离
 		float distance = Vector3.Distance(transform.position, _targetPosition);
 
-		// 如果距离超过阈值，直接瞬移
+		// 如果距离超过阈值,直接瞬移
 		if (distance > teleportThreshold) {
 			Teleport(_targetPosition);
 			return;
@@ -52,9 +52,9 @@ public class RemotePlayer : MonoBehaviour {
 
 	// 根据距离计算平滑时间
 	private float CalculateSmoothTime(float distance) {
-		// 如果距离很远，使用更快的平滑
+		// 如果距离很远,使用更快的平滑
 		if (distance > maxSmoothDistance) {
-			// 使用对数曲线，距离越远平滑时间越短
+			// 使用对数曲线,距离越远平滑时间越短
 			return Mathf.Clamp(Mathf.Log(distance) * 0.1f, 0.05f, 0.3f);
 		}
 

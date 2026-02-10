@@ -12,7 +12,7 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T
 
 	public static T Instance {
 		get {
-			// 如果程序正在退出，不再创建新实例，防止残留
+			// 如果程序正在退出,不再创建新实例,防止残留
 			if (_applicationIsQuitting) {
 				return null;
 			}
@@ -39,12 +39,12 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T
 	protected virtual void Awake() {
 		if (_instance == null) {
 			_instance = (T)this;
-			// 如果是手动拖入场景的，也确保跨场景持久化
+			// 如果是手动拖入场景的,也确保跨场景持久化
 			if (transform.parent == null) {
 				DontDestroyOnLoad(gameObject);
 			}
 		} else if (_instance != this) {
-			// 发现重复，立刻自毁
+			// 发现重复,立刻自毁
 			Debug.LogWarning($"MonoSingleton<{typeof(T).Name}>: Duplicate components were found in the scene and have been automatically destroyed");
 			Destroy(gameObject);
 		}
@@ -55,7 +55,7 @@ public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T
 	}
 
 	protected virtual void OnDestroy() {
-		// 如果是当前实例被销毁，清空引用
+		// 如果是当前实例被销毁,清空引用
 		if (_instance == this) {
 			_instance = null;
 		}

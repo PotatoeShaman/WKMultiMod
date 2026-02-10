@@ -29,7 +29,7 @@ public abstract class BaseRemoteFactory {
 
 	// 加载并处理预制体
 	public GameObject LoadAndPrepare(string path) {
-		// 1. 在 try 外部声明引用，以便 finally 块能访问到它
+		// 1. 在 try 外部声明引用,以便 finally 块能访问到它
 		AssetBundle bundle = null;
 		GameObject raw = null;
 
@@ -55,10 +55,10 @@ public abstract class BaseRemoteFactory {
 			OnPrepare(raw, bundle);
 
 		} catch (System.Exception ex) {
-			// 捕获异常并记录，防止崩溃
+			// 捕获异常并记录,防止崩溃
 			MPMain.LogError(Localization.Get("RPBaseFactory", "PreFabProcessingError",ex.GetType().Name,ex.Message,ex.StackTrace));
 
-			// 如果出错，建议将 raw 置空，防止后面使用不完整的预制体
+			// 如果出错,建议将 raw 置空,防止后面使用不完整的预制体
 			raw = null;
 		} finally {
 			// 执行卸载
@@ -198,7 +198,7 @@ public abstract class BaseRemoteFactory {
 
 	private void AddFactoryId(GameObject prefab) {
 		var factoryId = prefab.AddComponent<ObjectIdentity>();
-		factoryId.name = FactoryId;
+		factoryId.FactoryKey = FactoryId;
 	}
 
 	#endregion

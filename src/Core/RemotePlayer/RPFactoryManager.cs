@@ -77,13 +77,13 @@ public class RPFactoryManager: Singleton<RPFactoryManager> {
 		if (instance == null) return;
 
 		var identity = instance.GetComponent<ObjectIdentity>();
-		if (identity == null || string.IsNullOrEmpty(identity.name)) {
+		if (identity == null || string.IsNullOrEmpty(identity.FactoryKey)) {
 			MPMain.LogError(Localization.Get("RPFactoryManager", "CannotDetermineFactory"));
 			Object.Destroy(instance);
 			return;
 		}
 
-		if (_factories.TryGetValue(identity.name, out var registration)) {
+		if (_factories.TryGetValue(identity.FactoryKey, out var registration)) {
 			registration.Factory.Cleanup(instance);
 		} else {
 			MPMain.LogError(Localization.Get("RPFactoryManager", "FactoryNotFoundCleanup", identity.name));

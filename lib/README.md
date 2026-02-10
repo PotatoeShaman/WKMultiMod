@@ -69,7 +69,7 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 
 **重要提示 | Important Notice:**
 
-这些 DLL 文件是游戏 **White Knuckle** 的组成部分, 受版权法保护。  
+这些 DLL 文件是游戏 **White Knuckle** 的组成部分, 受版权法保护.  
 These DLL files are part of the game **White Knuckle** and are protected by copyright law.
 
 - 请仅将这些文件用于个人学习和研究目的

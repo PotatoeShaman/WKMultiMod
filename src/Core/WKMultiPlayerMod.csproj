@@ -29,7 +29,7 @@
 		<ItemGroup>
 			<SharedOutputFiles Include="$(TargetDir)$(TargetName).dll" />
 			<!-- 包含 JSON 文件 -->
-			<SharedOutputFiles Include="$(TargetDir)Localization\*.json" />
+			<SharedOutputFiles Include="$(ProjectDir)Util\Localization\*.json" />
 		</ItemGroup>
 		<!--生成.dll复制到bin\解决方案配置-->
 		<Copy SourceFiles="@(SharedOutputFiles)" DestinationFolder="$(SolutionDir)bin\$(Configuration)\" SkipUnchangedFiles="true" />

@@ -44,10 +44,6 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 	public ulong UserSteamId { get; private set; }
 	// 之前的主机Id
 	public ulong HostSteamId { get; private set; }
-	// 广播Id
-	public ulong BroadcastId { get; } = 0;
-	// 特殊Id (必须解包)
-	public ulong SpecialId { get; } = 1;
 
 	// 监听socket
 	internal SocketManager _socketManager;

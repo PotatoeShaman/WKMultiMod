@@ -141,6 +141,9 @@ public class MPCore : MonoSingleton<MPCore> {
 			_LocalPlayer = LocalPlayer.Instance;
 			_LocalPlayer.Initialize(MPSteamworks.Instance.UserSteamId, MPConfig.RemotePlayerModel);
 
+			// 初始化网络数据包路由器
+			MPPacketRouter.Initialize();
+
 			// 订阅网络事件
 			SubscribeToEvents();
 			// Debug
@@ -206,6 +209,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		if (!_syncTick.TryTick()) return;
 		// 在大厅但没有连接
 		foreach (var member in _MPsteamworks.Members) {
+			if (member.Id == _MPsteamworks.UserSteamId) continue;
 			if (!_MPsteamworks._allConnections.ContainsKey(member.Id)) {
 				_MPsteamworks.ConnectionController(member.Id, true);
 			}
@@ -313,7 +317,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// 发送本地玩家数据
 	/// </summary>
 	private void SeedLocalPlayerData(PlayerData data) {
-		var writer = GetWriter(_MPsteamworks.UserSteamId, _MPsteamworks.BroadcastId, PacketType.PlayerDataUpdate);
+		var writer = GetWriter(_MPsteamworks.UserSteamId, MPProtocol.BroadcastId, PacketType.PlayerDataUpdate);
 
 		// 进行数据写入
 		MPDataSerializer.WriteToNetData(writer, data);
@@ -351,7 +355,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// 发送玩家死亡信息
 	/// </summary>
 	private void HandlePlayerDeath(string type) {
-		var writer = GetWriter(_MPsteamworks.UserSteamId, _MPsteamworks.BroadcastId, PacketType.PlayerDeath);
+		var writer = GetWriter(_MPsteamworks.UserSteamId, MPProtocol.BroadcastId, PacketType.PlayerDeath);
 		writer.Put(type);
 		_MPsteamworks.Broadcast(writer);
 
@@ -503,7 +507,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		// 将参数数组组合成一个字符串
 		string message = string.Join(" ", args);
 
-		var writer = GetWriter(_MPsteamworks.UserSteamId, _MPsteamworks.BroadcastId, PacketType.BroadcastMessage);
+		var writer = GetWriter(_MPsteamworks.UserSteamId, MPProtocol.BroadcastId, PacketType.BroadcastMessage);
 		writer.Put(message); // 自动处理长度和编码
 
 		// 发送给所有人

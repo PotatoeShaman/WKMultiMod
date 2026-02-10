@@ -30,19 +30,19 @@ public class Test : MonoBehaviour {
 
 		// 使用 switch 表达式使代码更简洁
 		_ = args[0] switch {
-			"0" => RunCommand(GetGraphicsAPI),
-			"1" => RunCommand(GetMPStatus),
-			"2" => RunCommand(GetMassData),
-			"3" => RunCommand(GetSystemLanguage),
-			"4" => RunCommand(() => CreateRemotePlayer(args[1..])),
-			"5" => RunCommand(() => RemoveRemotePlayer(args[1..])),
-			"6" => RunCommand(() => UpdateRemoteTag(args[1..])),
-			"7" => RunCommand(GetAllFactoryList),
-			"8" => RunCommand(GetPath),
-			"9" => RunCommand(CreateTestPrefab),
-			"10" => RunCommand(GetHandCosmetic),
-			"11" => RunCommand(CreateDontDestroyGameObject),
-			"12" => RunCommand(TestSingleton),
+			"0" => RunCommand(GetGraphicsAPI),  // 获取图形API信息
+			"1" => RunCommand(GetMPStatus),     // 获取联机状态
+			"2" => RunCommand(GetMassData),     // 获取Mass数据
+			"3" => RunCommand(GetSystemLanguage),   // 获取系统语言
+			"4" => RunCommand(() => CreateRemotePlayer(args[1..])), // 创建远程玩家,参数:玩家ID(ulong),预制体工厂ID(string)
+			"5" => RunCommand(() => RemoveRemotePlayer(args[1..])), // 移除远程玩家,参数:玩家ID(ulong)
+			"6" => RunCommand(() => UpdateRemoteTag(args[1..])),    // 更新远程玩家标签,参数:标签文本(string)
+			"7" => RunCommand(GetAllFactoryList),   // 列出所有预制体工厂信息
+			"8" => RunCommand(GetPath),             // 获取程序路径信息
+			"9" => RunCommand(CreateTestPrefab),    // 创建测试预制体
+			"10" => RunCommand(GetHandCosmetic),    // 获取手部皮肤信息
+			"11" => RunCommand(CreateDontDestroyGameObject),    // 创建测试对象并设置DontDestroyOnLoad
+			"12" => RunCommand(TestSingleton),  // 测试单例模式
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
