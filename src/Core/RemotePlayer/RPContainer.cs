@@ -26,6 +26,7 @@ public class RPContainer {
 	private RemoteTag _remoteTag;
 	private RemoteEntity[] _remoteEntities;
 	private int _initializationCount = 5;
+	private bool _isDead = false;
 
 	public PlayerData PlayerData {
 		get {
@@ -63,7 +64,7 @@ public class RPContainer {
 			InitializeAllComponent(PlayerObject);
 			InitializeAllComponentData();
 			// 设为原点
-			UpdatePlayerData(new PlayerData {
+			HandlePlayerData(new PlayerData {
 				IsTeleport = true,
 				Position = new Vector3(0, 0, 0),
 			});
@@ -130,8 +131,14 @@ public class RPContainer {
 
 	#region[数据更新]
 
-	// 通过数据进行更新
-	public void UpdatePlayerData(PlayerData playerData) {
+	/// <summary>
+	/// 通过数据进行位置更新
+	/// </summary>
+	public void HandlePlayerData(PlayerData playerData) {
+		if (_isDead == true) {
+			PlayerObject.SetActive(true);
+			_isDead = false;
+		}
 
 		// 判断是否处于初始化 5 秒内
 		if (playerData.IsTeleport || _initializationCount > 0) {
@@ -156,8 +163,10 @@ public class RPContainer {
 		}
 	}
 
-	// 进行头部文字更新
-	public void UpdateNameTag(string text) {
+	/// <summary>
+	/// 通过数据进行头部文字更新
+	/// </summary>
+	public void HandleNameTag(string text) {
 		if (string.IsNullOrEmpty(text)) { return; }
 		if (_remoteTag == null) {
 			MPMain.LogError(Localization.Get("RPContainer", "NameTagComponentMissing"));
@@ -167,6 +176,13 @@ public class RPContainer {
 		return;
 	}
 
+	/// <summary>
+	/// 处理死亡 - 目前仅隐藏对象,后续可以添加死亡动画等
+	/// </summary>
+	public void HandleDeath() {
+		PlayerObject.SetActive(false);
+		_isDead = true;
+	}
 	#endregion
 
 	#region[旧创建对象函数]

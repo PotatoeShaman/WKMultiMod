@@ -13,14 +13,17 @@ using WKMPMod.Util;
 using static CommandConsole;
 using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
+using Random = UnityEngine.Random;
 using Vector3 = UnityEngine.Vector3;
 
 namespace WKMPMod.Test;
 
 public class Test : MonoBehaviour {
+	public const string NO_ITEM_PREFAB_NAME = "None";
 	public static float x = 0;
 	public static float y = 0;
 	public static float z = 0;
+	public static ulong id = 0;
 	public static void Main(string[] args) {
 
 		if (args.Length == 0) {
@@ -44,6 +47,9 @@ public class Test : MonoBehaviour {
 			"11" => RunCommand(CreateDontDestroyGameObject),    // 创建测试对象并设置DontDestroyOnLoad
 			"12" => RunCommand(TestSingleton),  // 测试单例模式
 			"13" => RunCommand(SimulationPlayerUpdata),  // 模拟玩家数据更新事件
+			"14" => RunCommand(() => CreateItem(args[1..])),  // 创建物品,参数:物品预制体名称(string)
+			"15" => RunCommand(() => AddItemInInventory(args[1..])),  // 创建物品并放入库存,参数:物品预制体名称(string)" =
+			"16" => RunCommand(GetInventoryItems),  // 获取库存信息
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -86,7 +92,7 @@ public class Test : MonoBehaviour {
 	}
 	// 创建远程玩家
 	public static void CreateRemotePlayer(string[] args) {
-		ulong id = 1;
+		id += 1;
 		string prefab = "default";
 		if (args.Length >= 1 && ulong.TryParse(args[0], out ulong parsedId)) {
 			id = parsedId;
@@ -96,8 +102,7 @@ public class Test : MonoBehaviour {
 		}
 		RPManager.Instance.PlayerCreate(id, prefab);
 		RPManager.Instance.Players[id]
-			.UpdatePlayerData(new PlayerData { Position = new Vector3(x, y, z) });
-		id += 1;
+			.HandlePlayerData(new PlayerData { Position = new Vector3(x, y, z) });
 		y += 4.0f;
 	}
 	// 移除远程玩家
@@ -115,7 +120,7 @@ public class Test : MonoBehaviour {
 			: "中文测试: 斯卡利茨恐虐神选";
 
 		if (RPManager.Instance.Players.TryGetValue(1, out var player)) {
-			player.UpdateNameTag(tagText);
+			player.HandleNameTag(tagText);
 		} else {
 			Debug.LogWarning("玩家ID 1 不存在");
 		}
@@ -173,7 +178,90 @@ public class Test : MonoBehaviour {
 		ArraySegment<byte> segment = new ArraySegment<byte>(data);
 		MPEventBusNet.NotifyReceive(1, segment);
 	}
-	public static void TestLocalPlayerUpdata() { 
-	
+	// 创建物品测试
+	public static void CreateItem(string[] args) {
+		foreach (var arg in args) {
+			if (arg != NO_ITEM_PREFAB_NAME) {
+				// 从资源管理器获取预制体
+				GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(arg);
+				if (prefabAsset != null) {
+					// 随机位置
+					Vector3 randomOffset = new Vector3(
+										Random.Range(-1f, 1f),     // X轴随机
+										Random.Range(0f, 0.5f),     // Y轴随机（向上）
+										Random.Range(-1f, 1f)       // Z轴随机
+									);
+
+					// 实例化物品
+					var itemObject = GameObject.Instantiate(
+						prefabAsset,
+						new Vector3(0, 0.5f, 0) + randomOffset,
+						Random.rotation  // 随机旋转
+					);
+
+					// 获取Rigidbody并添加随机斜上方动量
+					Rigidbody rb = itemObject.GetComponent<Rigidbody>();
+					if (rb != null) {
+						// 随机方向: 斜上方 (XZ随机，Y固定向上)
+						Vector3 randomDirection = new Vector3(
+							Random.Range(-1f, 1f),  // X轴随机方向
+							1f,                     // Y轴向上
+							Random.Range(-1f, 1f)   // Z轴随机方向
+						).normalized;
+
+						// 随机力度 (3-8之间)
+						float randomForce = Random.Range(3f, 8f);
+
+						// 添加冲量（瞬间力）
+						rb.AddForce(randomDirection * randomForce, ForceMode.Impulse);
+
+						// 可选: 添加随机旋转扭矩，让物品在空中旋转
+						//rb.AddTorque(Random.insideUnitSphere * Random.Range(1f, 5f), ForceMode.Impulse);
+					}
+				} else {
+					MPMain.LogInfo($"[MP Debug] 生成物: {arg} 不存在");
+				}
+			}
+		}
 	}
+	// 获取库存内全部物品信息
+	public static void GetInventoryItems() {
+		// 获取库存单例
+		var inventory = Inventory.instance;
+		if (inventory != null) {
+			// 获取库存中的物品列表
+			var items = inventory.GetItems();
+			foreach (var item in items) {
+				MPMain.LogInfo($"物品名称: {item.itemName}, 标签: {item.itemTag}, 预制体名称: {item.prefabName}");
+			}
+		} else {
+			MPMain.LogWarning("库存不存在");
+		}
+	}
+	// 创建物品并放入库存测试
+	public static void AddItemInInventory(string[] args) {
+		var inventory = Inventory.instance;
+		foreach (var arg in args) {
+			if (arg != NO_ITEM_PREFAB_NAME) {
+				// 从资源管理器获取预制体
+				GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(arg);
+				if (prefabAsset != null) {
+					// 实例化物品在 0,0.5,0 
+					var item = Instantiate(prefabAsset, new Vector3(0, 0.5f, 0), Quaternion.identity);
+					var item_Object = item.GetComponent<Item_Object>();
+					if (item_Object != null) {
+						inventory.AddItemToInventoryCenter(item_Object.itemData);
+						// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+						item_Object.gameObject.SetActive(value: false);
+					} else {
+						MPMain.LogInfo($"[MP Debug] 生成物: {item.name} 不可放入库存");
+					}
+					
+				} else {
+					MPMain.LogInfo($"[MP Debug] 生成物: {arg} 不存在");
+				}
+			}
+		}
+	}
+
 }

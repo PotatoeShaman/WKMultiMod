@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Text;
 
 namespace WKMPMod.Data;
@@ -127,6 +128,18 @@ public class DataReader {
 		var result = _data.Slice(_position, length); // Memory 的 Slice 返回的还是 Memory
 		_position += length;
 		return result;
+	}
+
+	// 获取 Dictionary<string, ushort>
+	public Dictionary<string, byte> GetStringByteDict() { 
+		int length = GetInt();
+		var val = new Dictionary<string, byte>();
+		for (int i = 0; i < length; i++) {
+			var stringKey = GetString();
+			var ushortValue = GetByte();
+			val[stringKey] = ushortValue;
+		}
+		return val;
 	}
 	#endregion
 }

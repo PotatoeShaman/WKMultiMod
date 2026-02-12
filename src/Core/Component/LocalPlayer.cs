@@ -72,6 +72,7 @@ public class LocalPlayer : MonoSingleton<LocalPlayer> {
 		//MPMain.LogInfo($"[MP Debug] Id: {userId} Factory: {factoryId}");
 
 		UserId = userId;
+		DefaulFactoryId = factoryId;
 		FactoryId = factoryId;
 		ResetStateCache();
 	}

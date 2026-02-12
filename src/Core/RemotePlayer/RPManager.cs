@@ -42,8 +42,8 @@ public class RPManager : Singleton<RPManager> {
 	/// <summary>
 	/// 根据Id创建玩家
 	/// </summary>
-	public RPContainer PlayerCreate(ulong playId,string prefab) {
-		if (Players.TryGetValue(playId, out var existing)) 
+	public RPContainer PlayerCreate(ulong playId, string prefab) {
+		if (Players.TryGetValue(playId, out var existing))
 			return existing;
 
 
@@ -88,7 +88,7 @@ public class RPManager : Singleton<RPManager> {
 
 		// 以后加上时间戳处理
 		if (Players.TryGetValue(playerId, out var RPcontainer)) {
-			RPcontainer.UpdatePlayerData(playerData);
+			RPcontainer.HandlePlayerData(playerData);
 			return;
 		} else if (_debugTick.TryTick()) {
 			MPMain.LogError(Localization.Get(
@@ -105,14 +105,40 @@ public class RPManager : Singleton<RPManager> {
 
 		// 以后加上时间戳处理
 		if (Players.TryGetValue(playerId, out var RPcontainer)) {
-			RPcontainer.UpdateNameTag(massage);
-			return;
-		} else {
-			MPMain.LogError(Localization.Get(
-				"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
+			RPcontainer.HandleNameTag(massage);
 			return;
 		}
+		MPMain.LogError(Localization.Get(
+			"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
+		return;
+
 	}
 
+	/// <summary>
+	/// 处理玩家死亡
+	/// </summary>
+	public void ProcessPlayerDeath(ulong playerId) {
+		if (Players.TryGetValue(playerId, out var RPcontainer)) {
+			RPcontainer.HandleDeath();
+			return;
+		}
+		MPMain.LogError(Localization.Get(
+			"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
+		return;
+	}
+
+	#endregion
+
+		#region
+
+		// 返回玩家对象
+	public GameObject GetPlayerObject(ulong playerId) {
+		if (Players.TryGetValue(playerId, out var container)) {
+			return container.PlayerObject;
+		}
+		MPMain.LogError(Localization.Get(
+			"RPManager", "RemotePlayerObjectNotFound", playerId.ToString()));
+		return null;
+	}
 	#endregion
 }

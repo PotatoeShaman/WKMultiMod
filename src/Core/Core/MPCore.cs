@@ -304,10 +304,8 @@ public class MPCore : MonoSingleton<MPCore> {
 			if (HandSkinToModelId.TryGetValue(
 				CL_CosmeticManager.GetCosmeticInHand(0).cosmeticData.id, out string factoryId)) {
 				_LocalPlayer.FactoryId = factoryId;
-				return;
 			}
 		}
-		_LocalPlayer.FactoryId = _LocalPlayer.DefaulFactoryId;
 	}
 	#endregion
 
@@ -356,11 +354,29 @@ public class MPCore : MonoSingleton<MPCore> {
 	}
 
 	/// <summary>
-	/// 发送玩家死亡信息
+	/// 发送玩家死亡信息 死因 string 库存物品 Dictionary<string, ushort>
 	/// </summary>
 	private void HandlePlayerDeath(string type) {
 		var writer = GetWriter(_MPsteamworks.UserSteamId, MPProtocol.BroadcastId, PacketType.PlayerDeath);
+		// 死因
 		writer.Put(type);
+
+		// 库存物品字典
+		var inventory = Inventory.instance;
+		var itemsDict = new Dictionary<string, byte>();
+
+		if (inventory != null) {
+			// 获取库存中的物品列表
+			var items = inventory.GetItems();
+			foreach (var item in items) {
+				itemsDict.TryAdd(item.prefabName, 0);
+				itemsDict[item.prefabName]++;
+			}
+		} else {
+			MPMain.LogWarning(Localization.Get("MPCore", "InventoryDoesNotExist"));
+		}
+		writer.Put(itemsDict);
+
 		_MPsteamworks.Broadcast(writer);
 
 		switch (SceneManager.GetActiveScene().name) {

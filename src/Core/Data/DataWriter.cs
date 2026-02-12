@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Text;
 
 namespace WKMPMod.Data;
@@ -187,6 +188,25 @@ public class DataWriter : IDisposable {
 		_position += actualBytes;
 		return this;
 	}
+
+	public DataWriter Put(Dictionary<string, byte> dict) {
+		if (dict == null) {
+			Put(0);  // 写入数量 0
+			return this;
+		}
+
+		// 先写入字典大小
+		Put(dict.Count);
+
+		// 遍历写入键值对
+		foreach (var kvp in dict) {
+			Put(kvp.Key);
+			Put(kvp.Value);
+		}
+		return this;
+	}
+	
+	
 	#endregion
 
 	// 确保缓冲区有足够的空间
