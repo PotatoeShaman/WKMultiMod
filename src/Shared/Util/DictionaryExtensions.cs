@@ -50,6 +50,8 @@ public static class DictionaryExtensions {
 		foreach (var (k, vM) in minuend) {
 			if (subtrahend.TryGetValue(k, out var vS) && vM > vS)
 				result[k] = (byte)(vM - vS);
+			else 
+				result[k] = vM;
 		}
 		return result;
 	}

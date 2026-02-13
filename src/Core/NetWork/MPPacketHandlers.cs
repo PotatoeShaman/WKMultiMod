@@ -14,6 +14,8 @@ using Random = UnityEngine.Random;
 namespace WKMPMod.NetWork;
 
 public class MPPacketHandlers {
+	public const string NO_ITEM_NAME = "None";
+	public const string ARTIFACT_NAME = "Artifact";
 
 	/// <summary>
 	/// 主机接收WorldInitRequest: 请求初始化数据
@@ -153,7 +155,7 @@ public class MPPacketHandlers {
 		var playerPosition = playerObject.transform.position;
 
 		foreach (var (item, count) in remoteItems) {
-			if (item == MPMain.NO_ITEM_NAME)
+			if (item == NO_ITEM_NAME)
 				continue;
 
 			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(item);
@@ -176,8 +178,8 @@ public class MPPacketHandlers {
 					// 随机动量方向: (-1~1,1,-1~1)再归一化
 					Vector3 direction = new Vector3(
 						Random.Range(-1f, 1f), 1f, Random.Range(-1f, 1f)).normalized;
-					// 添加冲量 力度(3-8)
-					rb.AddForce(direction * Random.Range(3f, 8f), ForceMode.Impulse);
+					// 添加冲量 力度(1-2)
+					rb.AddForce(direction * Random.Range(1f, 2f), ForceMode.Impulse);
 					// 可选: 添加随机旋转扭矩，让物品在空中旋转
 					//rb.AddTorque(Random.insideUnitSphere * Random.Range(1f, 5f), ForceMode.Impulse);
 				}
@@ -255,13 +257,22 @@ public class MPPacketHandlers {
 		var remoteItems = reader.GetStringByteDict();
 		var localItems = MPCore.GetGetInventoryItems();
 		var missingItems = SetDifference(remoteItems, localItems);
+		//foreach (var kvp in remoteItems) {
+		//	MPMain.LogInfo($"[MP Debug]对方背包 物品: {kvp.Key} 数量: {kvp.Value}");
+		//}
+		//foreach (var kvp in localItems) {
+		//	MPMain.LogInfo($"[MP Debug]我方背包 物品: {kvp.Key} 数量: {kvp.Value}");
+		//}
+		//foreach (var kvp in missingItems) {
+		//	MPMain.LogInfo($"[MP Debug]相差背包 物品: {kvp.Key} 数量: {kvp.Value}");
+		//}
 
 		var inventory = Inventory.instance;
 		foreach (var (itemId, count) in missingItems) {
 			// 空物品ID或神器不生成
-			if (itemId == MPMain.NO_ITEM_NAME)
+			if (itemId == NO_ITEM_NAME)
 				continue;
-			if (itemId.Contains(MPMain.ARTIFACT_NAME))
+			if (itemId.Contains(ARTIFACT_NAME))
 				continue;
 
 			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(itemId);
@@ -270,16 +281,18 @@ public class MPPacketHandlers {
 				continue;
 			}
 
-			// 实例化物品在 0,1,0 
-			var pickupObj = GameObject.Instantiate(itemPrefab, new Vector3(0, 1, 0), Quaternion.identity);
-			var item_Object = pickupObj.GetComponent<Item_Object>();
-			if (item_Object != null) {
-				inventory.AddItemToInventoryCenter(item_Object.itemData);
-				// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
-				item_Object.gameObject.SetActive(value: false);
-			} else {
-				MPMain.LogInfo($"[MP Debug] 生成物: {pickupObj.name} 不可放入库存");
-				continue;
+			for (int i = 0; i < count; i++) {
+				// 实例化物品在 0,1,0 
+				var pickupObj = GameObject.Instantiate(itemPrefab, new Vector3(0, 1, 0), Quaternion.identity);
+				var item_Object = pickupObj.GetComponent<Item_Object>();
+				if (item_Object != null) {
+					inventory.AddItemToInventoryCenter(item_Object.itemData);
+					// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+					item_Object.gameObject.SetActive(value: false);
+				} else {
+					MPMain.LogInfo($"[MP Debug] 生成物: {pickupObj.name} 不可放入库存");
+					continue;
+				}
 			}
 		}
 

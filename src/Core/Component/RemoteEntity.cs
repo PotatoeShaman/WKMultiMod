@@ -11,7 +11,7 @@ public class RemoteEntity : GameEntity {
 	public ulong PlayerId {
 		get => _playerId;
 		set {
-			MPMain.LogInfo($"[MP Debug] PlayerId changed: {_playerId} → {value}\n{Environment.StackTrace}");
+			//MPMain.LogInfo($"[MP Debug] PlayerId changed: {_playerId} → {value}\n{Environment.StackTrace}");
 			_playerId = value;
 		}
 	}

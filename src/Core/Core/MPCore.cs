@@ -388,15 +388,15 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// </summary>
 	private void RegisterCommands() {
 		// 将命令注册到 CommandConsole
-		CommandConsole.AddCommand("host", Host, false);
-		CommandConsole.AddCommand("join", Join, false);
-		CommandConsole.AddCommand("leave", Leave, false);
-		CommandConsole.AddCommand("getlobbyid", GetLobbyId, false);
-		CommandConsole.AddCommand("allconnections", GetAllConnections, false);
-		CommandConsole.AddCommand("getallplayer", GetAllPlayer, false);
-		CommandConsole.AddCommand("talk", Talk, false);
-		CommandConsole.AddCommand("tpto", TpToPlayer, false);
-		CommandConsole.AddCommand("initialized", Initialized, false);
+		CommandConsole.AddCommand("host", Host);
+		CommandConsole.AddCommand("join", Join);
+		CommandConsole.AddCommand("leave", Leave);
+		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
+		CommandConsole.AddCommand("allconnections", GetAllConnections);
+		CommandConsole.AddCommand("getallplayer", GetAllPlayer);
+		CommandConsole.AddCommand("talk", Talk);
+		CommandConsole.AddCommand("tpto", TpToPlayer);
+		CommandConsole.AddCommand("initialized", Initialized);
 		CommandConsole.AddCommand("changemodel", (str) => _LocalPlayer.DefaulFactoryId = str[0], false);
 		CommandConsole.AddCommand("test", Test.Test.Main, false);
 	}
@@ -676,6 +676,11 @@ public class MPCore : MonoSingleton<MPCore> {
 				itemsDict[item.prefabName]++;
 			}
 		}
+
+		//foreach (var kvp in itemsDict) {
+		//	MPMain.LogInfo($"[MP Debug] 物品: {kvp.Key} 数量: {kvp.Value}");
+		//}
+
 		return itemsDict;
 	}
 
