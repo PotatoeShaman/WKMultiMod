@@ -399,6 +399,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		CommandConsole.AddCommand("initialized", Initialized);
 		CommandConsole.AddCommand("changemodel", (str) => _LocalPlayer.DefaulFactoryId = str[0], false);
 		CommandConsole.AddCommand("test", Test.Test.Main, false);
+		CommandConsole.AddCommand("cheatstest", Test.CheatsTest.Main);
 	}
 
 	/// <summary>

@@ -212,7 +212,7 @@ public class MPPacketHandlers {
 
 	/// <summary>
 	/// 主机/客户端接收PlayerTeleportRequest<br/>
-	/// 发送PlayerTeleportRespond: 有Mess环境则携带Mess数据<br/>
+	/// 发送PlayerTeleportRespond: 位置数据, 库存数据, 有Mess环境则携带Mess数据<br/>
 	/// <see cref="MPPacketHandlers.HandlePlayerTeleportRespond(ulong, DataReader)"/>
 	/// </summary>
 	/// <param name="senderId">发送方ID</param>
@@ -243,7 +243,7 @@ public class MPPacketHandlers {
 	}
 
 	/// <summary>
-	/// 主机/客户端接收PlayerTeleportRespond: 传送并同步Mess数据
+	/// 主机/客户端接收PlayerTeleportRespond: 位置数据, 库存数据, 有Mess环境则携带Mess数据
 	/// <see cref="MPPacketHandlers.HandlePlayerTeleportRequest(ulong, DataReader)"/>
 	/// </summary>
 	/// <param name="senderId">发送ID</param>
@@ -287,6 +287,8 @@ public class MPPacketHandlers {
 				var item_Object = pickupObj.GetComponent<Item_Object>();
 				if (item_Object != null) {
 					inventory.AddItemToInventoryCenter(item_Object.itemData);
+					// 摆正为竖直向上,因为物品对象默认是向前
+					item_Object.itemData.bagRotation = Quaternion.Euler(90, 0, 0);
 					// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
 					item_Object.gameObject.SetActive(value: false);
 				} else {

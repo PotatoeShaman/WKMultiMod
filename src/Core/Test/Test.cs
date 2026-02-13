@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using JetBrains.Annotations;
 using Steamworks;
 using System;
 using System.IO;
@@ -27,7 +28,7 @@ public class Test : MonoBehaviour {
 	public static void Main(string[] args) {
 
 		if (args.Length == 0) {
-			Debug.Log("测试命令需要参数,可用参数:0-8");
+			Debug.Log("测试命令需要参数");
 			return;
 		}
 
@@ -47,9 +48,6 @@ public class Test : MonoBehaviour {
 			"11" => RunCommand(CreateDontDestroyGameObject),    // 创建测试对象并设置DontDestroyOnLoad
 			"12" => RunCommand(TestSingleton),  // 测试单例模式
 			"13" => RunCommand(SimulationPlayerUpdata),  // 模拟玩家数据更新事件
-			"14" => RunCommand(() => CreateItem(args[1..])),  // 创建物品,参数:物品预制体名称(string)
-			"15" => RunCommand(() => AddItemInInventory(args[1..])),  // 创建物品并放入库存,参数:物品预制体名称(string)" =
-			"16" => RunCommand(GetInventoryItems),  // 获取库存信息
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -169,7 +167,7 @@ public class Test : MonoBehaviour {
 		GameObject singleton2 = new GameObject("Test Game Object2");
 	}
 	// 输出单例测试
-	public static void TestSingleton() { 
+	public static void TestSingleton() {
 		MPMain.LogWarning(TestMonoSingleton.Instance.TestString);
 	}
 	// 模拟玩家数据更新事件
@@ -178,10 +176,34 @@ public class Test : MonoBehaviour {
 		ArraySegment<byte> segment = new ArraySegment<byte>(data);
 		MPEventBusNet.NotifyReceive(1, segment);
 	}
+}
+public class CheatsTest : MonoBehaviour {
+	public static void Main(string[] args) {
+
+		if (args.Length == 0) {
+			Debug.Log("测试命令需要参数");
+			return;
+		}
+
+		// 使用 switch 表达式使代码更简洁
+		_ = args[0] switch {
+			"0" => RunCommand(() => CreateItem(args[1..])),  // 创建物品,参数:物品预制体名称(string)
+			"1" => RunCommand(() => AddItemInInventory(args[1..])),  // 创建物品并放入库存,参数:物品预制体名称(string)
+			"2" => RunCommand(GetInventoryItems),  // 获取库存信息
+			"3" => RunCommand(AddItemInInventoryQuaternionTest),
+			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
+		};
+	}
+	// 辅助方法:安全执行命令
+	private static bool RunCommand(Action action) {
+		action();
+		return true;
+	}
+
 	// 创建物品测试
 	public static void CreateItem(string[] args) {
 		foreach (var arg in args) {
-			if (arg != NO_ITEM_PREFAB_NAME) {
+			if (arg != "None") {
 				// 从资源管理器获取预制体
 				GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(arg);
 				if (prefabAsset != null) {
@@ -242,7 +264,7 @@ public class Test : MonoBehaviour {
 	public static void AddItemInInventory(string[] args) {
 		var inventory = Inventory.instance;
 		foreach (var arg in args) {
-			if (arg != NO_ITEM_PREFAB_NAME) {
+			if (arg != "None") {
 				// 从资源管理器获取预制体
 				GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(arg);
 				if (prefabAsset != null) {
@@ -256,12 +278,32 @@ public class Test : MonoBehaviour {
 					} else {
 						MPMain.LogInfo($"[MP Debug] 生成物: {item.name} 不可放入库存");
 					}
-					
+
 				} else {
 					MPMain.LogInfo($"[MP Debug] 生成物: {arg} 不存在");
 				}
 			}
 		}
 	}
+	public static void AddItemInInventoryQuaternionTest() {
+		var inventory = Inventory.instance;
 
+		void AddItemInInventoryQuaternionTest(string arg, Quaternion quaternion) {
+			// 从资源管理器获取预制体
+			GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(arg);
+
+			// 实例化物品在 0,0.5,0 
+			var item = Instantiate(prefabAsset, new Vector3(0, 0.5f, 0), Quaternion.identity);
+			var item_Object = item.GetComponent<Item_Object>();
+			item_Object.itemData.bagRotation = quaternion; // 设置物品数据中的旋转
+			inventory.AddItemToInventoryCenter(item_Object.itemData);
+			// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+			item_Object.gameObject.SetActive(value: false);
+		}
+		AddItemInInventoryQuaternionTest("Item_Rebar", Quaternion.Euler(90, 0, 0));
+		AddItemInInventoryQuaternionTest("Item_Rebar_Explosive", Quaternion.Euler(90, 0, 0));
+		AddItemInInventoryQuaternionTest("Item_RebarRope", Quaternion.Euler(90, 0, 0));
+		AddItemInInventoryQuaternionTest("Item_Rebar_Holiday", Quaternion.Euler(90, 0, 0));
+		AddItemInInventoryQuaternionTest("Item_RebarRope_Holiday", Quaternion.Euler(90, 0, 0));
+	}
 }
