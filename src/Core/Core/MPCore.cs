@@ -76,7 +76,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	// 手部皮肤 -> 玩家模型ID 映射字典
 	public static readonly Dictionary<string, string> HandSkinToModelId = new() {
 		{ "default","default"},
-		{ MPMain.SlugcatHandId, MPMain.SlugcatBodyFactoryId },
+		{ MPMain.SLUGCAT_HAND_ID, MPMain.SLUGCAT_BODY_FACTORY_ID },
 		// 可在此添加更多映射
 	};
 
@@ -215,7 +215,7 @@ public class MPCore : MonoSingleton<MPCore> {
 			}
 		}
 		// 有连接但没有创建对象
-		foreach (var (steamId,connection) in _MPsteamworks._allConnections) {
+		foreach (var (steamId, connection) in _MPsteamworks._allConnections) {
 			if (!RPManager.Instance.Players.ContainsKey(steamId)) {
 				MPMain.LogWarning(Localization.Get("MPCore", "PlayerDataMissing", steamId));
 				// 发送请求玩家创建包
@@ -362,20 +362,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		writer.Put(type);
 
 		// 库存物品字典
-		var inventory = Inventory.instance;
-		var itemsDict = new Dictionary<string, byte>();
-
-		if (inventory != null) {
-			// 获取库存中的物品列表
-			var items = inventory.GetItems();
-			foreach (var item in items) {
-				itemsDict.TryAdd(item.prefabName, 0);
-				itemsDict[item.prefabName]++;
-			}
-		} else {
-			MPMain.LogWarning(Localization.Get("MPCore", "InventoryDoesNotExist"));
-		}
-		writer.Put(itemsDict);
+		writer.Put(GetGetInventoryItems());
 
 		_MPsteamworks.Broadcast(writer);
 
@@ -666,6 +653,30 @@ public class MPCore : MonoSingleton<MPCore> {
 			_MPsteamworks.SendToHost(writer);
 			yield return new WaitForSeconds(4.0f);
 		}
+	}
+
+	#endregion
+
+	#region[工具函数]
+
+	/// <summary>
+	/// 获取物品清单字典
+	/// </summary>
+	public static Dictionary<string, byte> GetGetInventoryItems() {
+		var inventory = Inventory.instance;
+		var itemsDict = new Dictionary<string, byte>();
+
+		if (inventory == null)
+			MPMain.LogWarning(Localization.Get("MPCore", "InventoryDoesNotExist"));
+		else {
+			// 获取库存中的物品列表
+			var items = inventory.GetItems();
+			foreach (var item in items) {
+				itemsDict.TryAdd(item.prefabName, 0);
+				itemsDict[item.prefabName]++;
+			}
+		}
+		return itemsDict;
 	}
 
 	#endregion

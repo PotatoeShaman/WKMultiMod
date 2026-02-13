@@ -40,4 +40,17 @@ public static class DictionaryExtensions {
 		}
 		return divisor;
 	}
+
+	// 返回 minuend - subtrahend 的结果(仅保留差值大于0的项)
+	public static Dictionary<K, byte> SetDifference<K> (
+		Dictionary<K, byte> minuend,   
+		Dictionary<K, byte> subtrahend) {
+
+		var result = new Dictionary<K, byte>();
+		foreach (var (k, vM) in minuend) {
+			if (subtrahend.TryGetValue(k, out var vS) && vM > vS)
+				result[k] = (byte)(vM - vS);
+		}
+		return result;
+	}
 }

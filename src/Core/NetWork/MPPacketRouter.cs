@@ -55,9 +55,10 @@ public class MPPacketRouter {
 	}
 
 	/// <summary>
-	/// 处理反射获取的方法,转为IEnumerable<(PacketType, Action<ulong, DataReader>)> 迭代器<包类型,无返回值委托>
+	/// 处理反射获取的方法,转为IEnumerable &lt;(PacketType, Action&lt;ulong, DataReader&gt;)&gt; <br/>迭代器 &lt;包类型,无返回值委托&gt;
 	/// </summary>
-	private static IEnumerable<(PacketType, Action<ulong, DataReader>)> ProcessMethod(MethodInfo method) {
+	private static IEnumerable<(PacketType, Action<ulong, DataReader>)> 
+		ProcessMethod(MethodInfo method) {
 		// 获取方法上的所有 MPPacketHandlerAttribute 特性
 		var attrs = method.GetCustomAttributes<MPPacketHandlerAttribute>();
 		// 获取方法的参数信息

@@ -188,7 +188,7 @@ public class Test : MonoBehaviour {
 					// 随机位置
 					Vector3 randomOffset = new Vector3(
 										Random.Range(-1f, 1f),     // X轴随机
-										Random.Range(0f, 0.5f),     // Y轴随机（向上）
+										Random.Range(0f, 0.5f),     // Y轴随机(向上)
 										Random.Range(-1f, 1f)       // Z轴随机
 									);
 
@@ -212,7 +212,7 @@ public class Test : MonoBehaviour {
 						// 随机力度 (3-8之间)
 						float randomForce = Random.Range(3f, 8f);
 
-						// 添加冲量（瞬间力）
+						// 添加冲量(瞬间力)
 						rb.AddForce(randomDirection * randomForce, ForceMode.Impulse);
 
 						// 可选: 添加随机旋转扭矩，让物品在空中旋转

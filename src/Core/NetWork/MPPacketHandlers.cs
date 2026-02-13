@@ -1,7 +1,5 @@
 ﻿using Steamworks;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using WKMPMod.Component;
 using WKMPMod.Core;
@@ -9,7 +7,9 @@ using WKMPMod.Data;
 using WKMPMod.RemotePlayer;
 using WKMPMod.Util;
 using static WKMPMod.Data.MPWriterPool;
+using static WKMPMod.Util.DictionaryExtensions;
 using Random = UnityEngine.Random;
+
 
 namespace WKMPMod.NetWork;
 
@@ -149,26 +149,27 @@ public class MPPacketHandlers {
 		}
 
 		// 生成死亡后掉落物品
-		Dictionary<string, byte> itemsDict = reader.GetStringByteDict();
+		Dictionary<string, byte> remoteItems = reader.GetStringByteDict();
 		var playerPosition = playerObject.transform.position;
 
-		foreach (var (item, count) in itemsDict) {
-			if (item == "None")
+		foreach (var (item, count) in remoteItems) {
+			if (item == MPMain.NO_ITEM_NAME)
 				continue;
 
-			GameObject prefabAsset = CL_AssetManager.GetAssetGameObject(item);
-			if (prefabAsset == null) {
+			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(item);
+			if (itemPrefab == null) {
 				MPMain.LogInfo($"[MP Debug] 生成物: {item} 不存在");
 				continue;
 			}
+
 			for (int i = 0; i < count; i++) {
 				// 随机位置 (-1~1,0~0.5,-1~1)
-				Vector3 randomOffset = new Vector3(
+				Vector3 offset = new Vector3(
 					Random.Range(-1f, 1f), Random.Range(0f, 0.5f), Random.Range(-1f, 1f));
 
 				// 实例化物品
 				var itemObject = GameObject.Instantiate(
-					prefabAsset, playerPosition + randomOffset, Random.rotation);
+					itemPrefab, playerPosition + offset, Random.rotation);
 
 				// 获取Rigidbody并添加随机斜上方动量
 				if (itemObject.TryGetComponent<Rigidbody>(out var rb)) {
@@ -182,9 +183,9 @@ public class MPPacketHandlers {
 				}
 			}
 		}
+
 		// 处理玩家死亡
 		RPManager.Instance.ProcessPlayerDeath(senderId);
-
 	}
 
 	/// <summary>
@@ -209,17 +210,21 @@ public class MPPacketHandlers {
 
 	/// <summary>
 	/// 主机/客户端接收PlayerTeleportRequest<br/>
-	/// 发送PlayerTeleportRespond: 有Mess环境则携带Mess数据
+	/// 发送PlayerTeleportRespond: 有Mess环境则携带Mess数据<br/>
+	/// <see cref="MPPacketHandlers.HandlePlayerTeleportRespond(ulong, DataReader)"/>
 	/// </summary>
 	/// <param name="senderId">发送方ID</param>
 	[MPPacketHandler(PacketType.PlayerTeleportRequest)]
-	private static void HandlePlayerTeleport(ulong senderId, DataReader reader) {
+	private static void HandlePlayerTeleportRequest(ulong senderId, DataReader reader) {
 		// 获取数据
-		var positionData = ENT_Player.GetPlayer().transform.position;
+		var playerPos = ENT_Player.GetPlayer().transform.position;
 		var writer = GetWriter(MPSteamworks.Instance.UserSteamId, senderId, PacketType.PlayerTeleportRespond);
-		writer.Put(positionData.x);
-		writer.Put(positionData.y);
-		writer.Put(positionData.z);
+		writer.Put(playerPos.x);
+		writer.Put(playerPos.y);
+		writer.Put(playerPos.z);
+
+		// 库存物品字典
+		writer.Put(MPCore.GetGetInventoryItems());
 
 		// 没有Mess环境则直接发送位置数据,有则发送位置数据和Mess数据
 		if (DEN_DeathFloor.instance == null) {
@@ -237,13 +242,47 @@ public class MPPacketHandlers {
 
 	/// <summary>
 	/// 主机/客户端接收PlayerTeleportRespond: 传送并同步Mess数据
+	/// <see cref="MPPacketHandlers.HandlePlayerTeleportRequest(ulong, DataReader)"/>
 	/// </summary>
 	/// <param name="senderId">发送ID</param>
 	[MPPacketHandler(PacketType.PlayerTeleportRespond)]
-	private static void HandleRespondPlayerTeleport(ulong senderId, DataReader reader) {
+	private static void HandlePlayerTeleportRespond(ulong senderId, DataReader reader) {
 		var posX = reader.GetFloat();
 		var posY = reader.GetFloat();
 		var posZ = reader.GetFloat();
+
+		// 对方背包物品
+		var remoteItems = reader.GetStringByteDict();
+		var localItems = MPCore.GetGetInventoryItems();
+		var missingItems = SetDifference(remoteItems, localItems);
+
+		var inventory = Inventory.instance;
+		foreach (var (itemId, count) in missingItems) {
+			// 空物品ID或神器不生成
+			if (itemId == MPMain.NO_ITEM_NAME)
+				continue;
+			if (itemId.Contains(MPMain.ARTIFACT_NAME))
+				continue;
+
+			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(itemId);
+			if (itemPrefab == null) {
+				MPMain.LogInfo($"[MP Debug] 生成物: {itemId} 不存在");
+				continue;
+			}
+
+			// 实例化物品在 0,1,0 
+			var pickupObj = GameObject.Instantiate(itemPrefab, new Vector3(0, 1, 0), Quaternion.identity);
+			var item_Object = pickupObj.GetComponent<Item_Object>();
+			if (item_Object != null) {
+				inventory.AddItemToInventoryCenter(item_Object.itemData);
+				// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+				item_Object.gameObject.SetActive(value: false);
+			} else {
+				MPMain.LogInfo($"[MP Debug] 生成物: {pickupObj.name} 不可放入库存");
+				continue;
+			}
+		}
+
 		if (reader.GetBool()) {
 			var deathFloorData = new DEN_DeathFloor.SaveData {
 				relativeHeight = reader.GetFloat(),

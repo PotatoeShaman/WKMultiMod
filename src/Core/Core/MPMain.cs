@@ -34,8 +34,10 @@ public class MPMain : BaseUnityPlugin {
 	// 核心实例访问器
 	public static MPCore Core => MPCore.Instance;
 
-	public const string SlugcatHandId = "slugcat hands";
-	public const string SlugcatBodyFactoryId = "slugcat";
+	public const string SLUGCAT_HAND_ID = "slugcat hands";
+	public const string SLUGCAT_BODY_FACTORY_ID = "slugcat";
+	public const string NO_ITEM_NAME = "None";
+	public const string ARTIFACT_NAME = "Artifact";
 
 	// Awake在对象创建时调用, 早于Start
 	private void Awake() {
