@@ -23,9 +23,7 @@ This is a Unity MOD for the game  *White Knuckle* , implementing basic networked
 graph RL
     %% Module 1: Player Display
     subgraph Player Display
-        1a[Hand Sprites]
         1d[Display Other Players' Held Items]
-        1e[Custom Hand Sprites]
     end
 
     %% Module 2: Player Interaction
@@ -38,15 +36,11 @@ graph RL
     %% Module 3: Data Synchronization
     subgraph Data Synchronization
         3a["Sync Man-made Structures (Rock Bolts, Rebars)"]
-        3b[Sync Inventory]
         3c[Sync Pickup Items]
         3e[Sync Entity Data]
     end
 
     %% Dependency Connections (cross-module and within modules)
-    1a --> 1e
-    3b --> 1d
-    1a --> 1d
     1d --> 2b
 ```
 
@@ -100,41 +94,56 @@ WhiteKnuckleMod/
 │   ├─ Data/
 │   │   ├─ DataReader.cs            # Reads data from ArraySegment<byte>/byte[]
 │   │   ├─ DataWriter.cs            # Writes data to ArraySegment<byte>
+│   │   ├─ MPDataPool.cs            # Manages thread-isolated read/write object pools to avoid frequent memory allocation
 │   │   ├─ MPDataSerializer.cs      # Serializes/deserializes PlayerData
+│   │   ├─ MPEventBusGame.cs        # In-game data bus, handles in-game event publishing and subscription
 │   │   └─ MPEventBusNet.cs         # Network data bus, facilitates communication between MPCore and MPSteamworks
 │   ├─ NetWork/
-│   │   ├─ MPLiteNet.cs             # (Currently deprecated)
+│   │   ├─ MPLiteNet.cs             # IP-based connection (currently deprecated)
+│   │   ├─ MPPacketHandler.cs       # Class for processing received data packets, dispatches data based on protocol
+│   │   ├─ MPPacketRouter.cs        # Builds packet type → handler function dictionary via reflection, calls handler based on packet type
 │   │   └─ MPSteamworks.cs          # Separated Steam networking logic class
 │   ├─ Patch/
 │   │   ├─ Patch.cs                 # Patches for map synchronization via unlock progress + disabled flipping
 │   │   ├─ Patch_ENT_Player.cs      # Patches for capturing player events
 │   │   └─ Patch_SteamManager.cs    # Patches for initializing MPCore via SteamManager lifecycle
-│   ├─ RemoteManager/
-│   │   ├─ RemotePlayerContainer.cs # Handles data updates and logic for a single remote player object
-│   │   └─ RemotePlayerManager.cs   # Manages lifecycle of all remote player objects
+│   ├─ RemotePlayer/
+│   │   ├─ Factory/
+│   │   │   ├─ BaseRemoteFactory.cs # Base class for remote object factories, provides interface for creating remote objects by cloning prefabs
+│   │   │   └─ SlugcatFactory.cs    # Factory class with special handling for Slugcat prefab model
+│   │   ├─ RPContainer.cs            # Handles data updates and lifecycle for a single remote player object
+│   │   ├─ RPFactoryManager.cs       # Creates remote player objects and adds them to RPManager for management
+│   │   └─ RPManager.cs              # Manages data updates and lifecycle for all remote player objects
 │   ├─ Test/
-│   │   └─ Test.cs                  # Non-game-impacting test functions, allows quick modifications
-│   └─ Util/                    
-│       ├─ DictionaryExtensions.cs  # Dictionary suffix matching for tpto command
-│       ├─ MPDataPool.cs            # Thread-isolated read/write object pool
-│       ├─ TickTimer.cs             # Debug output frequency controller
-│       └─ TypeConverter.cs         # String-to-bool utility
+│   │   ├─ Test.cs                  # Non-game-impacting test functions, allows quick modifications
+│   │   └─ TestMonoSingleton.cs     # Test MonoSingleton, allows quick modifications
+│   └─ Util/ 
+│       ├─ Localization/       
+│       │   ├─ Localization.cs      # Localization utility class, retrieves localized console text
+│       │   ├─ json_sort.py         # Sorts JSON files in the Localization folder
+│       │   ├─ texts_en.json        # English texts
+│       │   └─ texts_zh.json        # Chinese texts
+│       ├─ MonoSingleton.cs         # Base class for Unity component singletons, provides singleton pattern implementation for Unity
+│       └─ Singleton.cs             # Base class for regular singletons, provides generic singleton pattern implementation
 │
 ├── src/Shared/                     # Extracted Unity component logic for sharing with Unity project for rapid prefab construction
 │   ├─ Component/                   # Components usable in Unity project
 │   │   ├─ LookAt.cs                # Forces label to face player, scales label to maintain constant size
+│   │   ├─ ObjectIdentity.cs        # Identifies the factory ID that created this object, used for proper destruction
 │   │   ├─ RemoteHand.cs            # Controls hand position via network data
 │   │   ├─ RemotePlayer.cs          # Controls player position via network data
 │   │   ├─ RemoteTag.cs             # Controls label content via network data
 │   │   └─ SimpleArmIK.cs           # Uses IK to connect arm to hand
 │   ├─ Data/ 
 │   │   ├─ HandData.cs              # Hand position data
-│   │   ├─ MPEventBusGame.cs        # In-game data bus
 │   │   └─ PlayerData.cs            # Player position data
-│   └─ MK_Component/                # Game-internal components, cannot be directly assigned, handled via mapping components
-│       ├─ MK_CL_Handhold.cs        # Mapping for in-game CL_Handhold
-│       ├─ MK_ObjectTagger.cs       # Mapping for in-game ObjectTagger
-│       └─ MK_RemoteEntity.cs       # Mapping for mod's RemoteEntity
+│   ├─ MK_Component/                # Game-internal components, cannot be directly assigned, handled via mapping components
+│   │   ├─ MK_CL_Handhold.cs        # Mapping for in-game CL_Handhold
+│   │   ├─ MK_ObjectTagger.cs       # Mapping for in-game ObjectTagger
+│   │   └─ MK_RemoteEntity.cs       # Mapping for mod's RemoteEntity
+│   └─ Util/ 
+│       ├─ DictionaryExtensions.cs  # Dictionary utility class, provides suffix matching, set difference operations, etc.
+│       └─ TickTimer.cs             # Debug output frequency controller
 │
 ├── lib/                            # External dependency directory (must be added manually)
 │   └── README.md                   # Dependency acquisition guide
@@ -168,7 +177,7 @@ The project file (`WhiteKnuckleMod.csproj`) is configured with key references an
 
 ## Multiplayer Functionality
 
-### Version 1.0/0.14
+### Version 1.2/0.14
 
 After enabling cheat mode (`cheats`) in-game, use the following commands:
 
@@ -208,6 +217,10 @@ DataSendFrequency = 20
 ## This value sets the scale size for player name tags above their heads.
 # Setting type: Single
 NameTagScale = 1
+
+## Sets the model used for remote players. Default is 'default', you can set it to 'slugcat' to use the slugcat model.
+# Setting type: String
+Model = default
 
 [RemotePlayerPvP]
 

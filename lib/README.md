@@ -2,7 +2,7 @@
 
 ## 中文说明
 
-您需要从以下游戏目录获取所需的 DLL 文件并放入 `lib/` 文件夹中:
+您需要从以下游戏目录获取所需的 DLL 文件并放入 `lib/($FolderName)` 文件夹中:
 
 ```sh
 steamapps\common\White Knuckle\White Knuckle_Data\Managed
@@ -11,11 +11,21 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 
 ### 需要的文件列表:
 
+# BepInEx\
 - `BepInEx\Core`(5.4.23)
+# GameData\
 - `ALINE.dll`
 - `Assembly-CSharp-firstpass.dll`
 - `Assembly-CSharp.dll`
+- `DarkMachineUI.dll`
 - `Facepunch.Steamworks.Win64.dll`
+- `Newtonsoft.Json.dll`
+# Unity\
+- `Unity.Mathematics.dll`
+- `Unity.Mathematics.Extensions.dll`
+- `Unity.Mathematics.Extensions.Hybrid.dll`
+- `Unity.Postprocessing.Runtime.dll`
+- `UnityEngine.AssetBundleModule.dll`
 - `UnityEngine.CoreModule.dll`
 - `UnityEngine.dll`
 - `UnityEngine.InputLegacyModule.dll`
@@ -23,20 +33,19 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 - `UnityEngine.TextRenderingModule.dll`
 - `UnityEngine.UI.dll`
 
-
 ### 操作步骤:
 
 1. 确保已安装游戏 **White Knuckle**
 2. 导航到上述 Steam 游戏目录
 3. 复制列出的所有 DLL 文件
-4. 粘贴到本项目的 `lib/` 文件夹中
+4. 粘贴到本项目的 `lib/($FolderName)` 的各个文件夹中
 5. 重新构建项目即可使用
 
 ---
 
 ## English Instructions
 
-You need to obtain the required DLL files from the following game directory and place them in the `lib/` folder:
+You need to obtain the required DLL files from the following game directory and place them in the `lib/($FolderName)` folder:
 
 ```sh
 steamapps\common\White Knuckle\White Knuckle_Data\Managed
@@ -45,14 +54,26 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 
 ### Required files list:
 
-- `BeplnEx\Core`(5.4.23)
+# BepInEx\
+- `BepInEx\Core`(5.4.23)
+# GameData\
 - `ALINE.dll`
 - `Assembly-CSharp-firstpass.dll`
 - `Assembly-CSharp.dll`
+- `DarkMachineUI.dll`
+- `Facepunch.Steamworks.Win64.dll`
+- `Newtonsoft.Json.dll`
+# Unity\
+- `Unity.Mathematics.dll`
+- `Unity.Mathematics.Extensions.dll`
+- `Unity.Mathematics.Extensions.Hybrid.dll`
+- `Unity.Postprocessing.Runtime.dll`
+- `UnityEngine.AssetBundleModule.dll`
 - `UnityEngine.CoreModule.dll`
 - `UnityEngine.dll`
 - `UnityEngine.InputLegacyModule.dll`
 - `UnityEngine.PhysicsModule.dll`
+- `UnityEngine.TextRenderingModule.dll`
 - `UnityEngine.UI.dll`
 
 ### Steps:
@@ -60,7 +81,7 @@ steamapps\common\White Knuckle\White Knuckle_Data\Managed
 1. Ensure the game **White Knuckle** is installed
 2. Navigate to the Steam game directory mentioned above
 3. Copy all listed DLL files
-4. Paste them into the `lib/` folder of this project
+4. Paste them into the `lib/($FolderName)` each folder of this project
 5. Rebuild the project to use them
 
 ---

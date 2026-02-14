@@ -27,8 +27,6 @@ public class RemoteEntity : GameEntity {
 	public float OtherActive = 1;
 	// 受到伤害时调用
 	public override bool Damage(float amount, string type) {
-		// Debug
-		//MPMain.LogInfo($"[MP Debug] A PlayerId: {PlayerId} amount: {amount} type: {type}");
 
 		var baseDamage = amount * AllActive;
 		switch (type) {

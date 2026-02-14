@@ -1,4 +1,5 @@
 ﻿using Steamworks;
+using Steamworks.Ugc;
 using System.Collections.Generic;
 using UnityEngine;
 using WKMPMod.Component;
@@ -154,13 +155,14 @@ public class MPPacketHandlers {
 		Dictionary<string, byte> remoteItems = reader.GetStringByteDict();
 		var playerPosition = playerObject.transform.position;
 
-		foreach (var (item, count) in remoteItems) {
-			if (item == NO_ITEM_NAME)
+		foreach (var (itemId
+			, count) in remoteItems) {
+			if (itemId == NO_ITEM_NAME)
 				continue;
 
-			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(item);
+			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(itemId);
 			if (itemPrefab == null) {
-				MPMain.LogInfo($"[MP Debug] 生成物: {item} 不存在");
+				MPMain.LogInfo(Localization.Get("MPMessageHandlers", "PrefabDoesNotExist", itemId));
 				continue;
 			}
 
@@ -257,15 +259,6 @@ public class MPPacketHandlers {
 		var remoteItems = reader.GetStringByteDict();
 		var localItems = MPCore.GetGetInventoryItems();
 		var missingItems = SetDifference(remoteItems, localItems);
-		//foreach (var kvp in remoteItems) {
-		//	MPMain.LogInfo($"[MP Debug]对方背包 物品: {kvp.Key} 数量: {kvp.Value}");
-		//}
-		//foreach (var kvp in localItems) {
-		//	MPMain.LogInfo($"[MP Debug]我方背包 物品: {kvp.Key} 数量: {kvp.Value}");
-		//}
-		//foreach (var kvp in missingItems) {
-		//	MPMain.LogInfo($"[MP Debug]相差背包 物品: {kvp.Key} 数量: {kvp.Value}");
-		//}
 
 		var inventory = Inventory.instance;
 		foreach (var (itemId, count) in missingItems) {
@@ -277,7 +270,7 @@ public class MPPacketHandlers {
 
 			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(itemId);
 			if (itemPrefab == null) {
-				MPMain.LogInfo($"[MP Debug] 生成物: {itemId} 不存在");
+				MPMain.LogInfo(Localization.Get("MPMessageHandlers","PrefabDoesNotExist",itemId));
 				continue;
 			}
 
@@ -292,7 +285,8 @@ public class MPPacketHandlers {
 					// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
 					item_Object.gameObject.SetActive(value: false);
 				} else {
-					MPMain.LogInfo($"[MP Debug] 生成物: {pickupObj.name} 不可放入库存");
+					MPMain.LogInfo(Localization.Get("MPMessageHandlers", "PrefabIsNotItem", pickupObj.name));
+					GameObject.Destroy(pickupObj);
 					continue;
 				}
 			}

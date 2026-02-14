@@ -233,16 +233,17 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 						  SendType sendType = SendType.Reliable, ushort laneIndex = 0) {
 
 		// Debug
-		bool canLog = _debugTick.TryTick();
-		if (canLog) {
-			MPMain.LogInfo(Localization.Get("MPSteamworks", "StartedBroadcasting", _allConnections.Count.ToString()));
-		}
+		//bool canLog = _debugTick.TryTick();
+		//if (canLog) {
+		//	MPMain.LogInfo(Localization.Get("MPSteamworks", "StartedBroadcasting", _allConnections.Count.ToString()));
+		//}
 
 		foreach (var (steamId, connection) in _allConnections) {
 			try {
-				if (canLog) {
-					MPMain.LogInfo(Localization.Get("MPSteamworks", "SendingToConnection", steamId.ToString(), connection.Id.ToString()));
-				}
+
+				//if (canLog) {
+				//	MPMain.LogInfo(Localization.Get("MPSteamworks", "SendingToConnection", steamId.ToString(), connection.Id.ToString()));
+				//}
 
 				connection.SendMessage(data, offset, length, sendType, laneIndex);
 			} catch (Exception ex) {
@@ -735,6 +736,10 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 			}
 		}
 
+		if (!_allConnections.ContainsKey(targetId) && IsInLobby && IsMemberInLobby(targetId)) {
+			MPMain.LogError(Localization.Get("MPSteamworks", "ConnectionProcessFailed"));
+			yield break;
+		}
 	}
 
 	// 清理连接并重连玩家

@@ -23,9 +23,7 @@
 graph RL
     %% 模块 1:玩家显示方面
     subgraph 玩家显示方面
-        1a[手部精灵图]
         1d[显示其他玩家手持物]
-        1e[自定义手部精灵图]
     end
 
     %% 模块 2:玩家交互
@@ -38,15 +36,11 @@ graph RL
     %% 模块 3:同步数据
     subgraph 同步数据
         3a["同步人造结构(岩钉,钢筋)"]
-        3b[同步物品栏]
         3c[同步可拾取物品]
         3e[同步实体数据]
     end
 
     %% 依赖关系连接 (跨模块和模块内)
-    1a --> 1e
-    3b --> 1d
-    1a --> 1d
     1d --> 2b
 ```
 
@@ -100,41 +94,55 @@ WhiteKnuckleMod/
 │   ├─Data/
 │   │   ├─DataReader.cs         # 读取ArraySegment<byte>/byte[]内部数据
 │   │   ├─DataWriter.cs         # 写入ArraySegment<byte>数据
+│   │   ├─MPDataPool.cs         # 管理每个线程独立的读写对象池,避免频繁分配内存
 │   │   ├─MPDataSerializer.cs   # 将PlayerData序列化/反序列化
+│   │   ├─MPEventBusGame.cs     # 游戏内数据总线,负责游戏内事件的发布和订阅
 │   │   └─MPEventBusNet.cs      # 网络数据总线,负责MPCore和MPSteamworks交流
 │   ├─NetWork/
-│   │   ├─MPLiteNet.cs      # 暂时废弃
-│   │   └─MPSteamworks.cs   # 拆分的steam网络逻辑类
+│   │   ├─MPLiteNet.cs          # 通过IP连接 暂时废弃
+│   │   ├─MPPacketHandler.cs    # 处理接收数据包的类,根据协议分发数据
+│   │   ├─MPPacketRouter.cs     # 通过反射构建 包类型-处理函数字典 根据包类型调用对应的处理函数
+│   │   └─MPSteamworks.cs       # 拆分的steam网络逻辑类
 │   ├─Patch/
 │   │   ├─Patch.cs                  # 补丁,通过解锁进度+禁用翻转实现地图同步
 │   │   ├─Patch_ENT_Player.cs       # 补丁,获取玩家的事件
 │   │   └─Patch_SteamManager.cs     # 补丁,通过SteamManager的生命周期来初始化MPCore
-│   ├─RemoteManager/
-│   │   ├─RemotePlayerContainer.cs  # 负责单个远程玩家对象的数据更新等逻辑
-│   │   └─RemotePlayerManager       # 管理全部远程玩家对象的生命周期
+│   ├─RemotePlayer/
+│   │   ├─Factory/
+│   │   │   ├─BaseRemoteFactory.cs  # 远程对象工厂基类,提供创建远程对象的接口,通过复制预制体创建远程玩家对象
+│   │   │   └─SlugcatFactory.cs     # 对蛞蝓猫预制体模型进行特殊处理的工厂类
+│   │   ├─RPContainer.cs        # 负责单个远程玩家对象的数据更新和生命周期
+│   │   ├─RPFactoryManager.cs   # 负责创建远程玩家对象,并将其添加到RPManager中管理
+│   │   └─RPManager.cs          # 管理全部远程玩家对象的数据更新和生命周期
 │   ├─Test/
-│   │   └─Test.cs/  # 不影响游戏的测试函数,可以快速修改
+│   │   ├─Test.cs               # 不影响游戏的测试函数,可以快速修改
+│   │   └─TestMonoSingleton.cs  # 测试用的MonoSingleton,可以快速修改
 │   └─Util/ 
-│       ├─DictionaryExtensions.cs   # 字典后缀匹配,用于tpto命令
-│       ├─MPDataPool.cs             # 线程独立的读写对象池
-│       ├─TickTimer.cs              # Debug控制输出频率计数器
-│       └─TypeConverter.cs          # 字符串转Bool工具
-│
+│       ├─Localization/       
+│       │   ├─Localization.cs   # 本地化工具类,获取本地化控制台文本
+│       │   ├─json_sort.py      # 用于将Localization文件夹下的json文件排序
+│       │   ├─texts_en.json     # 英文文本
+│       │   └─texts_zh.json     # 中文文本
+│       ├─MonoSingleton.cs      # Unity组件单例基类,提供在Unity中使用的单例模式实现
+│       └─Singleton.cs          # 普通单例基类,提供普通的单例模式实现
 ├──src/Shared/      # 提取的Unity组件逻辑,用于共享到unity项目快速构建预制体
 │   ├─Component/    # 可以在Unity项目使用的组件
 │   │   ├─LookAt.cs         # 让标签强制面向玩家,缩放标签使大小不变
+│   │   ├─ObjectIdentity.cs # 标识该对象的创建工厂Id,用于对象正确销毁
 │   │   ├─RemoteHand.cs     # 通过网络数据控制手部位置
 │   │   ├─RemotePlayer.cs   # 通过网络数据控制玩家位置
 │   │   ├─RemoteTag.cs      # 通过网络数据控制标签内容
 │   │   └─SimpleArmIK.cs    # 通过IK使胳膊连接到手
 │   ├─Data/ 
 │   │   ├─HandData.cs           # 手部位置数据
-│   │   ├─MPEventBusGame.cs     # 游戏内数据总线
 │   │   └─PlayerData.cs         # 玩家位置数据
-│   └─MK_Component/     # 游戏内的组件,无法直接赋予,通过映射组件处理
-│       ├─MK_CL_Handhold.cs     # 游戏内CL_Handhold的映射
-│       ├─MK_ObjectTagger.cs    # 游戏内ObjectTagger的映射
-│       └─MK_RemoteEntity.cs    # Mod的RemoteEntity的映射
+│   ├─MK_Component/     # 游戏内的组件,无法直接赋予,通过映射组件处理
+│   │   ├─MK_CL_Handhold.cs     # 游戏内CL_Handhold的映射
+│   │   ├─MK_ObjectTagger.cs    # 游戏内ObjectTagger的映射
+│   │   └─MK_RemoteEntity.cs    # Mod的RemoteEntity的映射
+│   └─Util/ 
+│       ├─DictionaryExtensions.cs   # 字典工具类,有后缀匹配,字典做差等功能
+│       └─TickTimer.cs              # Debug控制输出频率计数器
 ├── lib/                            # 外部依赖库目录 (需自行添加) 
 │   └── README.md                   # 依赖库获取说明
 ├── WhiteKnuckleMod.sln             # Visual Studio 解决方案文件
@@ -167,7 +175,7 @@ WhiteKnuckleMod/
 
 ## 联机功能
 
-## 1.0/0.14
+## 1.2/0.14
 
 在游戏中开启作弊模式 (`cheats`) 后, 可使用以下命令:
 
@@ -204,10 +212,13 @@ DataSendFrequency = 20
 
 [RemotePlayer]
 
-## This value sets the scale size for player name tags above their heads.
 ## 这个值设置玩家头部名称的缩放倍率
 # Setting type: Single
 NameTagScale = 1
+
+## 设置远程玩家使用的模型,默认值为'default',你可以设置为'slugcat'来使用蛞蝓猫模型.
+# Setting type: String
+Model = default
 
 [RemotePlayerPvP]
 
@@ -231,7 +242,7 @@ AllActive = 0.2
 
 ## 玩家受到所有伤害类型的伤害倍率
 # Setting type: Single
-AllPassive = 0
+AllPassive = 1
 
 ## 玩家可以使用锤子造成伤害的伤害倍率
 # Setting type: Single

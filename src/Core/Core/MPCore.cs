@@ -331,10 +331,6 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// 发送伤害其他玩家数据
 	/// </summary>
 	private void HandlePlayerDamage(ulong steamId, float amount, string type) {
-
-		// Debug
-		//MPMain.LogInfo($"[MP Debug] B steamId: {steamId} amount: {amount} type: {type}");
-
 		var writer = GetWriter(_MPsteamworks.UserSteamId, steamId, PacketType.PlayerDamage);
 		writer.Put(amount);
 		writer.Put(type);

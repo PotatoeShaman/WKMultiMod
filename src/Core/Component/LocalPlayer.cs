@@ -68,9 +68,6 @@ public class LocalPlayer : MonoSingleton<LocalPlayer> {
 	// 重置状态缓存
 	public void Initialize(ulong userId,string factoryId) {
 
-		// Debug
-		//MPMain.LogInfo($"[MP Debug] Id: {userId} Factory: {factoryId}");
-
 		UserId = userId;
 		DefaulFactoryId = factoryId;
 		FactoryId = factoryId;
