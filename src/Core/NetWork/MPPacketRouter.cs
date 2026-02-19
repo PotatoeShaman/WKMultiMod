@@ -23,6 +23,7 @@ public class MPPacketRouter {
 	/// </summary>
 	static MPPacketRouter() {
 		// 反射MPPacketService类
+		// 返回迭代器<PacketType, Action<ulong, DataReader>>
 		var handlerEntries = typeof(MPPacketHandlers)
 			// 获取所有静态方法, 包括非公共的
 			.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
@@ -33,6 +34,7 @@ public class MPPacketRouter {
 
 		int count = 0;
 
+		// 将反射获取的结果存入数组
 		foreach (var (packetType, action) in handlerEntries) { 
 			ushort handlerId = (ushort)packetType;
 
@@ -127,7 +129,7 @@ public class MPPacketRouter {
 			&& targetId != MPProtocol.BroadcastId
 			&& targetId != MPProtocol.SpecialId) {
 
-			ProcessForwardToPeer(targetId, data);
+			ProcessForwardToPeer(targetId, (PacketType)packetType, data);
 			return; // 结束
 		}
 
@@ -135,6 +137,7 @@ public class MPPacketRouter {
 		if (targetId == MPProtocol.BroadcastId
 			&& senderId != MPSteamworks.Instance.UserSteamId) {
 
+			// P2P直连模式不需要进行广播包转发
 			//ProcessBroadcastExcept(senderId, data);
 			// 继续执行,因为主机也要处理广播包
 		}
@@ -158,16 +161,12 @@ public class MPPacketRouter {
 	/// <summary>
 	/// 转发网络数据包到指定的客户端
 	/// </summary>
-	private static void ProcessForwardToPeer(ulong targetId, ArraySegment<byte> data) {
-		// 直接从 segment 获取偏移和长度
-		int offset = data.Offset;
-		int count = data.Count;
+	private static void ProcessForwardToPeer(ulong targetId, PacketType type,ArraySegment<byte> data) {
 		// 解析类型
-		PacketType type = (PacketType)ReadUInt16LittleEndian(data.AsSpan(16, 2));
 		SendType st = (type == PacketType.PlayerDataUpdate)
 			? SendType.Unreliable : SendType.Reliable;
-
-		MPSteamworks.Instance.SendToPeer(targetId, data.Array, offset, count, st);
+		// 直接从 segment 获取偏移和长度
+		MPSteamworks.Instance.SendToPeer(targetId, data.Array, data.Offset, data.Count, st);
 	}
 
 	/// <summary>
