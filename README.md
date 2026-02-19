@@ -188,9 +188,9 @@ After enabling cheat mode (`cheats`) in-game, use the following commands:
   * Example: `join 109775241951624817`
 * `talk <text>` - Speak via the overhead label.
   * Example: `talk help me`
+* `getallplayer` - Get all player name and steamId
 * `tpto <steamId(suffix match)>` - Teleport between players
-  * Example: `tpto 22 (target ID: 561198279116422)`
-* `getallplayer` - Get all player message
+  * Example: `tpto 16422 or tpto 22 (target steamId: 561198279116422)`
 
 ### Version 0.12
 

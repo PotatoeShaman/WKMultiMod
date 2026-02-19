@@ -186,9 +186,9 @@ WhiteKnuckleMod/
   * 示例: `join 109775241951624817`
 * `talk <文字(目前控制台不支持中文)>` - 来在头顶的标签上说话
   * 示例: `talk help me`
+* `getallplayer` - 获取全部玩家及其steamId
 * `tpto <steamId(后缀匹配)>` - 进行玩家间tp
-  * 示例 `tpto 22(目标id 561198279116422)` 
-* `getallplayer` - 获取全部玩家
+  * 示例 `tpto 16422 或 tpto 22(目标steamId 561198279116422)` 
 
 ## 0.12
 
