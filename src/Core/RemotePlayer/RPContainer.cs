@@ -87,7 +87,6 @@ public class RPContainer {
 
 	// 初始化远程实体组件引用
 	public void InitializeAllComponent(GameObject instance) {
-		// 直接在实例中寻找这些组件,无需手动写循环遍历
 		_remotePlayer = instance.GetComponentInChildren<Component.RemotePlayer>();
 		_remoteTag = instance.GetComponentInChildren<RemoteTag>();
 		_remoteEntities = instance.GetComponentsInChildren<RemoteEntity>();

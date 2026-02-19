@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using WKMPMod.Asset;
 using WKMPMod.Core;
 using WKMPMod.Data;
 
@@ -7,7 +8,6 @@ namespace WKMPMod.Component;
 
 public class RemoteEntity : GameEntity {
 	private ulong _playerId;
-
 	public ulong PlayerId {
 		get => _playerId;
 		set {
@@ -15,6 +15,9 @@ public class RemoteEntity : GameEntity {
 			_playerId = value;
 		}
 	}
+
+	public GameObject DamageObject; // 受到伤害时生成的特效对象(如果为null则使用默认对象)
+
 	public float AllActive = 1;
 	public float HammerActive = 1;
 	public float RebarActive = 1;
@@ -25,9 +28,22 @@ public class RemoteEntity : GameEntity {
 	public float FlareActive = 1;
 	public float IceActive = 1;
 	public float OtherActive = 1;
+
+	public override void Start() {
+		base.Start();
+		canSave = false;    // 不保存远程实体
+
+		if (DamageObject == null) {
+			DamageObject = MPAssetManager.GetAssetGameObject(MPAssetManager.DAMAGE_OBJECT_NAME);
+		}
+	}
 	// 受到伤害时调用
 	public override bool Damage(float amount, string type) {
-
+		// 生成伤害特效
+		UnityEngine.Object.Instantiate(DamageObject, base.transform.position, base.transform.rotation, base.transform.parent);
+		// 添加屏幕震动
+		CL_CameraControl.Shake(0.01f);
+		// 发布到事件总线
 		var baseDamage = amount * AllActive;
 		switch (type) {
 			case "Hammer":

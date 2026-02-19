@@ -154,6 +154,7 @@ public abstract class BaseRemoteFactory {
 			component.FlareActive = MPConfig.FlareActive;
 			component.IceActive = MPConfig.IceActive;
 			component.OtherActive = MPConfig.OtherActive;
+			component.DamageObject = mk.DamageObject;
 		} else {
 			MPMain.LogError(Localization.Get("RPBaseFactory", "RemoteEntityAddFailed"));
 		}
@@ -163,7 +164,6 @@ public abstract class BaseRemoteFactory {
 	private void MapMarkersToObjectTagger(GameObject go, MK_ObjectTagger mk) {
 		var component = go.GetComponent<ObjectTagger>() ?? go.AddComponent<ObjectTagger>();
 		if (component != null) {
-			// 使用for循环添加标签
 			foreach (var t in mk.tags) {
 				if (!component.tags.Contains(t)) {
 					component.tags.Add(t);

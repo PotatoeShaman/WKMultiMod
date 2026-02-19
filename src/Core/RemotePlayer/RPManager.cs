@@ -1,6 +1,7 @@
 ﻿using Steamworks;
 using System.Collections.Generic;
 using UnityEngine;
+using WKMPMod.Asset;
 using WKMPMod.Core;
 using WKMPMod.Data;
 using WKMPMod.Util;
@@ -68,11 +69,18 @@ public class RPManager : Singleton<RPManager> {
 	public void PlayerRemove(ulong playId) {
 		if (Players.TryGetValue(playId, out var container)) {
 
-			// 工厂清理
-			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
+			// 生成死亡特效
+			var playerPosition = container.PlayerObject.transform.position;
+			var playerRotation = container.PlayerObject.transform.rotation;
+			GameObject.Instantiate(
+				MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME),
+				playerPosition, playerRotation);
 
 			// 容器清理引用
 			container.Destroy();
+
+			// 工厂清理
+			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
 
 			Players.Remove(playId);
 		}

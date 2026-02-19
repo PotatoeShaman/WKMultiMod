@@ -14,4 +14,5 @@ public class MK_RemoteEntity :MonoBehaviour{
 	public float FlareActive = 1;
 	public float IceActive = 1;
 	public float OtherActive = 1;
+	public GameObject DamageObject;
 }

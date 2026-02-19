@@ -2,6 +2,7 @@
 using Steamworks.Ugc;
 using System.Collections.Generic;
 using UnityEngine;
+using WKMPMod.Asset;
 using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
@@ -16,6 +17,7 @@ namespace WKMPMod.NetWork;
 
 public class MPPacketHandlers {
 	public const string NO_ITEM_NAME = "None";
+	public const string HAMMER_NAME = "Item_Hammer";
 	public const string ARTIFACT_NAME = "Artifact";
 
 	/// <summary>
@@ -151,13 +153,20 @@ public class MPPacketHandlers {
 			return;
 		}
 
+		// 生成死亡特效
+		var playerPosition = playerObject.transform.position;
+		var playerRotation = playerObject.transform.rotation;
+		GameObject.Instantiate(
+			MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME),
+			playerPosition, playerRotation);
+
 		// 生成死亡后掉落物品
 		Dictionary<string, byte> remoteItems = reader.GetStringByteDict();
-		var playerPosition = playerObject.transform.position;
 
-		foreach (var (itemId
-			, count) in remoteItems) {
+		foreach (var (itemId, count) in remoteItems) {
 			if (itemId == NO_ITEM_NAME)
+				continue;
+			if (itemId == HAMMER_NAME)
 				continue;
 
 			GameObject itemPrefab = CL_AssetManager.GetAssetGameObject(itemId);

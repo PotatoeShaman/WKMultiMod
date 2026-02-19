@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using WKMPMod.Asset;
 using WKMPMod.Component;
 using WKMPMod.Data;
 using WKMPMod.NetWork;
@@ -64,6 +65,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	private MPSteamworks _MPsteamworks;
 	private RPManager _RPManager;
 	private LocalPlayer _LocalPlayer;
+	private MPAssetManager _MPAssetManager;
 
 	// 世界种子 - 用于同步游戏世界生成
 	public int WorldSeed { get; private set; }
@@ -140,6 +142,10 @@ public class MPCore : MonoSingleton<MPCore> {
 			// 创建本地信息获取发送管理器
 			_LocalPlayer = LocalPlayer.Instance;
 			_LocalPlayer.Initialize(MPSteamworks.Instance.UserSteamId, MPConfig.RemotePlayerModel);
+
+			// 初始化资源管理器
+			_MPAssetManager = MPAssetManager.Instance;
+			_MPAssetManager.Initialize();
 
 			// 初始化网络数据包路由器
 			MPPacketRouter.Initialize();

@@ -48,6 +48,9 @@ public class Test : MonoBehaviour {
 			"11" => RunCommand(CreateDontDestroyGameObject),    // 创建测试对象并设置DontDestroyOnLoad
 			"12" => RunCommand(TestSingleton),  // 测试单例模式
 			"13" => RunCommand(SimulationPlayerUpdata),  // 模拟玩家数据更新事件
+			"14" => RunCommand(() => GetAssetGameObject(args[1..])),  // 获取预制体测试,参数:预制体名称(string),数据库名称(string,可选)
+			"15" => RunCommand(() => GetAllAssetGameObject(args[1])),  // 获取全部预制体测试,参数:预制体名称(string)
+			"16" => RunCommand(() => GetParticleEffectPrefab(args[1])),  // 获取粒子特效预制体测试,参数:预制体名称(string)
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -176,6 +179,56 @@ public class Test : MonoBehaviour {
 		ArraySegment<byte> segment = new ArraySegment<byte>(data);
 		MPEventBusNet.NotifyReceive(1, segment);
 	}
+	// 管理器预制体查询测试
+	public static void GetAssetGameObject(string[] args) {
+		string name, database = "";
+		if (args.Length < 1) {
+			MPMain.LogError("[MP Debug]需要至少一个参数: 预制体名称");
+			return;
+		}
+		name = args[0];
+		if (args.Length >= 2)
+			database = args[1];
+		if (CL_AssetManager.GetAssetGameObject(name, database) != null)
+			MPMain.LogInfo($"[MP Debug]成功获取预制体: {name} 来自数据库: {database}");
+		else
+			MPMain.LogError($"[MP Debug]获取预制体失败: {name} 来自数据库: {database}");
+	}
+	// 全部预制体查询测试
+	public static void GetAllAssetGameObject(string prefabName) {
+		// Resources.FindObjectsOfTypeAll会找到所有已加载的资源
+		GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+		foreach (GameObject obj in allObjects) {
+			// 关键判断：预制体不在场景中(scene.name == null）
+			if (obj.scene.name == null && obj.name == prefabName) {
+				Debug.Log($"[MP Debug]找到预制体: {prefabName}, 类型: {(obj.hideFlags == HideFlags.None ? "普通预制体" : "内部资源")}");
+				return;
+			}
+		}
+		Debug.LogWarning($"[MP Debug]找不到预制体: {prefabName}");
+	}
+	// 仅粒子特效预制体查询测试
+	public static void GetParticleEffectPrefab(string prefabName) {
+
+		// 默认生成位置: 相机位置 + 相机前方1单位
+		Vector3 position = Camera.main.transform.position + Camera.main.transform.forward;
+		// 默认旋转: 无旋转
+		Quaternion identity = Quaternion.identity;
+
+		GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+		foreach (GameObject obj in allObjects) {
+			if (obj.scene.name == null && obj.name == prefabName) {
+				ParticleSystem ps = obj.GetComponent<ParticleSystem>();
+				if (ps != null) {
+					Debug.Log($"[MP Debug]找到粒子特效预制体: {prefabName}");
+					GameObject.Instantiate(obj, position, identity);
+					return;
+				}
+			}
+		}
+		Debug.LogWarning($"[MP Debug]找不到粒子特效预制体: {prefabName}");
+	}
+
 }
 public class CheatsTest : MonoBehaviour {
 	public static void Main(string[] args) {
@@ -285,6 +338,7 @@ public class CheatsTest : MonoBehaviour {
 			}
 		}
 	}
+	// 创建物品并放入库存测试(旋转版本)
 	public static void AddItemInInventoryQuaternionTest() {
 		var inventory = Inventory.instance;
 
@@ -306,5 +360,4 @@ public class CheatsTest : MonoBehaviour {
 		AddItemInInventoryQuaternionTest("Item_Rebar_Holiday", Quaternion.Euler(90, 0, 0));
 		AddItemInInventoryQuaternionTest("Item_RebarRope_Holiday", Quaternion.Euler(90, 0, 0));
 	}
-
 }

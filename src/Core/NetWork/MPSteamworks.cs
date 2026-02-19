@@ -121,7 +121,7 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 
 	}
 
-	void LateUpdate() {
+	void Update() {
 		Steamworks.SteamClient.RunCallbacks();
 
 		_socketManager?.Receive(32);
