@@ -48,7 +48,7 @@ public class MPPacketRouter {
 				FastHandlers[handlerId] = (Action<ulong, DataReader>)action;
 				count++;
 
-				MPMain.LogInfo(Localization.Get("MPPacketRouter", "ShowAllRouteTable", packetType, action.Method.Name));
+				//MPMain.LogInfo(Localization.Get("MPPacketRouter", "ShowAllRouteTable", packetType, action.Method.Name));
 			} else {
 				Localization.Get("MPPacketRouter", "PacketTypeOutOfRange", (ushort)packetType, FastHandlers.Length - 1);
 			}

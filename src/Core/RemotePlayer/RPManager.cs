@@ -72,9 +72,10 @@ public class RPManager : Singleton<RPManager> {
 			// 生成死亡特效
 			var playerPosition = container.PlayerObject.transform.position;
 			var playerRotation = container.PlayerObject.transform.rotation;
-			GameObject.Instantiate(
-				MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME),
-				playerPosition, playerRotation);
+
+			var deathParticle = MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME);
+			if (deathParticle != null) 
+				GameObject.Instantiate(deathParticle,playerPosition, playerRotation);
 
 			// 容器清理引用
 			container.Destroy();

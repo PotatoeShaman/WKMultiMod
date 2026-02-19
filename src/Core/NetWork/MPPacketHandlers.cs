@@ -156,9 +156,9 @@ public class MPPacketHandlers {
 		// 生成死亡特效
 		var playerPosition = playerObject.transform.position;
 		var playerRotation = playerObject.transform.rotation;
-		GameObject.Instantiate(
-			MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME),
-			playerPosition, playerRotation);
+		var deathParticle = MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME);
+		if (deathParticle != null)
+			GameObject.Instantiate(deathParticle, playerPosition, playerRotation);
 
 		// 生成死亡后掉落物品
 		Dictionary<string, byte> remoteItems = reader.GetStringByteDict();

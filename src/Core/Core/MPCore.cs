@@ -145,7 +145,8 @@ public class MPCore : MonoSingleton<MPCore> {
 
 			// 初始化资源管理器
 			_MPAssetManager = MPAssetManager.Instance;
-			_MPAssetManager.Initialize();
+			// 必须在游戏资源加载完成后初始化
+			//_MPAssetManager.Initialize();
 
 			// 初始化网络数据包路由器
 			MPPacketRouter.Initialize();

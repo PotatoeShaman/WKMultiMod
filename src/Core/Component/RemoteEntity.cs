@@ -40,7 +40,10 @@ public class RemoteEntity : GameEntity {
 	// 受到伤害时调用
 	public override bool Damage(float amount, string type) {
 		// 生成伤害特效
-		UnityEngine.Object.Instantiate(DamageObject, base.transform.position, base.transform.rotation, base.transform.parent);
+		if (DamageObject != null) 
+			UnityEngine.Object.Instantiate(DamageObject, base.transform.position, base.transform.rotation, base.transform.parent);
+		
+
 		// 添加屏幕震动
 		CL_CameraControl.Shake(0.01f);
 		// 发布到事件总线
