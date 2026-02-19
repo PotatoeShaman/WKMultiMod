@@ -135,7 +135,7 @@ public class MPPacketRouter {
 		if (targetId == MPProtocol.BroadcastId
 			&& senderId != MPSteamworks.Instance.UserSteamId) {
 
-			ProcessBroadcastExcept(senderId, data);
+			//ProcessBroadcastExcept(senderId, data);
 			// 继续执行,因为主机也要处理广播包
 		}
 
