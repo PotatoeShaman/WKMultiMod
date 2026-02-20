@@ -27,7 +27,8 @@ public class RPContainer {
 	private RemoteEntity[] _remoteEntities;
 	private int _initializationCount = 5;
 	private bool _isDead = false;
-
+	// 死亡后1秒内不接受更新, 避免瞬移和动画冲突
+	private TickTimer _deathTick = new TickTimer(1f);
 	public PlayerData PlayerData {
 		get {
 			var data = new PlayerData {
@@ -134,7 +135,8 @@ public class RPContainer {
 	/// 通过数据进行位置更新
 	/// </summary>
 	public void HandlePlayerData(PlayerData playerData) {
-		if (_isDead == true) {
+		// 死亡后1秒内不接受更新, 避免瞬移和动画冲突
+		if (_isDead == true && _deathTick.IsTickReached) {
 			PlayerObject.SetActive(true);
 			_isDead = false;
 		}
@@ -181,6 +183,8 @@ public class RPContainer {
 	public void HandleDeath() {
 		PlayerObject.SetActive(false);
 		_isDead = true;
+		// 死亡后重置死亡计时器, 1秒内不接受更新, 避免瞬移和动画冲突
+		_deathTick.Reset();
 	}
 	#endregion
 

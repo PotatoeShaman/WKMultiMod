@@ -84,6 +84,10 @@ public class LocalPlayer : MonoSingleton<LocalPlayer> {
 		if (!_sendDataTimer.TryTick())
 			return;
 
+		// 如果玩家死亡则不发送数据
+		if (_cachedPlayer.IsDead())
+			return;
+
 		// 尝试创建玩家数据
 		if (!TryCreateLocalPlayerData(out PlayerData playerData))
 			return;
