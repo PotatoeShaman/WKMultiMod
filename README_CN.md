@@ -341,6 +341,7 @@ WhiteKnuckleMod/
 ## 联系方式
 
 * **GitHub Issues** : [在此提交问题或建议](https://github.com/%E4%BD%A0%E7%9A%84%E7%94%A8%E6%88%B7%E5%90%8D/%E4%BB%93%E5%BA%93%E5%90%8D/issues)
-* **Discord** : [https://discord.com/invite/f2CqdmUSap](https://discord.com/invite/f2CqdmUSap)
+* [**White Knuckle Discord**](https://discord.com/invite/f2CqdmUSap)
+* [**联机Mod Discord**](https://discord.gg/huHkf6ChcV)
 * **QQ 群** : 596296577
 * **作者** : Shenxl - 819452727@qq.com

@@ -51,6 +51,7 @@ public class Test : MonoBehaviour {
 			"14" => RunCommand(() => GetAssetGameObject(args[1..])),  // 获取预制体测试,参数:预制体名称(string),数据库名称(string,可选)
 			"15" => RunCommand(() => GetAllAssetGameObject(args[1])),  // 获取全部预制体测试,参数:预制体名称(string)
 			"16" => RunCommand(() => GetParticleEffectPrefab(args[1])),  // 获取粒子特效预制体测试,参数:预制体名称(string)
+			"17" => RunCommand(()=> MPCore.Instance.ResetStateVariables()),  // 重置状态变量测试
 			_ => RunCommand(() => Debug.Log($"未知命令: {args[0]}"))
 		};
 	}
@@ -277,7 +278,7 @@ public class CheatsTest : MonoBehaviour {
 					// 获取Rigidbody并添加随机斜上方动量
 					Rigidbody rb = itemObject.GetComponent<Rigidbody>();
 					if (rb != null) {
-						// 随机方向: 斜上方 (XZ随机，Y固定向上)
+						// 随机方向: 斜上方 (XZ随机,Y固定向上)
 						Vector3 randomDirection = new Vector3(
 							Random.Range(-1f, 1f),  // X轴随机方向
 							1f,                     // Y轴向上
@@ -290,7 +291,7 @@ public class CheatsTest : MonoBehaviour {
 						// 添加冲量(瞬间力)
 						rb.AddForce(randomDirection * randomForce, ForceMode.Impulse);
 
-						// 可选: 添加随机旋转扭矩，让物品在空中旋转
+						// 可选: 添加随机旋转扭矩,让物品在空中旋转
 						//rb.AddTorque(Random.insideUnitSphere * Random.Range(1f, 5f), ForceMode.Impulse);
 					}
 				} else {
@@ -326,7 +327,7 @@ public class CheatsTest : MonoBehaviour {
 					var item_Object = item.GetComponent<Item_Object>();
 					if (item_Object != null) {
 						inventory.AddItemToInventoryCenter(item_Object.itemData);
-						// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+						// 隐藏镜像物品对象,因为它已经被添加到库存中,不需要在场景中显示
 						item_Object.gameObject.SetActive(value: false);
 					} else {
 						MPMain.LogInfo($"[MP Debug] 生成物: {item.name} 不可放入库存");
@@ -351,7 +352,7 @@ public class CheatsTest : MonoBehaviour {
 			var item_Object = item.GetComponent<Item_Object>();
 			item_Object.itemData.bagRotation = quaternion; // 设置物品数据中的旋转
 			inventory.AddItemToInventoryCenter(item_Object.itemData);
-			// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+			// 隐藏镜像物品对象,因为它已经被添加到库存中,不需要在场景中显示
 			item_Object.gameObject.SetActive(value: false);
 		}
 		AddItemInInventoryQuaternionTest("Item_Rebar", Quaternion.Euler(90, 0, 0));

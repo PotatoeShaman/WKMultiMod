@@ -223,7 +223,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		}
 		// 有连接但没有创建对象
 		foreach (var (steamId, connection) in _MPsteamworks._allConnections) {
-			if (!RPManager.Instance.Players.ContainsKey(steamId)) {
+			if (!_RPManager.Players.ContainsKey(steamId)) {
 				MPMain.LogWarning(Localization.Get("MPCore", "PlayerDataMissing", steamId));
 				// 发送请求玩家创建包
 				var writer = GetWriter(_MPsteamworks.UserSteamId, steamId, PacketType.PlayerCreateRequest);
@@ -293,11 +293,11 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// <summary>
 	/// 退出联机模式时重置设置
 	/// </summary>
-	private void ResetStateVariables() {
+	public void ResetStateVariables() {
 		MultiPlayerStatus.SetField(MPStatus.INIT_MASK, MPStatus.NotInitialized);
 		MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.NotInLobby);
 		_MPsteamworks.DisconnectAll();
-		RPManager.Instance.ResetAll();
+		_RPManager.ResetAll();
 	}
 
 	/// <summary>
@@ -538,7 +538,7 @@ public class MPCore : MonoSingleton<MPCore> {
 			return;
 		}
 		if (ulong.TryParse(args[0], out ulong playerId)) {
-			var ids = DictionaryExtensions.FindByKeySuffix(RPManager.Instance.Players, playerId);
+			var ids = DictionaryExtensions.FindByKeySuffix(_RPManager.Players, playerId);
 			// 未找到对应id
 			if (ids.Count == 0) {
 				CommandConsole.LogError(Localization.Get("CommandConsole", "TargetIdNotFound"));
@@ -638,7 +638,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	private void HandlePlayerDisconnected(SteamId steamId) {
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "PlayerDisconnected", steamId.ToString()));
-		RPManager.Instance.PlayerRemove(steamId.Value);
+		_RPManager.PlayerRemove(steamId);
 	}
 
 	#endregion

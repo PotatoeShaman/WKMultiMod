@@ -191,7 +191,7 @@ public class MPPacketHandlers {
 						Random.Range(-1f, 1f), 1f, Random.Range(-1f, 1f)).normalized;
 					// 添加冲量 力度(1-2)
 					rb.AddForce(direction * Random.Range(1f, 2f), ForceMode.Impulse);
-					// 可选: 添加随机旋转扭矩，让物品在空中旋转
+					// 可选: 添加随机旋转扭矩,让物品在空中旋转
 					//rb.AddTorque(Random.insideUnitSphere * Random.Range(1f, 5f), ForceMode.Impulse);
 				}
 			}
@@ -291,7 +291,7 @@ public class MPPacketHandlers {
 					inventory.AddItemToInventoryCenter(item_Object.itemData);
 					// 摆正为竖直向上,因为物品对象默认是向前
 					item_Object.itemData.bagRotation = Quaternion.Euler(90, 0, 0);
-					// 隐藏镜像物品对象，因为它已经被添加到库存中，不需要在场景中显示
+					// 隐藏镜像物品对象,因为它已经被添加到库存中,不需要在场景中显示
 					item_Object.gameObject.SetActive(value: false);
 				} else {
 					MPMain.LogInfo(Localization.Get("MPMessageHandlers", "PrefabIsNotItem", pickupObj.name));

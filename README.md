@@ -370,6 +370,7 @@ Welcome to submit Issues for bug reports or suggestions! Pull Requests are also 
 ## Contact
 
 * **GitHub Issues** : [Submit issues or suggestions here](https://github.com/your-username/repo-name/issues)
-* **Discord** : [https://discord.com/invite/f2CqdmUSap](https://discord.com/invite/f2CqdmUSap)
+* [**White Knuckle Discord**](https://discord.com/invite/f2CqdmUSap)
+* [**Multi Player Mod Discord**](https://discord.gg/huHkf6ChcV)
 * **QQ Group** : 596296577
 * **Author** : Shenxl - 819452727@qq.com

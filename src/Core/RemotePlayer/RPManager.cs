@@ -33,7 +33,6 @@ public class RPManager : Singleton<RPManager> {
 	public void ResetAll() {
 		foreach (var container in Players.Values) {
 			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
-
 			container.Destroy();
 		}
 		Players.Clear();
@@ -46,7 +45,6 @@ public class RPManager : Singleton<RPManager> {
 	public RPContainer PlayerCreate(ulong playId, string prefab) {
 		if (Players.TryGetValue(playId, out var existing))
 			return existing;
-
 
 		var container = new RPContainer(playId);
 
@@ -77,12 +75,13 @@ public class RPManager : Singleton<RPManager> {
 			if (deathParticle != null) 
 				GameObject.Instantiate(deathParticle,playerPosition, playerRotation);
 
-			// 容器清理引用
-			container.Destroy();
-
 			// 工厂清理
 			RPFactoryManager.Instance.Cleanup(container.PlayerObject);
 
+			// 容器清理引用
+			container.Destroy();
+
+			// 字典删除
 			Players.Remove(playId);
 		}
 	}

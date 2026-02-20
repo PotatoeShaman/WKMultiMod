@@ -28,8 +28,8 @@ public class SlugcatFactory : BaseRemoteFactory {
 			//if (tmpText != null && tmpText.fontMaterial != null) {
 			//	Object.Destroy(tmpText.fontMaterial);
 			//}
-			Object.Destroy(instance);
 		}
+		base.Cleanup(instance);
 	}
 
 	#endregion

@@ -79,7 +79,9 @@ public abstract class BaseRemoteFactory {
 	/// <summary>
 	/// 资源清理
 	/// </summary>
-	public abstract void Cleanup(GameObject instance);
+	public virtual void Cleanup(GameObject instance) {
+		Object.Destroy(instance);
+	}
 
 	#endregion
 

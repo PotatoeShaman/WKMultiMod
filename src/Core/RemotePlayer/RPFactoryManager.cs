@@ -117,6 +117,9 @@ public class RPFactoryManager: Singleton<RPFactoryManager> {
 
 	#region[Debug]
 
+	/// <summary>
+	/// 仅供调试使用,列出所有注册的工厂信息
+	/// </summary>
 	public void ListAllFactory() {
 		foreach (var (factoryId, factory) in _factories) {
 			MPMain.LogWarning(Localization.Get("RPFactoryManager", "DebugFactoryInfo",
