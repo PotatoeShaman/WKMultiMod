@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Windows;
+using WKMPMod.Asset;
 using WKMPMod.Core;
 using WKMPMod.Data;
 using WKMPMod.RemotePlayer;
@@ -228,8 +229,15 @@ public class Test : MonoBehaviour {
 			}
 		}
 		Debug.LogWarning($"[MP Debug]找不到粒子特效预制体: {prefabName}");
-	}
 
+		//var particle = MPAssetManager.GetAssetGameObject(prefabName);
+		//if (particle != null) {
+		//	GameObject.Instantiate(particle, position, identity);
+		//	Debug.Log($"[MP Debug]找到粒子特效预制体: {prefabName}");
+		//} else {
+		//	Debug.LogWarning($"[MP Debug]找不到粒子特效预制体: {prefabName}");
+		//}
+	}
 }
 public class CheatsTest : MonoBehaviour {
 	public static void Main(string[] args) {

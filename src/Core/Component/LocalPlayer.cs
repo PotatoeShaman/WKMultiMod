@@ -84,6 +84,10 @@ public class LocalPlayer : MonoSingleton<LocalPlayer> {
 		if (!_sendDataTimer.TryTick())
 			return;
 
+		// 验证玩家引用
+		if (!ValidatePlayerReferences())
+			return;
+
 		// 如果玩家死亡则不发送数据
 		if (_cachedPlayer.IsDead())
 			return;
@@ -102,10 +106,6 @@ public class LocalPlayer : MonoSingleton<LocalPlayer> {
 	// 尝试创建本地玩家数据
 	public bool TryCreateLocalPlayerData(out PlayerData data) {
 		data = default;
-
-		// 验证玩家引用
-		if (!ValidatePlayerReferences())
-			return false;
 
 		// 检查是否有显著变化
 		if (!HasSignificantChanges())

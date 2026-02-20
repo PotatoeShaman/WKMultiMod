@@ -27,7 +27,8 @@ public class MPAssetManager : Singleton<MPAssetManager> {
 		foreach (GameObject obj in allObjects) {
 			if (!string.IsNullOrEmpty(obj.scene.name)) continue;// 跳过场景对象
 			if (!loadSet.TryGetValue(obj.name, out var actualValue)) continue;// 不在列表中
-			if (!obj.TryGetComponent<ParticleSystem>(out var ps)) continue;// 没有特效组件
+			if (assetDictionary.TryGetValue(obj.name, out var assetObject)) continue;// 已经加载过了
+			if (obj.GetComponentInChildren<ParticleSystem>() == null) continue;// 本身及其子对象没有特效组件
 			MPMain.LogInfo($"[MP Debug] Loaded asset: {obj.name} {actualValue}");
 			assetDictionary[actualValue] = obj;
 		}
