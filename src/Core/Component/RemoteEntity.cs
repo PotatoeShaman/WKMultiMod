@@ -37,12 +37,13 @@ public class RemoteEntity : GameEntity {
 			DamageObject = MPAssetManager.GetAssetGameObject(MPAssetManager.DAMAGE_OBJECT_NAME);
 		}
 	}
-	// 受到伤害时调用
+	// 对方受到伤害时调用
 	public override bool Damage(float amount, string type) {
 		// 生成伤害特效
-		if (DamageObject != null) 
+		if (DamageObject != null) {
 			UnityEngine.Object.Instantiate(DamageObject, base.transform.position, base.transform.rotation, base.transform.parent);
-		
+			//MPMain.LogInfo($"[MP Debug] 生成受击特效 位置:{base.transform.position} 角度:{base.transform.rotation}");
+		}
 
 		// 添加屏幕震动
 		CL_CameraControl.Shake(0.01f);

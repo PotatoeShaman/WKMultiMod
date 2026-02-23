@@ -152,18 +152,10 @@ public class MPPacketHandlers {
 		if (playerObject == null) {
 			return;
 		}
-
-		// 生成死亡特效
-		var playerPosition = playerObject.transform.position;
-		var playerRotation = playerObject.transform.rotation;
-		var deathParticle = MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME);
-		if (deathParticle != null) {
-			GameObject.Instantiate(deathParticle, playerPosition, playerRotation);
-			MPMain.LogInfo($"[MP Debug] 生成死亡特效 位置:{playerPosition} 角度:{playerRotation}");
-		}
 			
 		// 生成死亡后掉落物品
 		Dictionary<string, byte> remoteItems = reader.GetStringByteDict();
+		var playerPosition = playerObject.transform.position;
 
 		foreach (var (itemId, count) in remoteItems) {
 			if (itemId == NO_ITEM_NAME)
@@ -288,13 +280,15 @@ public class MPPacketHandlers {
 			for (int i = 0; i < count; i++) {
 				// 实例化物品在 0,1,0 
 				var pickupObj = GameObject.Instantiate(itemPrefab, new Vector3(0, 1, 0), Quaternion.identity);
-				var item_Object = pickupObj.GetComponent<Item_Object>();
-				if (item_Object != null) {
-					inventory.AddItemToInventoryCenter(item_Object.itemData);
-					// 摆正为竖直向上,因为物品对象默认是向前
-					item_Object.itemData.bagRotation = Quaternion.Euler(90, 0, 0);
+				var itemObject = pickupObj.GetComponent<Item_Object>();
+				var itemData = itemObject.itemData;
+				if (itemObject != null) {
+					// 通过.upDirection属性,摆正为竖直向上
+					itemObject.itemData.bagRotation = Quaternion.LookRotation(itemData.upDirection);
+					// 将物品放入背包
+					inventory.AddItemToInventoryCenter(itemObject.itemData);
 					// 隐藏镜像物品对象,因为它已经被添加到库存中,不需要在场景中显示
-					item_Object.gameObject.SetActive(value: false);
+					itemObject.gameObject.SetActive(value: false);
 				} else {
 					MPMain.LogInfo(Localization.Get("MPMessageHandlers", "PrefabIsNotItem", pickupObj.name));
 					GameObject.Destroy(pickupObj);

@@ -2,6 +2,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Events;
+using WKMPMod.Asset;
 using WKMPMod.Component;
 using WKMPMod.Core;
 using WKMPMod.Data;
@@ -181,6 +182,14 @@ public class RPContainer {
 	/// 处理死亡 - 目前仅隐藏对象,后续可以添加死亡动画等
 	/// </summary>
 	public void HandleDeath() {
+		// 生成死亡特效
+		var playerPosition = PlayerObject.transform.position;
+		var playerRotation = PlayerObject.transform.rotation;
+		var deathParticle = MPAssetManager.GetAssetGameObject(MPAssetManager.DEATH_OBJECT_NAME);
+		if (deathParticle != null) {
+			GameObject.Instantiate(deathParticle, playerPosition, playerRotation);
+			//MPMain.LogInfo($"[MP Debug] 生成死亡特效 位置:{playerPosition} 角度:{playerRotation}");
+		}
 		PlayerObject.SetActive(false);
 		_isDead = true;
 		// 死亡后重置死亡计时器, 1秒内不接受更新, 避免瞬移和动画冲突

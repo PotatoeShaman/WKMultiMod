@@ -332,11 +332,15 @@ public class CheatsTest : MonoBehaviour {
 				if (prefabAsset != null) {
 					// 实例化物品在 0,0.5,0 
 					var item = Instantiate(prefabAsset, new Vector3(0, 0.5f, 0), Quaternion.identity);
-					var item_Object = item.GetComponent<Item_Object>();
-					if (item_Object != null) {
-						inventory.AddItemToInventoryCenter(item_Object.itemData);
+					var itemObject = item.GetComponent<Item_Object>();
+					var itemData = itemObject.itemData;
+					if (itemObject != null) {
+						itemObject.itemData.bagRotation = Quaternion.LookRotation(itemData.upDirection);
+
+						inventory.AddItemToInventoryCenter(itemObject.itemData);
+
 						// 隐藏镜像物品对象,因为它已经被添加到库存中,不需要在场景中显示
-						item_Object.gameObject.SetActive(value: false);
+						itemObject.gameObject.SetActive(value: false);
 					} else {
 						MPMain.LogInfo($"[MP Debug] 生成物: {item.name} 不可放入库存");
 					}
