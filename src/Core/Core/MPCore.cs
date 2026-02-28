@@ -286,7 +286,9 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// </summary>
 	private IEnumerator OnDeathSequence() {
 		yield return new WaitForSeconds(0.5f);
+		string lobby_id = _MPsteamworks.LobbyId.ToString();
 		ResetStateVariables();
+		Join([lobby_id]);
 		yield break;
 	}
 
@@ -445,7 +447,8 @@ public class MPCore : MonoSingleton<MPCore> {
 						break;
 					}
 				}
-
+				string lobby_id = _MPsteamworks.LobbyId.ToString();
+				CopyToClipboard(lobby_id);
 			} else {
 				MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
 				CommandConsole.LogError(Localization.Get("CommandConsole", "CreateLobbyFailed"));
@@ -506,9 +509,15 @@ public class MPCore : MonoSingleton<MPCore> {
 			CommandConsole.LogError(Localization.Get("CommandConsole", "NeedToBeOnline"));
 			return;
 		}
+		string lobby_id = _MPsteamworks.LobbyId.ToString();
+		CopyToClipboard(lobby_id);
 		CommandConsole.Log(Localization.Get(
-			"CommandConsole", "LobbyIdOutput", _MPsteamworks.LobbyId.ToString()));
+			"CommandConsole", "LobbyIdOutput", lobby_id));
 	}
+
+	private void CopyToClipboard(string text) {
+        GUIUtility.systemCopyBuffer = text;
+    }
 
 	/// <summary>
 	/// 发送信息到他人控制台
