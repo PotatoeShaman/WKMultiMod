@@ -56,7 +56,7 @@ UNITY_FILES=(
 "${WK_PATH}/UnityEngine.TextRenderingModule.dll"
 "${WK_PATH}/UnityEngine.UI.dll"
 "${WK_PATH}/UnityEngine.dll"
-
+"${WK_PATH}/UnityEngine.IMGUIModule.dll"
 )
 cp -t "${UNITY_PATH}/" "${UNITY_FILES[@]}"
 
