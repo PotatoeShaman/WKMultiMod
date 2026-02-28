@@ -17,6 +17,7 @@
 		<!-- <OutputPath>$(SolutionDir)bin\$(Configuration)\</OutputPath> -->
 		<!-- 项目本身的 bin 目录 -->
 		<OutputPath>bin\$(Configuration)\</OutputPath>
+        <SolutionDir>..\..\</SolutionDir>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
