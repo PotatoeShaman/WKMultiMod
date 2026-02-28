@@ -16,7 +16,10 @@ public class MPConfig {
 
 	// 远程玩家模型 (默认值为 "default", 可以设置为 "slugcat" 来使用蛞蝓猫模型)
 	private static ConfigEntry<string> _remotePlayerModel;
-	public static string RemotePlayerModel { get { return _remotePlayerModel.Value; } }
+	public static string RemotePlayerModel { 
+		get { return _remotePlayerModel.Value; }
+		set { _remotePlayerModel.Value = value; }
+	}
 
 	#region[PVP相关]
 	// All (所有伤害)
