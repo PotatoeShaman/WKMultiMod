@@ -10,6 +10,8 @@
 *.userosscache
 *.sln.docstates
 *.zip
+*.tar
+*.rar
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -363,15 +365,15 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# 排除整个 libs/ 文件夹
+# 锟脚筹拷锟斤拷锟斤拷 libs/ 锟侥硷拷锟斤拷
 libs/*
 lib/*
 
-# 但保留 libs/README.md 文件
+# 锟斤拷锟斤拷锟斤拷 libs/README.md 锟侥硷拷
 !libs/README.md
 !lib/README.md
 
 
-# 排除整个 temp/ 文件夹 
-# 我用来存放他人代码和工具的位置
+# 锟脚筹拷锟斤拷锟斤拷 temp/ 锟侥硷拷锟斤拷 
+# 锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷舜锟斤拷锟酵癸拷锟竭碉拷位锟斤拷
 temp/
