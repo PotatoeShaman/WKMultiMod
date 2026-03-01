@@ -4,6 +4,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using WKMPMod.Asset;
@@ -16,6 +17,13 @@ using static WKMPMod.Data.MPReaderPool;
 using static WKMPMod.Data.MPWriterPool;
 
 namespace WKMPMod.Core;
+
+public enum UIDisplayType {
+	None,
+	AscentHeader,
+	TipHeader,
+	Header
+}
 
 #region[多人模式状态枚举]
 [Flags]
@@ -181,12 +189,18 @@ public class MPCore : MonoSingleton<MPCore> {
 		MPEventBusGame.OnPlayerDamage += HandlePlayerDamage;
 		MPEventBusGame.OnPlayerAddForce += HandlePlayerAddForce;
 		MPEventBusGame.OnPlayerDeath += HandlePlayerDeath;
+
+		SteamFriends.OnGameLobbyJoinRequested += AcceptLobbyInvite;
+		SteamMatchmaking.OnLobbyEntered += ShowLobbyInfo;
+		SteamMatchmaking.OnLobbyMemberJoined += OnPlayerJoinedLobby;
+		SteamMatchmaking.OnLobbyMemberLeave += OnPlayerLeaveLobby;
+		SteamMatchmaking.OnLobbyInvite += OnPlayerInvitedToLobby;
 	}
 
-	/// <summary>
-	/// 取消所有网络事件订阅
-	/// </summary>
-	private void UnsubscribeFromEvents() {
+    /// <summary>
+    /// 取消所有网络事件订阅
+    /// </summary>
+    private void UnsubscribeFromEvents() {
 		//// 退订网络数据接收事件
 		//MPEventBusNet.OnReceiveData -= ProcessReceiveData;
 
@@ -204,10 +218,31 @@ public class MPCore : MonoSingleton<MPCore> {
 		MPEventBusGame.OnPlayerDamage -= HandlePlayerDamage;
 		MPEventBusGame.OnPlayerAddForce -= HandlePlayerAddForce;
 		MPEventBusGame.OnPlayerDeath -= HandlePlayerDeath;
-
+		
+		SteamFriends.OnGameLobbyJoinRequested -= AcceptLobbyInvite;
+		SteamMatchmaking.OnLobbyEntered -= ShowLobbyInfo;
+		SteamMatchmaking.OnLobbyMemberJoined -= OnPlayerJoinedLobby;
+		SteamMatchmaking.OnLobbyMemberLeave -= OnPlayerLeaveLobby;
+		SteamMatchmaking.OnLobbyInvite -= OnPlayerInvitedToLobby;
 	}
 
 	#endregion
+
+	public void ShowLobbyInfo(Lobby lobby) {
+		SystemMessage($"Lobby {lobby.GetData(name)} - {lobby.MemberCount}/{lobby.MaxMembers}\nid: {lobby.Id.Value}", UIDisplayType.AscentHeader);
+	}
+
+	public void OnPlayerJoinedLobby(Lobby lobby, Friend friend) {
+		SystemMessage($"{friend.Name} has been hired at the facility {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
+	}
+
+	public void OnPlayerLeaveLobby(Lobby lobby, Friend friend) {
+		SystemMessage($"{friend.Name} has been fired from the facility {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
+	}
+
+	public void OnPlayerInvitedToLobby(Friend friend, Lobby lobby) {
+		SystemMessage($"{friend.Name} has been invited to the facility", UIDisplayType.AscentHeader);
+	}
 
 	#region[玩家数量同步]
 	private void CheckAndRepairPlayers() {
@@ -286,9 +321,14 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// </summary>
 	private IEnumerator OnDeathSequence() {
 		yield return new WaitForSeconds(0.5f);
-		string lobby_id = _MPsteamworks.LobbyId.ToString();
+		string lobby_id = "";
+		if(IsInLobby) {
+			lobby_id = _MPsteamworks.LobbyId.ToString();
+		}
 		ResetStateVariables();
-		Join([lobby_id]);
+		if(!string.IsNullOrEmpty(lobby_id)) {
+			Join([lobby_id]);
+		}
 		yield break;
 	}
 
@@ -396,6 +436,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		CommandConsole.AddCommand("host", Host);
 		CommandConsole.AddCommand("join", Join);
 		CommandConsole.AddCommand("leave", Leave);
+		CommandConsole.AddCommand("invite", OpenSteamInviteUI);
 		CommandConsole.AddCommand("getlobbyid", GetLobbyId);
 		CommandConsole.AddCommand("allconnections", GetAllConnections);
 		CommandConsole.AddCommand("getallplayer", GetAllPlayer);
@@ -408,6 +449,19 @@ public class MPCore : MonoSingleton<MPCore> {
 		}, false);
 		CommandConsole.AddCommand("test", Test.Test.Main, false);
 		CommandConsole.AddCommand("cheatstest", Test.CheatsTest.Main);
+	}
+
+	public void OpenSteamInviteUI(string[] args) {
+		if(!IsInLobby) {
+			CommandConsole.LogError(Localization.Get("CommandConsole", "NeedToBeOnline"));
+			return;
+		}
+		ulong lobby_id = _MPsteamworks.LobbyId;
+		SteamFriends.OpenGameInviteOverlay(lobby_id);
+	}
+
+	public void AcceptLobbyInvite(Lobby lobby, SteamId steam_id) {
+		Join([lobby.Id.ToString()]);
 	}
 
 	/// <summary>
@@ -482,6 +536,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		_MPsteamworks.JoinRoom(lobbyId, (success) => {
 			if (success) {
 				MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
+				SystemMessage("Has been employed by the facility!", UIDisplayType.AscentHeader);
 			} else {
 				MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
 				CommandConsole.LogError(Localization.Get("CommandConsole", "JoinLobbyFailed"));
@@ -489,13 +544,11 @@ public class MPCore : MonoSingleton<MPCore> {
 		});
 	}
 
-
-
-
 	/// <summary>
 	/// 离开大厅
 	/// </summary>
 	public void Leave(string[] args) {
+		SystemMessage("Has been fired by the facility!", UIDisplayType.AscentHeader);
 		ResetStateVariables();
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "DisconnectedAndCleaned"));
@@ -537,6 +590,32 @@ public class MPCore : MonoSingleton<MPCore> {
 		_MPsteamworks.Broadcast(writer);
 	}
 
+	public void SystemMessage(string message, UIDisplayType type) {
+		switch(type) {
+			case UIDisplayType.AscentHeader: 
+				CL_GameManager.gMan.uiMan.ascentHeader.ShowText(message); 
+				break;
+			case UIDisplayType.TipHeader: 
+				CL_GameManager.gMan.uiMan.tipHeader.ShowText(message); 
+				break;
+			case UIDisplayType.Header: 
+				CL_GameManager.gMan.uiMan.header.ShowText(message); 
+				break;
+			default:
+				break;
+		}
+		CommandConsole.Log($"[SYSTEM] {message}");
+
+		if (!IsInLobby) {
+			CommandConsole.LogError(Localization.Get("CommandConsole", "NeedToBeOnline"));
+			return;
+		}
+		var writer = GetWriter(_MPsteamworks.UserSteamId, MPProtocol.BroadcastId, PacketType.BroadcastMessage);
+		writer.Put(message);
+		_MPsteamworks.Broadcast(writer);
+
+	}
+
 	/// <summary>
 	/// 向某人TP
 	/// </summary>
@@ -566,6 +645,7 @@ public class MPCore : MonoSingleton<MPCore> {
 			// 找到对应id,发出传送请求
 			var writer = GetWriter(_MPsteamworks.UserSteamId, ids[0], PacketType.PlayerTeleportRequest);
 			_MPsteamworks.SendToPeer(ids[0], writer);
+			CommandConsole.HideConsole();
 		}
 	}
 

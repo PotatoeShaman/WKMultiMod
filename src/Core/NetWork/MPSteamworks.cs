@@ -31,6 +31,12 @@ public class MPSteamworks : MonoSingleton<MPSteamworks>, ISocketManager {
 
 	// 大厅Id
 	private Lobby _currentLobby;
+	public string LobbyName {
+		get { return _currentLobby.GetData("name"); }
+	}
+	public int LobbySize {
+		get { return _currentLobby.MaxMembers; }
+	}
 	// 获取当前大厅ID
 	public ulong CurrentLobbyId {
 		get { return _currentLobby.Id.Value; }

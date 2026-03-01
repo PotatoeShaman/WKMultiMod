@@ -24,4 +24,4 @@ perl -e '
   or die "Zip failed: $ZipError\n";
 '
 
-mv ../WKMultiMod_local.zip ./
+mv ./WKMultiMod_local.zip ./Release/
