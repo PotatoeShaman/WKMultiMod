@@ -10,7 +10,7 @@
 *.userosscache
 *.sln.docstates
 *.zip
-*.tar
+*.tar*
 *.rar
 
 # User-specific files (MonoDevelop/Xamarin Studio)

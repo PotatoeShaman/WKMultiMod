@@ -7,4 +7,7 @@ cd ../Core
 dotnet build -c Release
 
 cd ../../bin/Release
-tar -cvf "./WKMultiMod_local.tar" "./"
+
+rm "./WKMultiMod_local.tar.gz"
+tar -czvf ../WKMultiMod_local.tar.gz *
+mv ../WKMultiMod_local.tar.gz ./
