@@ -4,7 +4,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using WKMPMod.Asset;
@@ -22,7 +21,8 @@ public enum UIDisplayType {
 	None,
 	AscentHeader,
 	TipHeader,
-	Header
+	Header,
+	HighscoreHeader
 }
 
 #region[多人模式状态枚举]
@@ -82,6 +82,8 @@ public class MPCore : MonoSingleton<MPCore> {
 	// 是否处于大厅中
 	public static bool IsInLobby => MultiPlayerStatus.IsInLobby();
 	public static bool IsInitialized => MultiPlayerStatus.IsInitialized();
+
+	public System.Random lobby_random = new System.Random();
 
 	// 手部皮肤 -> 玩家模型ID 映射字典
 	public static readonly Dictionary<string, string> HandSkinToModelId = new() {
@@ -229,15 +231,36 @@ public class MPCore : MonoSingleton<MPCore> {
 	#endregion
 
 	public void ShowLobbyInfo(Lobby lobby) {
-		SystemMessage($"Lobby {lobby.GetData(name)} - {lobby.MemberCount}/{lobby.MaxMembers}\nid: {lobby.Id.Value}", UIDisplayType.AscentHeader);
+		SystemMessage($"Hired into {lobby.GetData(name)} - {lobby.MemberCount}/{lobby.MaxMembers}\nid: {lobby.Id.Value}", UIDisplayType.AscentHeader);
+	}
+
+	public void test_join(string[] args)
+	{
+		Lobby lobby = new Lobby(_MPsteamworks.LobbyId);
+		Friend friend = new Friend(SteamClient.SteamId);
+		OnPlayerJoinedLobby(lobby, friend);
+	}
+	public void test_leave(string[] args)
+	{
+		Lobby lobby = new Lobby(_MPsteamworks.LobbyId);
+		Friend friend = new Friend(SteamClient.SteamId);
+		OnPlayerLeaveLobby(lobby, friend);
 	}
 
 	public void OnPlayerJoinedLobby(Lobby lobby, Friend friend) {
-		SystemMessage($"{friend.Name} has been hired at the facility {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
+		string[] possible_messages = MPConfig.JoinMessages.Split(';');
+		int message_id = lobby_random.Next(0, possible_messages.Length - 1);
+		string message = possible_messages[message_id];
+		message = message.Replace("{player}", friend.Name);
+		SystemMessage($"{message} {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
 	}
 
 	public void OnPlayerLeaveLobby(Lobby lobby, Friend friend) {
-		SystemMessage($"{friend.Name} has been fired from the facility {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
+		string[] possible_messages = MPConfig.LeaveMessages.Split(';');
+		int message_id = lobby_random.Next(0, possible_messages.Length - 1);
+		string message = possible_messages[message_id];
+		message = message.Replace("{player}", friend.Name);
+		SystemMessage($"{message} {lobby.MemberCount}/{lobby.MaxMembers}", UIDisplayType.AscentHeader);
 	}
 
 	public void OnPlayerInvitedToLobby(Friend friend, Lobby lobby) {
@@ -433,6 +456,9 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// </summary>
 	private void RegisterCommands() {
 		// 将命令注册到 CommandConsole
+		CommandConsole.AddCommand("test_leave", test_leave);
+		CommandConsole.AddCommand("test_join", test_join);
+
 		CommandConsole.AddCommand("host", Host);
 		CommandConsole.AddCommand("join", Join);
 		CommandConsole.AddCommand("leave", Leave);
@@ -536,7 +562,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		_MPsteamworks.JoinRoom(lobbyId, (success) => {
 			if (success) {
 				MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.InLobby);
-				SystemMessage("Has been employed by the facility!", UIDisplayType.AscentHeader);
+				lobby_random = new System.Random((int)_MPsteamworks.LobbyId);
 			} else {
 				MultiPlayerStatus.SetField(MPStatus.LOBBY_MASK, MPStatus.LobbyConnectionError);
 				CommandConsole.LogError(Localization.Get("CommandConsole", "JoinLobbyFailed"));
@@ -548,7 +574,6 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// 离开大厅
 	/// </summary>
 	public void Leave(string[] args) {
-		SystemMessage("Has been fired by the facility!", UIDisplayType.AscentHeader);
 		ResetStateVariables();
 		// Debug
 		MPMain.LogInfo(Localization.Get("MPCore", "DisconnectedAndCleaned"));
@@ -600,6 +625,9 @@ public class MPCore : MonoSingleton<MPCore> {
 				break;
 			case UIDisplayType.Header: 
 				CL_GameManager.gMan.uiMan.header.ShowText(message); 
+				break;
+			case UIDisplayType.HighscoreHeader: 
+				CL_GameManager.gMan.uiMan.highscoreHeader.ShowText(message); 
 				break;
 			default:
 				break;

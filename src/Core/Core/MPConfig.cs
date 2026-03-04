@@ -82,6 +82,15 @@ public class MPConfig {
 	public static float OtherActive { get { return _otherActive.Value; } }
 	public static float OtherPassive { get { return _otherPassive.Value; } }
 	#endregion
+
+	#region fugels_config
+	private static ConfigEntry<string> _joinMessages;
+	private static ConfigEntry<string> _leaveMessages;
+
+	public static string JoinMessages { get { return _joinMessages.Value; } }
+	public static string LeaveMessages { get { return _leaveMessages.Value; } }
+	#endregion
+
 	public static void Initialize(ConfigFile config) {
 
 		_dataSendFrequency = config.Bind<int>(
@@ -241,6 +250,19 @@ Passive配置项控制玩家受到的伤害倍率
 			"Multiplier for other damage received by the player.\n" +
 			"玩家受到其他伤害类型的伤害倍率");
 		#endregion
+
+		_joinMessages = config.Bind<string>(
+			"UIMessages", "JoinMessages",
+			("{player} has been hired at the facility;" +
+			"{player} has emerged from the mass;" + 
+			"{player} has been summoned by Rho;"),
+            "Possible messages that appears when a player joins a lobby");
+		_leaveMessages = config.Bind<string>(
+			"UIMessages", "LeaveMessages",
+			("{player} has been fired from the facility;" + 
+			"{player} has been mysteriously eaten by substructure;" +
+			"{player} has disappointed Rho;"),
+            "Possible messages that appears when a player leaves a lobby");
 	}
 }
 
