@@ -247,6 +247,14 @@ public class MPCore : MonoSingleton<MPCore> {
 		OnPlayerLeaveLobby(lobby, friend);
 	}
 
+	public void test_ui_headers(string[] args)
+	{
+		SystemMessage($"Test", UIDisplayType.AscentHeader);
+		SystemMessage($"Test", UIDisplayType.Header);
+		SystemMessage($"Test", UIDisplayType.TipHeader);
+		SystemMessage($"Test", UIDisplayType.HighscoreHeader);
+	}
+
 	public void OnPlayerJoinedLobby(Lobby lobby, Friend friend) {
 		string[] possible_messages = MPConfig.JoinMessages.Split(';');
 		int message_id = lobby_random.Next(0, possible_messages.Length - 1);
@@ -458,6 +466,7 @@ public class MPCore : MonoSingleton<MPCore> {
 		// 将命令注册到 CommandConsole
 		CommandConsole.AddCommand("test_leave", test_leave);
 		CommandConsole.AddCommand("test_join", test_join);
+		CommandConsole.AddCommand("test_ui_headers", test_ui_headers);
 
 		CommandConsole.AddCommand("host", Host);
 		CommandConsole.AddCommand("join", Join);
@@ -494,6 +503,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	/// 创建大厅
 	/// </summary>
 	public void Host(string[] args) {
+		//CommandConsole.cheatsEnabled
 		if (IsInLobby) {
 			CommandConsole.LogError(Localization.Get("CommandConsole", "AlreadyInOnlineMode"));
 			return;
@@ -618,7 +628,7 @@ public class MPCore : MonoSingleton<MPCore> {
 	public void SystemMessage(string message, UIDisplayType type) {
 		switch(type) {
 			case UIDisplayType.AscentHeader: 
-				CL_GameManager.gMan.uiMan.ascentHeader.ShowText(message); 
+				CL_GameManager.gMan.uiMan.ascentHeader.ShowText(message);
 				break;
 			case UIDisplayType.TipHeader: 
 				CL_GameManager.gMan.uiMan.tipHeader.ShowText(message); 

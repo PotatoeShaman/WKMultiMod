@@ -125,7 +125,7 @@
     "FactoryAlreadyRegistered": "[MP RPFactoryMan] {0} 已经注册过",
     "FactoryNotFound": "[MP RPFactoryMan] {0} 未找到",
     "FactoryNotFoundCleanup": "[MP RPFactoryMan] 销毁工厂 {0} 未找到,直接销毁对象",
-    "FactoryRegistered": "[MP RPFactoryMan] {0} 注册成功",
+    "FactoryRegistered": "[MP RPFactoryMan] {0} 注册成功"
   },
   "RPManager": {
     "FactoryCreateObjectFailed": "[MP RPMan] 创建远程映射对象失败",

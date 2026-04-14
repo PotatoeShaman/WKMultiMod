@@ -1,4 +1,19 @@
 {
+  "UIPrompts": {
+    "PlayerJoinedMessages": [
+      "{player} has been hired at the facility",
+      "{player} has emerged from the mass",
+      "{player} has been summoned by Rho"
+    ],
+    "PlayerLeftMessages": [
+      "{player} has been fired from the facility",
+      "{player} has been mysteriously eaten by substructure",
+      "{player} has disappointed Rho"
+    ],
+    "PlayerDeathMessages": [
+      "{player} died due to {reason}"
+    ]
+  },
   "CommandConsole": {
     "AllPlayer": "Name: {0} Id: {1}",
     "AlreadyInOnlineMode": "You are already in online mode, \nplease use the leave command to leave and then go online",
@@ -124,7 +139,7 @@
     "FactoryAlreadyRegistered": "[MP RPFactoryMan] {0} already registered",
     "FactoryNotFound": "[MP RPFactoryMan] {0} not found",
     "FactoryNotFoundCleanup": "[MP RPFactoryMan] The destruction factory {0} was not found, and the object was directly destroyed",
-    "FactoryRegistered": "[MP RPFactoryMan] {0} registered successfully",
+    "FactoryRegistered": "[MP RPFactoryMan] {0} registered successfully"
   },
   "RPManager": {
     "FactoryCreateObjectFailed": "[MP RPMan] Failed to create the remote player object",

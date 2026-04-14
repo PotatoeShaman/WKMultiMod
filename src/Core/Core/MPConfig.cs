@@ -256,13 +256,13 @@ Passive配置项控制玩家受到的伤害倍率
 			("{player} has been hired at the facility;" +
 			"{player} has emerged from the mass;" + 
 			"{player} has been summoned by Rho;"),
-            "Possible messages that appears when a player joins a lobby");
+            "Possible messages that appears when a player joins a lobby, seperated by ';'");
 		_leaveMessages = config.Bind<string>(
 			"UIMessages", "LeaveMessages",
 			("{player} has been fired from the facility;" + 
 			"{player} has been mysteriously eaten by substructure;" +
 			"{player} has disappointed Rho;"),
-            "Possible messages that appears when a player leaves a lobby");
+            "Possible messages that appears when a player leaves a lobby, seperated by ';'");
 	}
 }
 
